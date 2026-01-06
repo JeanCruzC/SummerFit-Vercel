@@ -1,0 +1,7 @@
+requests
+supabase
+streamlit==1.36.0
+python-dotenv
+pandas
+plotly>=5.22.0
+streamlit-lottie

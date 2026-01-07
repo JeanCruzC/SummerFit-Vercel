@@ -78,27 +78,62 @@ export default function OnboardingPage() {
     setIsLoading(true);
     const supabase = createClient();
 
-    // Create profile with all data
-    const { error } = await supabase.from("profiles").upsert({
-      id: userId,
+    console.log("Saving profile data:", formData); // Debug
+
+    // Map goal values to DB format
+    const goalMap: { [key: string]: string } = {
+      lose_weight: "Definir",
+      maintain: "Mantener",
+      gain_muscle: "Volumen",
+    };
+
+    // Map activity levels to DB format
+    const activityMap: { [key: string]: string } = {
+      sedentary: "Sedentario",
+      light: "Ligero",
+      moderate: "Moderado",
+      active: "Activo",
+      very_active: "Muy activo",
+    };
+
+    // Map diet types to DB format
+    const dietMap: { [key: string]: string } = {
+      standard: "Estándar",
+      vegetarian: "Vegetariana",
+      vegan: "Vegana",
+      keto: "Keto",
+      paleo: "Paleo",
+    };
+
+    // Map gender to DB format
+    const genderMap: { [key: string]: string } = {
+      Masculino: "M",
+      Femenino: "F",
+    };
+
+    // Create profile with all data properly mapped
+    const { data, error } = await supabase.from("profiles").upsert({
+      user_id: userId,
       age: parseInt(formData.age),
-      gender: formData.gender,
-      weight: parseFloat(formData.weight),
-      height: parseFloat(formData.height),
-      goal: formData.goal,
-      target_weight: parseFloat(formData.target_weight),
-      activity_level: formData.activity_level,
-      diet_type: formData.diet_type,
+      gender: genderMap[formData.gender] || "M",
+      weight_kg: parseFloat(formData.weight),
+      height_cm: parseFloat(formData.height),
+      goal: goalMap[formData.goal] || "Mantener",
+      target_weight_kg: parseFloat(formData.target_weight),
+      activity_level: activityMap[formData.activity_level] || "Moderado",
+      diet_type: dietMap[formData.diet_type] || "Estándar",
       onboarding_completed: true,
       updated_at: new Date().toISOString(),
     });
 
     if (error) {
       console.error("Error saving profile:", error);
+      alert("Error al guardar el perfil: " + error.message);
       setIsLoading(false);
       return;
     }
 
+    console.log("Profile saved successfully:", data);
     router.push("/dashboard");
   };
 
@@ -137,8 +172,8 @@ export default function OnboardingPage() {
               <div
                 key={step.id}
                 className={`h-2 flex-1 rounded-full transition-all duration-500 ${step.id <= currentStep
-                    ? "bg-gradient-to-r from-emerald-500 to-teal-500"
-                    : "bg-zinc-200"
+                  ? "bg-gradient-to-r from-emerald-500 to-teal-500"
+                  : "bg-zinc-200"
                   }`}
               />
             ))}
@@ -254,8 +289,8 @@ function Step1({ formData, onChange }: any) {
               type="button"
               onClick={() => onChange("gender", option)}
               className={`py-4 rounded-xl border-2 font-bold transition-all ${formData.gender === option
-                  ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                  : "border-zinc-200 text-zinc-700 hover:border-emerald-200"
+                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                : "border-zinc-200 text-zinc-700 hover:border-emerald-200"
                 }`}
             >
               {option}
@@ -318,8 +353,8 @@ function Step3({ formData, onChange }: any) {
             type="button"
             onClick={() => onChange("goal", goal.value)}
             className={`py-6 px-6 rounded-2xl border-2 font-bold text-left transition-all flex items-center gap-4 ${formData.goal === goal.value
-                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                : "border-zinc-200 text-zinc-700 hover:border-emerald-200"
+              ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+              : "border-zinc-200 text-zinc-700 hover:border-emerald-200"
               }`}
           >
             <span className="text-4xl">{goal.emoji}</span>
@@ -363,8 +398,8 @@ function Step4({ formData, onChange }: any) {
           type="button"
           onClick={() => onChange("activity_level", level.value)}
           className={`w-full py-4 px-6 rounded-xl border-2 font-bold text-left transition-all ${formData.activity_level === level.value
-              ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-              : "border-zinc-200 text-zinc-700 hover:border-emerald-200"
+            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+            : "border-zinc-200 text-zinc-700 hover:border-emerald-200"
             }`}
         >
           <div className="font-bold text-lg">{level.label}</div>
@@ -395,8 +430,8 @@ function Step5({ formData, onChange }: any) {
           type="button"
           onClick={() => onChange("diet_type", diet.value)}
           className={`w-full py-4 px-6 rounded-xl border-2 font-bold text-left transition-all ${formData.diet_type === diet.value
-              ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-              : "border-zinc-200 text-zinc-700 hover:border-emerald-200"
+            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+            : "border-zinc-200 text-zinc-700 hover:border-emerald-200"
             }`}
         >
           <div className="font-bold text-lg">{diet.label}</div>

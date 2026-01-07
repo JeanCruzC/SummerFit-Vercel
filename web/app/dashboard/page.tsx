@@ -46,6 +46,12 @@ export default function DashboardPage() {
                 ),
             ]);
 
+            // Check if onboarding is completed
+            if (!profileData?.onboarding_completed) {
+                router.push("/onboarding");
+                return;
+            }
+
             setProfile(profileData || getDefaultProfile(session.user.id));
             setWeightHistory(weights);
             setTodayMeals(meals);

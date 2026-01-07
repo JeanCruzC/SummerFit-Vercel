@@ -12,6 +12,7 @@ create table if not exists public.profiles (
   goal text check (goal in ('Definir', 'Mantener', 'Volumen')),
   activity_level text check (activity_level in ('Sedentario', 'Ligero', 'Moderado', 'Activo', 'Muy activo')),
   diet_type text default 'Estándar',
+  onboarding_completed boolean default false,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

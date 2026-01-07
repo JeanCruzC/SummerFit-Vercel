@@ -9,6 +9,7 @@ export interface UserProfile {
     goal: 'Definir' | 'Mantener' | 'Volumen';
     activity_level: 'Sedentario' | 'Ligero' | 'Moderado' | 'Activo' | 'Muy activo';
     diet_type: DietType;
+    onboarding_completed?: boolean;
     created_at?: string;
     updated_at?: string;
 }

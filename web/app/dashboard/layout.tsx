@@ -5,18 +5,19 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
     Bell, Calendar, ChevronDown, Dumbbell, Flame, Home, LogOut, Menu, Moon,
-    PieChart, Scale, Settings, Sun, Target, TrendingDown, UtensilsCrossed, User, X, Zap
+    PieChart, Scale, Settings, Sun, Target, TrendingDown, UtensilsCrossed, User, X, Zap, ClipboardList
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS = [
     { key: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
+    { key: "workout-plan", label: "Rutinas", icon: ClipboardList, href: "/dashboard/workout-plan" },
+    { key: "exercises", label: "Ejercicios", icon: Dumbbell, href: "/dashboard/exercises" },
+    { key: "equipment", label: "Equipo", icon: Settings, href: "/dashboard/equipment" },
     { key: "nutrition", label: "Nutrición", icon: UtensilsCrossed, href: "/dashboard/nutrition" },
     { key: "foods", label: "Alimentos", icon: PieChart, href: "/dashboard/foods" },
     { key: "tracking", label: "Diario", icon: Calendar, href: "/dashboard/tracking" },
-    { key: "exercise", label: "Ejercicio", icon: Dumbbell, href: "/dashboard/exercise" },
     { key: "progress", label: "Progreso", icon: TrendingDown, href: "/dashboard/progress" },
-    { key: "supplements", label: "Suplementos", icon: Zap, href: "/dashboard/supplements" },
     { key: "profile", label: "Perfil", icon: User, href: "/dashboard/profile" },
 ];
 

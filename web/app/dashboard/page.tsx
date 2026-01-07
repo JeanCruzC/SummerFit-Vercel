@@ -8,9 +8,10 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Card, StatCard, ProgressBar, Segmented, Chip, Alert, RingProgress, Button } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile, getWeightHistory, getMealEntries, getDailyLogsRange } from "@/lib/supabase/database";
-import { calculateHealthMetrics, calculateMacros, calculateProjection } from "@/lib/calculations";
+import { getActiveWorkoutPlan } from "@/lib/supabase/exercises";
+import { calculateHealthMetrics, calculateMacros, calculateProjectionWithExercise } from "@/lib/calculations";
 import { getSupplementRecommendations } from "@/lib/supplements";
-import { UserProfile } from "@/types";
+import { UserProfile, WorkoutPlan } from "@/types";
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -22,6 +23,7 @@ export default function DashboardPage() {
     const [todayMeals, setTodayMeals] = useState<any[]>([]);
     const [weightHistory, setWeightHistory] = useState<{ recorded_at: string; weight_kg: number }[]>([]);
     const [weekLogs, setWeekLogs] = useState<any[]>([]);
+    const [activePlan, setActivePlan] = useState<WorkoutPlan | null>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -35,7 +37,7 @@ export default function DashboardPage() {
 
             setUserId(session.user.id);
 
-            const [profileData, weights, meals, logs] = await Promise.all([
+            const [profileData, weights, meals, logs, plan] = await Promise.all([
                 getProfile(session.user.id),
                 getWeightHistory(session.user.id, 14),
                 getMealEntries(session.user.id, new Date().toISOString().split("T")[0]),
@@ -44,6 +46,7 @@ export default function DashboardPage() {
                     new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
                     new Date().toISOString().split("T")[0]
                 ),
+                getActiveWorkoutPlan(session.user.id),
             ]);
 
             // Check if onboarding is completed
@@ -56,6 +59,7 @@ export default function DashboardPage() {
             setWeightHistory(weights);
             setTodayMeals(meals);
             setWeekLogs(logs);
+            setActivePlan(plan);
             setLoading(false);
         };
 
@@ -81,8 +85,15 @@ export default function DashboardPage() {
 
     const projection = useMemo(() => {
         if (!profile || !metrics) return null;
-        return calculateProjection(profile.weight_kg, profile.target_weight_kg, metrics.tdee, profile.goal, mode);
-    }, [profile, metrics, mode]);
+        return calculateProjectionWithExercise(
+            profile.weight_kg,
+            profile.target_weight_kg,
+            metrics.tdee,
+            profile.goal,
+            mode,
+            activePlan?.estimated_calories_weekly || 0
+        );
+    }, [profile, metrics, mode, activePlan]);
 
     const macros = useMemo(() => {
         if (!projection || !profile) return null;
@@ -183,6 +194,12 @@ export default function DashboardPage() {
                             <div>
                                 <div className="text-sm text-gray-500">Objetivo diario</div>
                                 <div className="text-4xl font-bold">{projection.daily_calories} <span className="text-lg font-normal text-gray-500">kcal</span></div>
+                                {(projection as any).exercise_boost > 0 && (
+                                    <div className="text-xs font-semibold text-emerald-600 mt-1 flex items-center gap-1">
+                                        <Zap className="h-3 w-3" />
+                                        +{(projection as any).exercise_boost} kcal quemadas (extra)
+                                    </div>
+                                )}
                             </div>
                         </div>
 

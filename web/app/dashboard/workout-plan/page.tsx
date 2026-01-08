@@ -134,13 +134,13 @@ export default function WorkoutPlansPage() {
                 </div>
 
                 {plans.length === 0 ? (
-                    <div className="text-center py-12 md:py-16 bg-gray-800/50 backdrop-blur-xl border border-gray-700 rounded-2xl">
-                        <Calendar className="h-16 w-16 text-purple-400/50 mx-auto mb-4" />
-                        <h3 className="text-xl font-bold text-white mb-2">No tienes planes creados</h3>
-                        <p className="text-zinc-400 mb-6 text-sm px-4">Crea tu primer plan para comenzar a organizar tus rutinas.</p>
+                    <div className="text-center py-12 md:py-16 bg-white dark:bg-gray-800/50 backdrop-blur-xl border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm dark:shadow-none">
+                        <Calendar className="h-16 w-16 text-purple-200 dark:text-purple-400/50 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">No tienes planes creados</h3>
+                        <p className="text-zinc-500 dark:text-zinc-400 mb-6 text-sm px-4">Crea tu primer plan para comenzar a organizar tus rutinas.</p>
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="py-3 px-6 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-500 transition-all"
+                            className="py-3 px-6 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-500 transition-all shadow-lg hover:shadow-purple-500/25"
                         >
                             Crear Plan
                         </button>

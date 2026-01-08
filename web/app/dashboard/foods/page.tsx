@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, X } from "lucide-react";
+import { Search, Plus, X, Leaf, UtensilsCrossed, LayoutGrid } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, Button, Input, Alert } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
-import { searchFoods, getFoodCategories, addMealEntry, getProfile } from "@/lib/supabase/database";
+import { searchFoods, getFoodCategories, addMealEntry, getProfile, getRandomFoods } from "@/lib/supabase/database";
 import { FoodItem, UserProfile } from "@/types";
 
 const CATEGORY_TRANSLATIONS: Record<string, string> = {
@@ -102,6 +102,11 @@ export default function FoodsPage() {
             ]);
             setCategories(cats);
             setProfile(prof);
+
+            // Load initial popular foods
+            const initialFoods = await getRandomFoods(30);
+            initialFoods.sort((a, b) => (a.name?.length || 0) - (b.name?.length || 0));
+            setFoods(initialFoods);
         };
         load();
     }, [router]);
@@ -192,21 +197,24 @@ export default function FoodsPage() {
                 <div className="mt-4 flex gap-2">
                     <button
                         onClick={() => setFoodType("all")}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${foodType === "all" ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-1.5 ${foodType === "all" ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
                     >
-                        🍽️ Todos
+                        <LayoutGrid className="h-4 w-4" />
+                        Todos
                     </button>
                     <button
                         onClick={() => setFoodType("basic")}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${foodType === "basic" ? "bg-green-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-1.5 ${foodType === "basic" ? "bg-green-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
                     >
-                        🥬 Básicos
+                        <Leaf className="h-4 w-4" />
+                        Básicos
                     </button>
                     <button
                         onClick={() => setFoodType("prepared")}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${foodType === "prepared" ? "bg-orange-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-1.5 ${foodType === "prepared" ? "bg-orange-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
                     >
-                        🍔 Preparados
+                        <UtensilsCrossed className="h-4 w-4" />
+                        Preparados
                     </button>
                 </div>
 

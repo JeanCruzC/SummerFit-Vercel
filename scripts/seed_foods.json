@@ -1,0 +1,101 @@
+[
+    {
+        "name": "Arroz blanco cocido",
+        "category": "Cereal Grains and Pasta",
+        "kcal": 130,
+        "protein": 2.7,
+        "carbs": 28.2,
+        "fat": 0.3,
+        "id": "seed_001"
+    },
+    {
+        "name": "Arroz integral cocido",
+        "category": "Cereal Grains and Pasta",
+        "kcal": 111,
+        "protein": 2.6,
+        "carbs": 23.0,
+        "fat": 0.9,
+        "id": "seed_002"
+    },
+    {
+        "name": "Pechuga de pollo (plancha)",
+        "category": "Poultry Products",
+        "kcal": 165,
+        "protein": 31.0,
+        "carbs": 0.0,
+        "fat": 3.6,
+        "id": "seed_003"
+    },
+    {
+        "name": "Huevo entero (cocido)",
+        "category": "Dairy and Egg Products",
+        "kcal": 155,
+        "protein": 12.6,
+        "carbs": 1.1,
+        "fat": 10.6,
+        "id": "seed_004"
+    },
+    {
+        "name": "Clara de huevo",
+        "category": "Dairy and Egg Products",
+        "kcal": 52,
+        "protein": 11.0,
+        "carbs": 0.7,
+        "fat": 0.2,
+        "id": "seed_005"
+    },
+    {
+        "name": "Avena (hojuelas)",
+        "category": "Breakfast Cereals",
+        "kcal": 389,
+        "protein": 16.9,
+        "carbs": 66.3,
+        "fat": 6.9,
+        "id": "seed_006"
+    },
+    {
+        "name": "Manzana (con piel)",
+        "category": "Fruits and Fruit Juices",
+        "kcal": 52,
+        "protein": 0.3,
+        "carbs": 14.0,
+        "fat": 0.2,
+        "id": "seed_007"
+    },
+    {
+        "name": "Plátano / Banana",
+        "category": "Fruits and Fruit Juices",
+        "kcal": 89,
+        "protein": 1.1,
+        "carbs": 22.8,
+        "fat": 0.3,
+        "id": "seed_008"
+    },
+    {
+        "name": "Carne de res (magra)",
+        "category": "Beef Products",
+        "kcal": 250,
+        "protein": 26.0,
+        "carbs": 0.0,
+        "fat": 15.0,
+        "id": "seed_009"
+    },
+    {
+        "name": "Leche entera",
+        "category": "Dairy and Egg Products",
+        "kcal": 61,
+        "protein": 3.2,
+        "carbs": 4.8,
+        "fat": 3.3,
+        "id": "seed_010"
+    },
+    {
+        "name": "Aceite de oliva",
+        "category": "Fats and Oils",
+        "kcal": 884,
+        "protein": 0.0,
+        "carbs": 0.0,
+        "fat": 100.0,
+        "id": "seed_011"
+    }
+]

@@ -39,6 +39,40 @@ const CATEGORY_TRANSLATIONS: Record<string, string> = {
 
 const translateCategory = (cat: string) => CATEGORY_TRANSLATIONS[cat] || cat;
 
+// Categories that are "basic" ingredients vs prepared dishes
+const BASIC_CATEGORIES = [
+    "Dairy and Egg Products",
+    "Fats and Oils",
+    "Poultry Products",
+    "Fruits and Fruit Juices",
+    "Pork Products",
+    "Vegetables and Vegetable Products",
+    "Nut and Seed Products",
+    "Beef Products",
+    "Finfish and Shellfish Products",
+    "Legumes and Legume Products",
+    "Lamb, Veal, and Game Products",
+    "Cereal Grains and Pasta",
+    "Spices and Herbs",
+    "Beverages",
+];
+
+const PREPARED_CATEGORIES = [
+    "Fast Foods",
+    "Meals, Entrees, and Side Dishes",
+    "Restaurant Foods",
+    "Soups, Sauces, and Gravies",
+    "Snacks",
+    "Sweets",
+    "Baked Products",
+    "Breakfast Cereals",
+    "Baby Foods",
+    "Sausages and Luncheon Meats",
+];
+
+const isBasicFood = (category: string | null | undefined) => BASIC_CATEGORIES.includes(category || "");
+const isPreparedFood = (category: string | null | undefined) => PREPARED_CATEGORIES.includes(category || "");
+
 export default function FoodsPage() {
     const router = useRouter();
     const [userId, setUserId] = useState<string>("");
@@ -47,6 +81,7 @@ export default function FoodsPage() {
     const [foods, setFoods] = useState<FoodItem[]>([]);
     const [categories, setCategories] = useState<string[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("");
+    const [foodType, setFoodType] = useState<"all" | "basic" | "prepared">("all");
     const [loading, setLoading] = useState(false);
     const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
     const [grams, setGrams] = useState(100);
@@ -153,23 +188,51 @@ export default function FoodsPage() {
                     </Button>
                 </div>
 
+                {/* Food Type Filter (Básicos vs Preparados) */}
+                <div className="mt-4 flex gap-2">
+                    <button
+                        onClick={() => setFoodType("all")}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${foodType === "all" ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
+                    >
+                        🍽️ Todos
+                    </button>
+                    <button
+                        onClick={() => setFoodType("basic")}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${foodType === "basic" ? "bg-green-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
+                    >
+                        🥬 Básicos
+                    </button>
+                    <button
+                        onClick={() => setFoodType("prepared")}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${foodType === "prepared" ? "bg-orange-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
+                    >
+                        🍔 Preparados
+                    </button>
+                </div>
+
                 {/* Category filter */}
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                     <button
                         onClick={() => setSelectedCategory("")}
                         className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${!selectedCategory ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"}`}
                     >
-                        Todos
+                        Todas categorías
                     </button>
-                    {categories.slice(0, 10).map(cat => (
-                        <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedCategory === cat ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"}`}
-                        >
-                            {translateCategory(cat)}
-                        </button>
-                    ))}
+                    {categories
+                        .filter(cat => {
+                            if (foodType === "basic") return isBasicFood(cat);
+                            if (foodType === "prepared") return isPreparedFood(cat);
+                            return true;
+                        })
+                        .slice(0, 8).map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setSelectedCategory(cat)}
+                                className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedCategory === cat ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"}`}
+                            >
+                                {translateCategory(cat)}
+                            </button>
+                        ))}
                 </div>
             </Card>
 
@@ -179,7 +242,14 @@ export default function FoodsPage() {
                     <h3 className="text-lg font-semibold mb-4">{foods.length} resultados</h3>
                     <div className="space-y-2 max-h-[400px] overflow-y-auto">
                         {foods
-                            .filter(f => !selectedCategory || f.category === selectedCategory)
+                            .filter(f => {
+                                // Apply category filter
+                                if (selectedCategory && f.category !== selectedCategory) return false;
+                                // Apply food type filter
+                                if (foodType === "basic" && !isBasicFood(f.category)) return false;
+                                if (foodType === "prepared" && !isPreparedFood(f.category)) return false;
+                                return true;
+                            })
                             .map(food => {
                                 const n = calcNutrients(food, 100);
                                 return (

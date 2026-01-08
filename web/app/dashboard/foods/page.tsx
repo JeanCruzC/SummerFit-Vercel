@@ -64,7 +64,8 @@ const PREPARED_CATEGORIES = [
     "Soups, Sauces, and Gravies",
     "Snacks",
     "Sweets",
-    "Baked Products",
+    "Baked Foods",  // Match actual DB value
+    "Baked Products",  // Keep this too for compatibility
     "Breakfast Cereals",
     "Baby Foods",
     "Sausages and Luncheon Meats",

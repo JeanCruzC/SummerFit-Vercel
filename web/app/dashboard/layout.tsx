@@ -170,7 +170,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                             <item.icon className="h-5 w-5" />
                                             <span className="text-sm font-medium">{item.label}</span>
                                         </Link>
-                                    ))}
+                                    );
+                                })}
                             </nav>
                         </div>
 

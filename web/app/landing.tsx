@@ -115,7 +115,7 @@ export default function Landing() {
 
               {/* Headline */}
               <motion.h1
-                className="text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.95]"
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tighter leading-[0.95]"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
@@ -156,7 +156,7 @@ export default function Landing() {
               >
                 <Link href="/register">
                   <motion.button
-                    className="h-16 bg-gradient-to-r from-coral-500 to-coral-600 text-white text-xl font-black rounded-full px-10 shadow-2xl hover:shadow-coral-500/60 min-w-[280px]"
+                    className="h-14 sm:h-16 bg-gradient-to-r from-coral-500 to-coral-600 text-white text-lg sm:text-xl font-black rounded-full px-6 sm:px-10 shadow-2xl hover:shadow-coral-500/60 w-full sm:w-auto sm:min-w-[280px]"
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                     animate={{
@@ -426,7 +426,7 @@ export default function Landing() {
 
           <Link href="/register">
             <motion.button
-              className="h-20 bg-white text-coral-600 text-2xl font-black rounded-full px-16 shadow-2xl hover:shadow-white/50 transition-shadow min-w-[400px]"
+              className="h-16 sm:h-20 bg-white text-coral-600 text-xl sm:text-2xl font-black rounded-full px-8 sm:px-16 shadow-2xl hover:shadow-white/50 transition-shadow w-full sm:w-auto sm:min-w-[400px]"
               whileHover={{ scale: 1.05, y: -5 }}
               whileTap={{ scale: 0.98 }}
             >

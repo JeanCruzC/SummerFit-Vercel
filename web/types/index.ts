@@ -8,6 +8,7 @@ export interface UserProfile {
     target_weight_kg: number;
     goal: 'Definir' | 'Mantener' | 'Volumen';
     activity_level: 'Sedentario' | 'Ligero' | 'Moderado' | 'Activo' | 'Muy activo';
+    goal_speed?: 'conservador' | 'moderado' | 'acelerado'; // New field for progress speed preference
     diet_type: DietType;
     onboarding_completed?: boolean;
     created_at?: string;

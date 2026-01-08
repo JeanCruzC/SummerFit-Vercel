@@ -36,6 +36,12 @@ const GOAL_OPTIONS = [
     { value: "Volumen", label: "Volumen (ganar músculo)" },
 ];
 
+const SPEED_OPTIONS = [
+    { value: "conservador", label: "Conservador (lento y seguro)" },
+    { value: "moderado", label: "Moderado (balanceado)" },
+    { value: "acelerado", label: "Acelerado (rápido, exigente)" },
+];
+
 export default function ProfilePage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -50,6 +56,7 @@ export default function ProfilePage() {
         target_weight_kg: 72,
         goal: "Definir",
         activity_level: "Moderado",
+        goal_speed: "moderado",
         diet_type: "Estándar",
     });
 
@@ -172,6 +179,12 @@ export default function ProfilePage() {
                         options={GOAL_OPTIONS}
                         value={profile.goal}
                         onChange={e => handleChange("goal", e.target.value)}
+                    />
+                    <Select
+                        label="Velocidad de progreso"
+                        options={SPEED_OPTIONS}
+                        value={profile.goal_speed || "moderado"}
+                        onChange={e => handleChange("goal_speed", e.target.value)}
                     />
                     <Select
                         label="Nivel de actividad"

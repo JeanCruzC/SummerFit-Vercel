@@ -312,14 +312,14 @@ export function calculateCaloriesBurned(
 ): number {
     // MET values for common exercises
     const MET_VALUES: Record<string, Record<string, number>> = {
-        'Caminar': { 'Baja': 2.5, 'Media': 3.5, 'Alta': 4.5 },
-        'Correr': { 'Baja': 6, 'Media': 8, 'Alta': 11 },
-        'Ciclismo': { 'Baja': 4, 'Media': 6, 'Alta': 10 },
-        'Natación': { 'Baja': 5, 'Media': 7, 'Alta': 10 },
-        'Pesas': { 'Baja': 3, 'Media': 5, 'Alta': 6 },
-        'HIIT': { 'Baja': 6, 'Media': 8, 'Alta': 12 },
+        'Caminar': { 'Baja': 2.5, 'Media': 3.3, 'Alta': 4.0 },
+        'Correr': { 'Baja': 6.0, 'Media': 7.5, 'Alta': 9.5 },
+        'Ciclismo': { 'Baja': 3.5, 'Media': 5.5, 'Alta': 8.0 },
+        'Natación': { 'Baja': 5, 'Media': 7, 'Alta': 9 },
+        'Pesas': { 'Baja': 3, 'Media': 4.5, 'Alta': 6 },
+        'HIIT': { 'Baja': 6, 'Media': 8, 'Alta': 10 },
         'Yoga': { 'Baja': 2, 'Media': 3, 'Alta': 4 },
-        'Cardio': { 'Baja': 5, 'Media': 7, 'Alta': 9 },
+        'Cardio': { 'Baja': 4, 'Media': 6, 'Alta': 8 },
     };
 
     const exerciseMETs = MET_VALUES[exerciseType] || MET_VALUES['Cardio'];

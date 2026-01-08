@@ -56,6 +56,9 @@ export default function DashboardPage() {
             }
 
             setProfile(profileData || getDefaultProfile(session.user.id));
+            if (profileData?.goal_speed) {
+                setMode(profileData.goal_speed);
+            }
             setWeightHistory(weights);
             setTodayMeals(meals);
             setWeekLogs(logs);

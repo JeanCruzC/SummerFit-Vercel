@@ -31,6 +31,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Init theme from localStorage or system preference
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+            setTheme("dark");
+            document.documentElement.classList.add("dark");
+        } else {
+            setTheme("light");
+            document.documentElement.classList.remove("dark");
+        }
+
         const checkAuth = async () => {
             const supabase = createClient();
             const { data: { session } } = await supabase.auth.getSession();
@@ -42,11 +52,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             setLoading(false);
         };
         checkAuth();
-
-        // Check system preference
-        if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-            setTheme("dark");
-        }
     }, [router]);
 
     const handleLogout = async () => {
@@ -56,7 +61,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
 
     const toggleTheme = () => {
-        setTheme(t => t === "dark" ? "light" : "dark");
+        setTheme(prev => {
+            const newTheme = prev === "dark" ? "light" : "dark";
+            if (newTheme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+            localStorage.setItem("theme", newTheme);
+            return newTheme;
+        });
     };
 
     if (loading) {
@@ -71,7 +85,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     return (
-        <div className={`min-h-screen ${theme === "dark" ? "dark" : ""}`}>
+        <div className="min-h-screen">
             <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white">
                 {/* Mobile Header */}
                 <div className="lg:hidden sticky top-0 z-40 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">

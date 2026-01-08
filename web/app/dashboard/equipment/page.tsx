@@ -2,23 +2,27 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Dumbbell, Check } from "lucide-react";
+import {
+    Plus, Trash2, Check,
+    User, Dumbbell, Bell, Activity, Armchair, Footprints, Anchor,
+    Settings, LayoutList, Spline, Box
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserEquipment, addUserEquipment, removeUserEquipment } from "@/lib/supabase/exercises";
 import type { UserEquipment } from "@/types";
 
 // Common equipment types
 const EQUIPMENT_TYPES = [
-    { value: "Peso corporal", label: "Peso corporal", icon: "💪", hasWeight: false },
-    { value: "Barra", label: "Barra", icon: "🏋️‍♂️", hasWeight: false },
-    { value: "Mancuernas", label: "Mancuernas", icon: "🏋️‍♀️", hasWeight: true },
-    { value: "Pesa Rusa", label: "Pesa Rusa (Kettlebell)", icon: "🔔", hasWeight: true },
-    { value: "Bandas", label: "Bandas elásticas", icon: "🎗️", hasWeight: false },
-    { value: "Banco", label: "Banco", icon: "🪑", hasWeight: false },
-    { value: "Cinta", label: "Cinta de correr", icon: "🏃‍♂️", hasWeight: false },
-    { value: "Polea", label: "Poleas / Cable", icon: "⛓️", hasWeight: false },
-    { value: "Paralelas", label: "Barras paralelas", icon: "🤸", hasWeight: false },
-    { value: "Maquina", label: "Máquinas (Gimnasio)", icon: "⚙️", hasWeight: false },
+    { value: "Peso corporal", label: "Peso corporal", icon: <User className="w-8 h-8 text-emerald-600" />, hasWeight: false },
+    { value: "Barra", label: "Barra", icon: <Spline className="w-8 h-8 text-emerald-600" />, hasWeight: false },
+    { value: "Mancuernas", label: "Mancuernas", icon: <Dumbbell className="w-8 h-8 text-emerald-600" />, hasWeight: true },
+    { value: "Pesa Rusa", label: "Pesa Rusa (Kettlebell)", icon: <Bell className="w-8 h-8 text-emerald-600" />, hasWeight: true },
+    { value: "Bandas", label: "Bandas elásticas", icon: <Activity className="w-8 h-8 text-emerald-600" />, hasWeight: false },
+    { value: "Banco", label: "Banco", icon: <Armchair className="w-8 h-8 text-emerald-600" />, hasWeight: false },
+    { value: "Cinta", label: "Cinta de correr", icon: <Footprints className="w-8 h-8 text-emerald-600" />, hasWeight: false },
+    { value: "Polea", label: "Poleas / Cable", icon: <Anchor className="w-8 h-8 text-emerald-600" />, hasWeight: false },
+    { value: "Paralelas", label: "Barras paralelas", icon: <LayoutList className="w-8 h-8 text-emerald-600" />, hasWeight: false },
+    { value: "Maquina", label: "Máquinas (Gimnasio)", icon: <Settings className="w-8 h-8 text-emerald-600" />, hasWeight: false },
 ];
 
 export default function EquipmentPage() {
@@ -150,9 +154,9 @@ export default function EquipmentPage() {
                                         className={`py-4 px-4 rounded-xl border-2 font-bold transition-all text-left disabled:opacity-40 disabled:cursor-not-allowed ${selectedTypes.includes(type.value)
                                             ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                                             : "border-zinc-200 text-zinc-700 hover:border-emerald-200"
-                                            }`}
+                                            } flex flex-col items-center justify-center`}
                                     >
-                                        <div className="text-2xl mb-1">{type.icon}</div>
+                                        <div className="mb-2 flex justify-center">{type.icon}</div>
                                         <div className="text-sm">{type.label}</div>
                                     </button>
                                 ))}

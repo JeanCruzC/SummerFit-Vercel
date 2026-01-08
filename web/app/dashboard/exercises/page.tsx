@@ -102,15 +102,18 @@ export default function ExercisesPage() {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-4xl font-black text-zinc-900 dark:text-white mb-2">💪 Ejercicios Disponibles</h1>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-lg">
+                <div className="mb-6">
+                    <h1 className="text-2xl md:text-3xl font-black text-zinc-900 dark:text-white mb-1 flex items-center gap-3">
+                        <Dumbbell className="h-7 w-7 text-purple-500" />
+                        Ejercicios Disponibles
+                    </h1>
+                    <p className="text-zinc-600 dark:text-zinc-400 text-sm md:text-base">
                         {filteredExercises.length} ejercicios que puedes hacer con tu equipamiento
                     </p>
                 </div>
 
                 {/* Search & Filters */}
-                <div className="bg-white dark:bg-gray-900 backdrop-blur-xl border-2 border-purple-100 dark:border-purple-900 rounded-3xl p-6 shadow-2xl mb-8">
+                <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700 rounded-2xl p-4 md:p-6 mb-6">
                     {/* Search Bar */}
                     <div className="mb-6">
                         <div className="relative">
@@ -120,7 +123,7 @@ export default function ExercisesPage() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Buscar ejercicios..."
-                                className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-zinc-200 font-medium focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none"
+                                className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-900 border border-gray-600 text-white placeholder-gray-400 font-medium focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
                             />
                         </div>
                     </div>
@@ -128,13 +131,13 @@ export default function ExercisesPage() {
                     {/* Filters */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label className="text-sm font-bold text-zinc-700 mb-2 block">
+                            <label className="text-sm font-medium text-zinc-400 mb-2 block">
                                 Parte del cuerpo
                             </label>
                             <select
                                 value={filterBodyPart}
                                 onChange={(e) => setFilterBodyPart(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border-2 border-zinc-200 font-medium focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none"
+                                className="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-600 text-white font-medium focus:border-purple-500 outline-none"
                             >
                                 <option value="">Todos</option>
                                 {bodyParts.map(bp => (
@@ -144,13 +147,13 @@ export default function ExercisesPage() {
                         </div>
 
                         <div>
-                            <label className="text-sm font-bold text-zinc-700 mb-2 block">
+                            <label className="text-sm font-medium text-zinc-400 mb-2 block">
                                 Nivel
                             </label>
                             <select
                                 value={filterLevel}
                                 onChange={(e) => setFilterLevel(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border-2 border-zinc-200 font-medium focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none"
+                                className="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-600 text-white font-medium focus:border-purple-500 outline-none"
                             >
                                 <option value="">Todos</option>
                                 {levels.map(level => (
@@ -160,13 +163,13 @@ export default function ExercisesPage() {
                         </div>
 
                         <div>
-                            <label className="text-sm font-bold text-zinc-700 mb-2 block">
+                            <label className="text-sm font-medium text-zinc-400 mb-2 block">
                                 Tipo
                             </label>
                             <select
                                 value={filterType}
                                 onChange={(e) => setFilterType(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border-2 border-zinc-200 font-medium focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none"
+                                className="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-600 text-white font-medium focus:border-purple-500 outline-none"
                             >
                                 <option value="">Todos</option>
                                 {types.map(type => (

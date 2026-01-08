@@ -116,8 +116,11 @@ export default function WorkoutPlansPage() {
             <div className="max-w-6xl mx-auto">
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-4xl font-black text-zinc-900 dark:text-white mb-2">📅 Mis Planes</h1>
-                        <p className="text-zinc-600 dark:text-zinc-400 text-lg">
+                        <h1 className="text-2xl md:text-3xl font-black text-zinc-900 dark:text-white mb-1 flex items-center gap-3">
+                            <Calendar className="h-7 w-7 text-purple-500" />
+                            Mis Planes
+                        </h1>
+                        <p className="text-zinc-600 dark:text-zinc-400 text-sm md:text-base">
                             Organiza tu semana de entrenamiento
                         </p>
                     </div>
@@ -131,13 +134,13 @@ export default function WorkoutPlansPage() {
                 </div>
 
                 {plans.length === 0 ? (
-                    <div className="text-center py-16 bg-white dark:bg-gray-900 backdrop-blur-xl border-2 border-purple-100 dark:border-purple-900 rounded-3xl shadow-lg">
-                        <Calendar className="h-20 w-20 text-purple-200 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 mb-2">No tienes planes creados</h3>
-                        <p className="text-zinc-500 dark:text-zinc-400 mb-6">Crea tu primer plan para comenzar a organizar tus rutinas.</p>
+                    <div className="text-center py-12 md:py-16 bg-gray-800/50 backdrop-blur-xl border border-gray-700 rounded-2xl">
+                        <Calendar className="h-16 w-16 text-purple-400/50 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold text-white mb-2">No tienes planes creados</h3>
+                        <p className="text-zinc-400 mb-6 text-sm px-4">Crea tu primer plan para comenzar a organizar tus rutinas.</p>
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="py-3 px-8 rounded-full border-2 border-purple-500 text-purple-600 font-bold hover:bg-purple-50 transition-all"
+                            className="py-3 px-6 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-500 transition-all"
                         >
                             Crear Plan
                         </button>

@@ -127,21 +127,24 @@ export default function EquipmentPage() {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-4xl font-black text-zinc-900 dark:text-white mb-2">🏋️ Mi Equipamiento</h1>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-lg">
-                        Configura qué equipamiento tienes disponible para entrenar
+                <div className="mb-6">
+                    <h1 className="text-2xl md:text-3xl font-black text-zinc-900 dark:text-white mb-1 flex items-center gap-3">
+                        <Dumbbell className="h-7 w-7 text-purple-500" />
+                        Mi Equipamiento
+                    </h1>
+                    <p className="text-zinc-600 dark:text-zinc-400 text-sm md:text-base">
+                        Configura qué equipamiento tienes disponible
                     </p>
                 </div>
 
                 {/* Add Equipment Form */}
-                <div className="bg-white dark:bg-gray-900 backdrop-blur-xl border-2 border-purple-100 dark:border-purple-900 rounded-3xl p-8 shadow-2xl mb-8">
+                <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700 rounded-2xl p-4 md:p-6 mb-6">
                     <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">Agregar Equipamiento</h2>
 
                     <div className="space-y-6">
                         {/* Equipment Type */}
                         <div>
-                            <label className="text-sm font-bold text-zinc-700 mb-3 block">
+                            <label className="text-sm font-medium text-zinc-400 mb-3 block">
                                 Tipo de equipamiento
                             </label>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -151,9 +154,9 @@ export default function EquipmentPage() {
                                         type="button"
                                         onClick={() => toggleSelection(type.value)}
                                         disabled={equipment.some(e => e.equipment_type === type.value && !type.hasWeight)}
-                                        className={`py-4 px-4 rounded-xl border-2 font-bold transition-all text-left disabled:opacity-40 disabled:cursor-not-allowed ${selectedTypes.includes(type.value)
-                                            ? "border-purple-500 bg-purple-50 text-purple-700"
-                                            : "border-zinc-200 text-zinc-700 hover:border-purple-200"
+                                        className={`py-3 px-3 rounded-xl border font-medium transition-all text-left disabled:opacity-40 disabled:cursor-not-allowed ${selectedTypes.includes(type.value)
+                                            ? "border-purple-500 bg-purple-500/20 text-white"
+                                            : "border-gray-600 text-zinc-400 hover:border-purple-400"
                                             } flex flex-col items-center justify-center`}
                                     >
                                         <div className="mb-2 flex justify-center">{type.icon}</div>
@@ -210,8 +213,8 @@ export default function EquipmentPage() {
                 </div>
 
                 {/* Equipment List */}
-                <div className="bg-white dark:bg-gray-900 backdrop-blur-xl border-2 border-purple-100 dark:border-purple-900 rounded-3xl p-8 shadow-2xl">
-                    <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">Tu Equipamiento</h2>
+                <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700 rounded-2xl p-4 md:p-6">
+                    <h2 className="text-xl font-bold text-white mb-4">Tu Equipamiento</h2>
 
                     {!hasEquipment ? (
                         <div className="text-center py-12">
@@ -228,7 +231,7 @@ export default function EquipmentPage() {
                                 return (
                                     <div
                                         key={item.id}
-                                        className="flex items-center justify-between p-4 rounded-xl border-2 border-zinc-200 hover:border-purple-200 transition-all"
+                                        className="flex items-center justify-between p-3 rounded-xl border border-gray-600 hover:border-purple-400 transition-all"
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className="text-3xl">{equipType?.icon || "🏋️"}</div>
@@ -260,7 +263,7 @@ export default function EquipmentPage() {
                         <div className="mt-8 pt-8 border-t-2 border-zinc-100">
                             <button
                                 onClick={() => router.push("/dashboard/exercises")}
-                                className="w-full py-4 rounded-xl bg-gradient-to-r from-coral-500 to-coral-600 text-white font-black text-lg hover:shadow-xl hover:shadow-coral-500/50 transition-all flex items-center justify-center gap-2"
+                                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold text-base hover:shadow-xl transition-all flex items-center justify-center gap-2"
                             >
                                 <Check className="h-5 w-5" />
                                 Ver Ejercicios Disponibles

@@ -306,6 +306,28 @@ function FilterSelect({ label, value, onChange, options }: { label: string, valu
     )
 }
 
+// Helper to render stars
+function ScoreStars({ score }: { score: number }) {
+    return (
+        <div className="flex gap-0.5">
+            {[1, 2, 3, 4, 5].map((i) => (
+                <svg
+                    key={i}
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill={i <= score ? "currentColor" : "none"}
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className={i <= score ? "text-yellow-400" : "text-gray-300 dark:text-gray-700"}
+                >
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+            ))}
+        </div>
+    );
+}
+
 function ExerciseCard({ exercise }: { exercise: Exercise }) {
     const [isHovered, setIsHovered] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
@@ -319,6 +341,9 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
     // Fallback URL
     const displayUrl = video ? video.url : image ? image.url : null;
     const isVideo = !!video;
+
+    // Scientific Data Available?
+    const hasScience = !!exercise.score_hypertrophy;
 
     return (
         <div
@@ -361,6 +386,15 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
                     {exercise.level === 'Intermedio' && <span className="px-2 py-1 bg-yellow-500/90 backdrop-blur text-white text-[10px] font-bold uppercase tracking-wider rounded-md">Intermedio</span>}
                     {exercise.level === 'Avanzado' && <span className="px-2 py-1 bg-red-500/90 backdrop-blur text-white text-[10px] font-bold uppercase tracking-wider rounded-md">Avanzado</span>}
                 </div>
+
+                {/* Science Badge */}
+                {hasScience && (
+                    <div className="absolute bottom-3 right-3">
+                        <div className="flex items-center gap-1 px-2 py-1 bg-black/70 backdrop-blur text-white text-[10px] font-bold uppercase rounded-full border border-purple-500/50">
+                            <span className="text-purple-400">⚡ Science</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Content info */}
@@ -369,11 +403,28 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
                     <h3 className="text-lg font-bold text-zinc-900 dark:text-white leading-tight mb-1 group-hover:text-purple-600 transition-colors">
                         {exercise.title}
                     </h3>
-                    <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                    <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 mb-2">
                         <span className="font-semibold text-purple-600 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">{exercise.body_part}</span>
                         <span>•</span>
                         <span>{exercise.mechanic || "Ejercicio"} {exercise.force ? `(${exercise.force})` : ""}</span>
                     </div>
+
+                    {/* Scientific Score Row */}
+                    {hasScience && (
+                        <div className="flex items-center gap-3 text-xs mt-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold">Hipertrofia</span>
+                                <ScoreStars score={exercise.score_hypertrophy || 0} />
+                            </div>
+                            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700"></div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold">Patrón</span>
+                                <span className="font-medium text-zinc-700 dark:text-zinc-300 capitalize truncate w-24">
+                                    {(exercise.movement_pattern || "General").replace(/_/g, " ")}
+                                </span>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Equipment chips */}
@@ -418,6 +469,46 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
                         <p className="text-sm text-zinc-500 italic">No hay instrucciones detalladas.</p>
                     )}
 
+                    {/* Scientific Activation Map */}
+                    {hasScience && exercise.activation_profile && (
+                        <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+                            <h5 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-600 mb-3">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
+                                Activación Muscular (EMG Proxy)
+                            </h5>
+
+                            <div className="space-y-3">
+                                {exercise.activation_profile.high && exercise.activation_profile.high.length > 0 && (
+                                    <div className="flex items-start gap-3">
+                                        <span className="text-[10px] font-bold text-green-500 w-12 pt-0.5">ALTA</span>
+                                        <div className="flex flex-wrap gap-1">
+                                            {exercise.activation_profile.high.map(m => (
+                                                <span key={m} className="px-2 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-[10px] font-medium rounded border border-green-100 dark:border-green-800">{m}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {exercise.activation_profile.medium && exercise.activation_profile.medium.length > 0 && (
+                                    <div className="flex items-start gap-3">
+                                        <span className="text-[10px] font-bold text-yellow-500 w-12 pt-0.5">MEDIA</span>
+                                        <div className="flex flex-wrap gap-1">
+                                            {exercise.activation_profile.medium.map(m => (
+                                                <span key={m} className="px-2 py-0.5 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 text-[10px] font-medium rounded border border-yellow-100 dark:border-yellow-800">{m}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {exercise.scientific_notes && (
+                                <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-[11px] text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
+                                    <span className="font-bold mr-1">💡 Nota Técnica:</span> {exercise.scientific_notes}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Standard Muscle Data (Fallback or Complement) */}
                     <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
                         <div className="grid grid-cols-2 gap-4 text-xs">
                             <div>

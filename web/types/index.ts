@@ -170,6 +170,18 @@ export interface Exercise {
     secondary_muscles?: string[];
     // Media & Instructions
     instructions?: string[];
+    // Scientific / Biomechanical Data
+    movement_pattern?: string;
+    score_hypertrophy?: number; // 1-5
+    score_difficulty?: number; // 1-5
+    score_risk?: number; // 1-5
+    score_stability?: number; // 1-5
+    activation_profile?: {
+        high: string[];
+        medium: string[];
+        low: string[];
+    };
+    scientific_notes?: string;
     exercise_media?: {
         id: number;
         type: 'video' | 'image';

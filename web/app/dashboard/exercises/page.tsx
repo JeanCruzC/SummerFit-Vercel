@@ -203,8 +203,25 @@ export default function ExercisesPage() {
 
                         <FilterSelect label="Músculo" value={filterBodyPart} onChange={setFilterBodyPart} options={bodyParts} />
                         <FilterSelect label="Nivel" value={filterLevel} onChange={setFilterLevel} options={levels} />
-                        <FilterSelect label="Fuerza" value={filterForce} onChange={setFilterForce} options={forces} />
-                        <FilterSelect label="Mecánica" value={filterMechanic} onChange={setFilterMechanic} options={mechanics} />
+                        <FilterSelect
+                            label="Fuerza"
+                            value={filterForce}
+                            onChange={setFilterForce}
+                            options={[
+                                { value: "Push", label: "Empuje", description: "Movimientos donde alejas la carga del cuerpo (Ej: Flexiones)" },
+                                { value: "Pull", label: "Tracción", description: "Movimientos donde atraes la carga hacia ti (Ej: Dominadas)" },
+                                { value: "Static", label: "Isométrico", description: "Ejercicios estáticos sin movimiento (Ej: Plancha)" }
+                            ]}
+                        />
+                        <FilterSelect
+                            label="Mecánica"
+                            value={filterMechanic}
+                            onChange={setFilterMechanic}
+                            options={[
+                                { value: "Compound", label: "Compuesto", description: "Involucra varias articulaciones y grupos musculares a la vez" },
+                                { value: "Isolation", label: "Aislamiento", description: "Se enfoca en una sola articulación y músculo específico" }
+                            ]}
+                        />
                     </div>
                 </div>
 
@@ -236,18 +253,50 @@ export default function ExercisesPage() {
 }
 
 // Helper Component for Select Filters
-function FilterSelect({ label, value, onChange, options }: { label: string, value: string, onChange: (v: string) => void, options: string[] }) {
+interface FilterOption {
+    value: string;
+    label: string;
+    description?: string;
+}
+
+function FilterSelect({ label, value, onChange, options }: { label: string, value: string, onChange: (v: string) => void, options: (string | FilterOption)[] }) {
+    // Normalize options to objects
+    const normalizedOptions: FilterOption[] = options.map(opt =>
+        typeof opt === 'string' ? { value: opt, label: opt } : opt
+    );
+
+    const selectedOption = normalizedOptions.find(o => o.value === value);
+
     return (
-        <div className="relative">
-            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1 block pl-1">{label}</label>
+        <div className="relative group/filter">
+            <div className="flex items-center gap-1 mb-1 pl-1">
+                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{label}</label>
+                {/* Info Icon with Tooltip */}
+                <div className="relative group/tooltip">
+                    <div className="cursor-help text-zinc-300 hover:text-purple-500 transition-colors">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
+                    </div>
+                    {/* Floating Tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-zinc-900 text-white text-xs p-2 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 pointer-events-none">
+                        <p>Filtra por {label.toLowerCase()}.</p>
+                        {selectedOption?.description && (
+                            <div className="mt-1 pt-1 border-t border-zinc-700 text-zinc-300">
+                                <span className="font-bold text-purple-400">{selectedOption.label}:</span> {selectedOption.description}
+                            </div>
+                        )}
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 bg-zinc-900 w-2 h-2 rotate-45"></div>
+                    </div>
+                </div>
+            </div>
+
             <select
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-medium text-zinc-900 dark:text-white focus:border-purple-500 outline-none appearance-none cursor-pointer"
             >
                 <option value="">Cualquiera</option>
-                {options.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
+                {normalizedOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
             </select>
             <div className="absolute right-3 bottom-3 pointer-events-none text-zinc-400">

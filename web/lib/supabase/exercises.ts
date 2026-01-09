@@ -16,8 +16,8 @@ export async function getExercisesByEquipment(
     // Extract equipment types the user has
     const availableEquipment = userEquipment.map(e => e.equipment_type);
 
-    // Always include bodyweight exercises
-    availableEquipment.push('Peso corporal');
+    // Always include bodyweight exercises and those requiring no equipment
+    availableEquipment.push('Peso corporal', 'None', 'Ninguno', 'Bodyweight');
 
     // Query exercises where ALL required equipment is available
     const { data, error } = await supabase

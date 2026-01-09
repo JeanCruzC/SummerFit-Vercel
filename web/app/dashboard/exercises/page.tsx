@@ -19,6 +19,8 @@ export default function ExercisesPage() {
     const [filterBodyPart, setFilterBodyPart] = useState("");
     const [filterLevel, setFilterLevel] = useState("");
     const [filterType, setFilterType] = useState("");
+    const [filterForce, setFilterForce] = useState("");
+    const [filterMechanic, setFilterMechanic] = useState("");
     const [locationType, setLocationType] = useState<"all" | "home" | "gym">("all");
 
     useEffect(() => {
@@ -27,7 +29,7 @@ export default function ExercisesPage() {
 
     useEffect(() => {
         applyFilters();
-    }, [searchQuery, filterBodyPart, filterLevel, filterType, locationType, exercises]);
+    }, [searchQuery, filterBodyPart, filterLevel, filterType, locationType, filterForce, filterMechanic, exercises]);
 
     const loadData = async () => {
         const supabase = createClient();
@@ -45,23 +47,15 @@ export default function ExercisesPage() {
             setUserEquipment(equipment);
 
             if (equipment.length === 0) {
-                // If no equipment, default to "home" view which shows bodyweight
-                // Don't redirect immediately, let them see basic exercises
                 setLocationType("home");
             }
 
             const exercisesList = await getExercisesByEquipment(equipment);
             setExercises(exercisesList);
-            // Default sort: Basics/Beginners first
-            exercisesList.sort((a, b) => {
-                // Priority to basic exercises
-                const basics = ["push-ups", "flexiones", "correr", "run", "squat", "sentadillas", "lunges", "zancadas"];
-                const isBasicA = basics.some(k => a.title.toLowerCase().includes(k) || a.slug.includes(k));
-                const isBasicB = basics.some(k => b.title.toLowerCase().includes(k) || b.slug.includes(k));
-                if (isBasicA && !isBasicB) return -1;
-                if (!isBasicA && isBasicB) return 1;
-                return 0;
-            });
+
+            // Sort by popularity/rank
+            exercisesList.sort((a, b) => (b.ranking_score || 0) - (a.ranking_score || 0));
+
             setFilteredExercises(exercisesList);
         } catch (error) {
             console.error("Error loading data:", error);
@@ -73,25 +67,20 @@ export default function ExercisesPage() {
     const applyFilters = () => {
         let filtered = exercises;
 
-        // 0. Location Filter (Home vs Gym)
         if (locationType === "home") {
-            // Filter for Bodyweight or "None" equipment
             filtered = filtered.filter(ex => {
                 const eq = ex.equipment_required || [];
                 return eq.length === 0 || eq.includes("Peso corporal") || eq.includes("None") || eq.includes("Ninguno");
             });
         } else if (locationType === "gym") {
-            // Filter for exercises that REQUIRE equipment (excluding simple bodyweight)
             filtered = filtered.filter(ex => {
                 const eq = ex.equipment_required || [];
                 return eq.length > 0 && !eq.includes("Peso corporal");
             });
         }
 
-        // 1. Search with synonyms
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
-            // Map common English terms to Spanish if needed
             const synonyms: Record<string, string[]> = {
                 "push up": ["flexiones", "push-up", "pecho"],
                 "pull up": ["dominadas", "pull-up", "espalda"],
@@ -104,7 +93,6 @@ export default function ExercisesPage() {
             };
 
             let searchTerms = [query];
-            // Add synonyms to search terms
             Object.keys(synonyms).forEach(key => {
                 if (query.includes(key)) {
                     searchTerms = [...searchTerms, ...synonyms[key]];
@@ -114,8 +102,10 @@ export default function ExercisesPage() {
             filtered = filtered.filter(ex =>
                 searchTerms.some(term =>
                     ex.title.toLowerCase().includes(term) ||
+                    (ex.title_en && ex.title_en.toLowerCase().includes(term)) ||
                     ex.description?.toLowerCase().includes(term) ||
-                    ex.body_part?.toLowerCase().includes(term)
+                    ex.body_part?.toLowerCase().includes(term) ||
+                    ex.slug.includes(term)
                 )
             );
         }
@@ -128,140 +118,113 @@ export default function ExercisesPage() {
             filtered = filtered.filter(ex => ex.level === filterLevel);
         }
 
+        // Fix: "Type" in DB is now 'Fuerza' mostly, but we can filter by Force/Mechanic too
         if (filterType) {
             filtered = filtered.filter(ex => ex.type === filterType);
+        }
+
+        if (filterForce) {
+            filtered = filtered.filter(ex => ex.force === filterForce);
+        }
+
+        if (filterMechanic) {
+            filtered = filtered.filter(ex => ex.mechanic === filterMechanic);
         }
 
         setFilteredExercises(filtered);
     };
 
-    // Extract unique values for filters
-    const bodyParts = Array.from(new Set(exercises.map(e => e.body_part).filter(Boolean)));
-    const levels = Array.from(new Set(exercises.map(e => e.level).filter(Boolean)));
-    const types = Array.from(new Set(exercises.map(e => e.type).filter(Boolean)));
+    const bodyParts = Array.from(new Set(exercises.map(e => e.body_part).filter(Boolean))) as string[];
+    const levels = Array.from(new Set(exercises.map(e => e.level).filter(Boolean))) as string[];
+    // Provide hardcoded options for cleaner UI
+    const forces = ["Push", "Pull", "Static"];
+    const mechanics = ["Compound", "Isolation"];
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+                <div className="h-10 w-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
-            <div className="max-w-7xl mx-auto">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-8">
+            <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
-                <div className="mb-6">
-                    <h1 className="text-2xl md:text-3xl font-black text-zinc-900 dark:text-white mb-1 flex items-center gap-3">
-                        <Dumbbell className="h-7 w-7 text-purple-500" />
-                        Ejercicios Disponibles
+                <div>
+                    <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white mb-2 flex items-center gap-3">
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-500">
+                            Biblioteca de Ejercicios
+                        </span>
                     </h1>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-sm md:text-base">
-                        {filteredExercises.length} ejercicios que puedes hacer con tu equipamiento
+                    <p className="text-zinc-600 dark:text-zinc-400 text-lg">
+                        Explora {filteredExercises.length} ejercicios optimizados para tu equipamiento.
                     </p>
                 </div>
 
-                {/* Search & Filters */}
-                <div className="bg-white dark:bg-gray-800/50 backdrop-blur-xl border border-gray-200 dark:border-gray-700 rounded-2xl p-4 md:p-6 mb-6 shadow-sm dark:shadow-none">
-                    {/* Search Bar */}
-                    <div className="mb-6">
-                        <div className="relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-purple-500" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Buscar ejercicios..."
-                                className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-gray-400 font-medium focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all"
-                            />
-                        </div>
+                {/* Search & Filters Panel */}
+                <div className="bg-white dark:bg-gray-900 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
+                    {/* Search */}
+                    <div className="relative mb-6">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-purple-500" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Buscar por nombre, músculo o tipo..."
+                            className="w-full pl-12 pr-4 py-4 rounded-xl bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-700 text-zinc-900 dark:text-white placeholder-zinc-400 font-medium focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all"
+                        />
                     </div>
 
-                    {/* Filters */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {/* Location Type Filter */}
-                        <div className="md:col-span-4 flex gap-2 mb-2">
+                    {/* Filter Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {/* Location Toggle - Full Width on Mobile */}
+                        <div className="col-span-2 md:col-span-4 lg:col-span-1 flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
                             <button
                                 onClick={() => setLocationType("all")}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${locationType === "all" ? "bg-purple-500 text-white shadow-lg shadow-purple-500/30" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"}`}
+                                className={`flex-1 py-2 px-3 rounded-lg text-xs md:text-sm font-bold transition-all ${locationType === "all" ? "bg-white dark:bg-gray-700 shadow text-purple-600" : "text-gray-500"}`}
                             >
-                                ♾️ Todos
+                                Todos
                             </button>
                             <button
                                 onClick={() => setLocationType("home")}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${locationType === "home" ? "bg-green-500 text-white shadow-lg shadow-green-500/30" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"}`}
+                                className={`flex-1 py-2 px-3 rounded-lg text-xs md:text-sm font-bold transition-all ${locationType === "home" ? "bg-white dark:bg-gray-700 shadow text-green-600" : "text-gray-500"}`}
                             >
-                                🏠 En Casa
+                                Casa
                             </button>
                             <button
                                 onClick={() => setLocationType("gym")}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${locationType === "gym" ? "bg-blue-500 text-white shadow-lg shadow-blue-500/30" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"}`}
+                                className={`flex-1 py-2 px-3 rounded-lg text-xs md:text-sm font-bold transition-all ${locationType === "gym" ? "bg-white dark:bg-gray-700 shadow text-blue-600" : "text-gray-500"}`}
                             >
-                                🏋️ Gimnasio
+                                Gym
                             </button>
                         </div>
 
-                        <div>
-                            <label className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2 block">
-                                Parte del cuerpo
-                            </label>
-                            <select
-                                value={filterBodyPart}
-                                onChange={(e) => setFilterBodyPart(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-zinc-900 dark:text-white font-medium focus:border-purple-500 outline-none transition-all"
-                            >
-                                <option value="">Todos</option>
-                                {bodyParts.map(bp => (
-                                    <option key={bp} value={bp}>{bp}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2 block">
-                                Nivel
-                            </label>
-                            <select
-                                value={filterLevel}
-                                onChange={(e) => setFilterLevel(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-zinc-900 dark:text-white font-medium focus:border-purple-500 outline-none"
-                            >
-                                <option value="">Todos</option>
-                                {levels.map(level => (
-                                    <option key={level} value={level}>{level}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2 block">
-                                Tipo
-                            </label>
-                            <select
-                                value={filterType}
-                                onChange={(e) => setFilterType(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-zinc-900 dark:text-white font-medium focus:border-purple-500 outline-none"
-                            >
-                                <option value="">Todos</option>
-                                {types.map(type => (
-                                    <option key={type} value={type}>{type}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <FilterSelect label="Músculo" value={filterBodyPart} onChange={setFilterBodyPart} options={bodyParts} />
+                        <FilterSelect label="Nivel" value={filterLevel} onChange={setFilterLevel} options={levels} />
+                        <FilterSelect label="Fuerza" value={filterForce} onChange={setFilterForce} options={forces} />
+                        <FilterSelect label="Mecánica" value={filterMechanic} onChange={setFilterMechanic} options={mechanics} />
                     </div>
                 </div>
 
-                {/* Exercise Grid */}
+                {/* Results Grid */}
                 {filteredExercises.length === 0 ? (
-                    <div className="text-center py-12 bg-white dark:bg-gray-900 backdrop-blur-xl border-2 border-purple-100 dark:border-purple-900 rounded-3xl p-8">
-                        <Dumbbell className="h-16 w-16 text-zinc-300 mx-auto mb-4" />
-                        <p className="text-zinc-500 dark:text-zinc-400 font-medium">
-                            No se encontraron ejercicios con estos filtros.
-                        </p>
+                    <div className="text-center py-20">
+                        <div className="bg-purple-100 dark:bg-purple-900/20 h-20 w-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Dumbbell className="h-10 w-10 text-purple-500" />
+                        </div>
+                        <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">No se encontraron resultados</h3>
+                        <p className="text-zinc-500">Intenta ajustar tus filtros de búsqueda.</p>
+                        <button
+                            onClick={() => { setSearchQuery(""); setLocationType("all"); setFilterBodyPart(""); setFilterLevel(""); setFilterForce(""); setFilterMechanic(""); }}
+                            className="mt-6 px-6 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-full font-bold hover:scale-105 transition"
+                        >
+                            Limpiar Filtros
+                        </button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filteredExercises.map((exercise) => (
                             <ExerciseCard key={exercise.id} exercise={exercise} />
                         ))}
@@ -272,152 +235,158 @@ export default function ExercisesPage() {
     );
 }
 
+// Helper Component for Select Filters
+function FilterSelect({ label, value, onChange, options }: { label: string, value: string, onChange: (v: string) => void, options: string[] }) {
+    return (
+        <div className="relative">
+            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1 block pl-1">{label}</label>
+            <select
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-medium text-zinc-900 dark:text-white focus:border-purple-500 outline-none appearance-none cursor-pointer"
+            >
+                <option value="">Cualquiera</option>
+                {options.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                ))}
+            </select>
+            <div className="absolute right-3 bottom-3 pointer-events-none text-zinc-400">
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </div>
+        </div>
+    )
+}
+
 function ExerciseCard({ exercise }: { exercise: Exercise }) {
-    const levelColors = {
-        'Principiante': 'bg-green-100 text-green-700 border-green-200',
-        'Intermedio': 'bg-yellow-100 text-yellow-700 border-yellow-200',
-        'Avanzado': 'bg-red-100 text-red-700 border-red-200',
-    };
+    const [isHovered, setIsHovered] = useState(false);
+    const [showDetails, setShowDetails] = useState(false);
 
-    const typeIcons = {
-        'Fuerza': '💪',
-        'Cardio': '🏃',
-        'Flexibilidad': '🧘',
-    };
+    // Prefer video -> gif -> image
+    // Prefer "male" & "front" angle if available, or just first video
+    const media = exercise.exercise_media || [];
+    const video = media.find(m => m.type === 'video' && m.angle === 'front') || media.find(m => m.type === 'video');
+    const image = media.find(m => m.type === 'image' && m.angle === 'front') || media.find(m => m.type === 'image');
 
-    const [showInstructions, setShowInstructions] = useState(false);
+    // Fallback URL
+    const displayUrl = video ? video.url : image ? image.url : null;
+    const isVideo = !!video;
 
     return (
-        <div className="bg-white dark:bg-gray-900 backdrop-blur-xl border-2 border-purple-100 dark:border-purple-900 rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                    <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2 line-clamp-2">
+        <div
+            className="group relative bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 border border-gray-100 dark:border-gray-800 flex flex-col h-full"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            {/* Media Area */}
+            <div className="relative aspect-[4/3] bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                {displayUrl ? (
+                    isVideo ? (
+                        <video
+                            src={displayUrl}
+                            muted
+                            loop
+                            playsInline
+                            // Auto-play on hover
+                            ref={el => {
+                                if (el) {
+                                    if (isHovered) el.play().catch(() => { });
+                                    else el.pause();
+                                }
+                            }}
+                            className="w-full h-full object-cover"
+                            poster={image?.url} // Use image as poster if available
+                        />
+                    ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={displayUrl} alt={exercise.title} className="w-full h-full object-cover" />
+                    )
+                ) : (
+                    <div className="flex items-center justify-center h-full text-zinc-300">
+                        <Dumbbell className="h-12 w-12" />
+                    </div>
+                )}
+
+                {/* Badges */}
+                <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+                    {exercise.level === 'Principiante' && <span className="px-2 py-1 bg-green-500/90 backdrop-blur text-white text-[10px] font-bold uppercase tracking-wider rounded-md">Principiante</span>}
+                    {exercise.level === 'Intermedio' && <span className="px-2 py-1 bg-yellow-500/90 backdrop-blur text-white text-[10px] font-bold uppercase tracking-wider rounded-md">Intermedio</span>}
+                    {exercise.level === 'Avanzado' && <span className="px-2 py-1 bg-red-500/90 backdrop-blur text-white text-[10px] font-bold uppercase tracking-wider rounded-md">Avanzado</span>}
+                </div>
+            </div>
+
+            {/* Content info */}
+            <div className="p-5 flex flex-col flex-1">
+                <div className="mb-3">
+                    <h3 className="text-lg font-bold text-zinc-900 dark:text-white leading-tight mb-1 group-hover:text-purple-600 transition-colors">
                         {exercise.title}
                     </h3>
-
-                    <div className="flex gap-2 flex-wrap">
-                        {exercise.level && (
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 ${levelColors[exercise.level as keyof typeof levelColors] || 'bg-zinc-100 text-zinc-700'
-                                }`}>
-                                {exercise.level}
-                            </span>
-                        )}
-
-                        {exercise.type && (
-                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border-2 border-purple-200">
-                                {typeIcons[exercise.type as keyof typeof typeIcons] || ''} {exercise.type}
-                            </span>
-                        )}
+                    <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                        <span className="font-semibold text-purple-600 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">{exercise.body_part}</span>
+                        <span>•</span>
+                        <span>{exercise.mechanic || "Ejercicio"} {exercise.force ? `(${exercise.force})` : ""}</span>
                     </div>
                 </div>
 
-                {exercise.rating && (
-                    <div className="flex items-center gap-1 ml-2">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="font-bold text-sm">{exercise.rating.toFixed(1)}</span>
-                    </div>
-                )}
-            </div>
-
-            {/* Description */}
-            {exercise.description && (
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4 line-clamp-3">
-                    {exercise.description}
-                </p>
-            )}
-
-            {/* Metadata */}
-            <div className="space-y-2 mb-4">
-                {exercise.body_part && (
-                    <div className="text-sm">
-                        <span className="font-bold text-zinc-700">Parte del cuerpo:</span>{" "}
-                        <span className="text-zinc-600 dark:text-zinc-400">{exercise.body_part}</span>
-                    </div>
-                )}
-
-                {exercise.met && (
-                    <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-purple-500" />
-                        <span className="text-sm font-bold text-purple-700">
-                            {exercise.met} MET
+                {/* Equipment chips */}
+                <div className="flex flex-wrap gap-1.5 mb-4 mt-auto">
+                    {exercise.equipment_required && exercise.equipment_required.slice(0, 3).map((eq, i) => (
+                        <span key={i} className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] font-semibold rounded-md border border-zinc-200 dark:border-zinc-700">
+                            {eq}
                         </span>
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                            (Intensidad metabólica)
-                        </span>
-                    </div>
-                )}
-            </div>
-
-            {/* Equipment Required */}
-            {exercise.equipment_required && exercise.equipment_required.length > 0 && (
-                <div className="border-t-2 border-zinc-100 pt-4">
-                    <div className="text-xs font-bold text-zinc-700 mb-2">Equipamiento:</div>
-                    <div className="flex flex-wrap gap-2">
-                        {exercise.equipment_required.map((eq, idx) => (
-                            <span
-                                key={idx}
-                                className="px-2 py-1 bg-zinc-100 text-zinc-700 rounded-lg text-xs font-medium"
-                            >
-                                {eq}
-                            </span>
-                        ))}
-                    </div>
+                    ))}
+                    {(exercise.equipment_required?.length || 0) > 3 && (
+                        <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 text-[10px] font-semibold rounded-md">+{(exercise.equipment_required?.length || 0) - 3}</span>
+                    )}
                 </div>
-            )}
 
-            {/* Action Buttons */}
-            <div className="flex gap-2 mt-4">
                 <button
-                    onClick={() => setShowInstructions(!showInstructions)}
-                    className="flex-1 py-3 rounded-xl border-2 border-purple-100 dark:border-purple-900 text-purple-700 font-bold hover:bg-purple-50 transition-all flex items-center justify-center gap-2"
+                    onClick={() => setShowDetails(!showDetails)}
+                    className="w-full py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-purple-300 dark:hover:border-purple-700 bg-white dark:bg-gray-800 text-zinc-700 dark:text-zinc-300 font-semibold text-sm transition-all flex items-center justify-center gap-2"
                 >
-                    <BookOpen className="h-4 w-4" />
-                    {showInstructions ? "Ocultar" : "Instrucciones"}
-                </button>
-                <button
-                    className="flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                >
-                    <Heart className="h-4 w-4" />
-                    Agregar
+                    {showDetails ? "Ocultar Detalles" : "Ver Instrucciones"}
                 </button>
             </div>
 
-            {/* Instructions Panel */}
-            {showInstructions && (
-                <div className="mt-4 pt-4 border-t-2 border-zinc-100 animate-in fade-in slide-in-from-top-4">
-                    {exercise.video_url && (
-                        <a
-                            href={exercise.video_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block w-full mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-center font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
-                        >
-                            <PlayCircle className="h-5 w-5" />
-                            Ver Video Tutorial
-                        </a>
-                    )}
-
-                    {exercise.gif_url && (
-                        <div className="mb-4 rounded-xl overflow-hidden border-2 border-zinc-100">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={exercise.gif_url} alt={exercise.title} className="w-full object-cover" />
-                        </div>
-                    )}
+            {/* Expanded Details Overlay/Panel */}
+            {showDetails && (
+                <div className="absolute inset-0 bg-white dark:bg-gray-900 z-10 p-6 overflow-y-auto animate-in fade-in slide-in-from-bottom-4 flex flex-col">
+                    <div className="flex justify-between items-center mb-4">
+                        <h4 className="font-bold text-zinc-900 dark:text-white">Instrucciones</h4>
+                        <button onClick={() => setShowDetails(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+                            <X className="h-5 w-5 text-zinc-500" />
+                        </button>
+                    </div>
 
                     {exercise.instructions && exercise.instructions.length > 0 ? (
-                        <ol className="space-y-2 list-decimal list-inside text-sm text-zinc-600 dark:text-zinc-400">
+                        <ol className="space-y-3 text-sm text-zinc-600 dark:text-zinc-300 list-decimal list-outside pl-4">
                             {exercise.instructions.map((step, idx) => (
-                                <li key={idx} className="pl-1 marker:font-bold marker:text-purple-500">
+                                <li key={idx} className="marker:text-purple-500 marker:font-bold">
                                     {step}
                                 </li>
                             ))}
                         </ol>
                     ) : (
-                        <div className="text-center text-zinc-400 text-sm py-2 italic bg-zinc-50 rounded-lg">
-                            No hay instrucciones detalladas disponibles.
-                        </div>
+                        <p className="text-sm text-zinc-500 italic">No hay instrucciones detalladas.</p>
                     )}
+
+                    <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div>
+                                <span className="block text-zinc-400 font-semibold mb-1">Músculos Primarios</span>
+                                <div className="flex flex-wrap gap-1">
+                                    {exercise.primary_muscles?.map(m => (
+                                        <span key={m} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-100">{m}</span>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <span className="block text-zinc-400 font-semibold mb-1">Músculos Secundarios</span>
+                                <div className="text-zinc-600">
+                                    {exercise.secondary_muscles?.join(", ") || "N/A"}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

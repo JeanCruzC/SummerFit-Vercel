@@ -152,6 +152,7 @@ export interface Exercise {
     id: number;
     slug: string;
     title: string;
+    title_en?: string;
     description?: string;
     type?: 'Fuerza' | 'Cardio' | 'Flexibilidad';
     level?: 'Principiante' | 'Intermedio' | 'Avanzado';
@@ -162,10 +163,20 @@ export interface Exercise {
     ranking_score?: number;
     rating?: number;
     rating_desc?: string;
+    // New Fields
+    force?: 'Pull' | 'Push' | 'Static';
+    mechanic?: 'Isolation' | 'Compound';
+    primary_muscles?: string[];
+    secondary_muscles?: string[];
     // Media & Instructions
-    video_url?: string;
-    gif_url?: string;
     instructions?: string[];
+    exercise_media?: {
+        id: number;
+        type: 'video' | 'image';
+        url: string;
+        gender: string;
+        angle: string;
+    }[];
     created_at?: string;
 }
 

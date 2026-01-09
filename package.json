@@ -1,0 +1,26 @@
+{
+  "name": "summerfit-vercel-main",
+  "version": "1.0.0",
+  "description": "--- title: \"SummerFit · Premium Fitness Dashboard\" emoji: \"💪\" colorFrom: \"pink\" colorTo: \"purple\" sdk: \"streamlit\" sdk_version: \"1.36.0\" app_file: \"app/streamlit_app.py\" pinned: false ---",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JeanCruzC/SummerFit-Vercel.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JeanCruzC/SummerFit-Vercel/issues"
+  },
+  "homepage": "https://github.com/JeanCruzC/SummerFit-Vercel#readme",
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.90.1",
+    "dotenv": "^17.2.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

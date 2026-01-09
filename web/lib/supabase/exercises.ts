@@ -22,7 +22,7 @@ export async function getExercisesByEquipment(
     // Query exercises where ALL required equipment is available
     const { data, error } = await supabase
         .from('exercises')
-        .select('*')
+        .select('*, exercise_media(*)')
         .containedBy('equipment_required', availableEquipment)
         .order('ranking_score', { ascending: false })
         .limit(100);
@@ -46,7 +46,7 @@ export async function searchExercises(
 
     let queryBuilder = supabase
         .from('exercises')
-        .select('*')
+        .select('*, exercise_media(*)')
         .or(`title.ilike.%${query}%,description.ilike.%${query}%`);
 
     if (filters?.body_part) {
@@ -77,7 +77,7 @@ export async function getExerciseById(id: number): Promise<Exercise | null> {
 
     const { data, error } = await supabase
         .from('exercises')
-        .select('*')
+        .select('*, exercise_media(*)')
         .eq('id', id)
         .single();
 

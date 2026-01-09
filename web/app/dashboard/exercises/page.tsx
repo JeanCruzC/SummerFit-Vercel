@@ -19,6 +19,7 @@ export default function ExercisesPage() {
     const [filterBodyPart, setFilterBodyPart] = useState("");
     const [filterLevel, setFilterLevel] = useState("");
     const [filterType, setFilterType] = useState("");
+    const [locationType, setLocationType] = useState<"all" | "home" | "gym">("all");
 
     useEffect(() => {
         loadData();
@@ -26,7 +27,7 @@ export default function ExercisesPage() {
 
     useEffect(() => {
         applyFilters();
-    }, [searchQuery, filterBodyPart, filterLevel, filterType, exercises]);
+    }, [searchQuery, filterBodyPart, filterLevel, filterType, locationType, exercises]);
 
     const loadData = async () => {
         const supabase = createClient();
@@ -44,13 +45,23 @@ export default function ExercisesPage() {
             setUserEquipment(equipment);
 
             if (equipment.length === 0) {
-                // No equipment configured, redirect
-                router.push("/dashboard/equipment");
-                return;
+                // If no equipment, default to "home" view which shows bodyweight
+                // Don't redirect immediately, let them see basic exercises
+                setLocationType("home");
             }
 
             const exercisesList = await getExercisesByEquipment(equipment);
             setExercises(exercisesList);
+            // Default sort: Basics/Beginners first
+            exercisesList.sort((a, b) => {
+                // Priority to basic exercises
+                const basics = ["push-ups", "flexiones", "correr", "run", "squat", "sentadillas", "lunges", "zancadas"];
+                const isBasicA = basics.some(k => a.title.toLowerCase().includes(k) || a.slug.includes(k));
+                const isBasicB = basics.some(k => b.title.toLowerCase().includes(k) || b.slug.includes(k));
+                if (isBasicA && !isBasicB) return -1;
+                if (!isBasicA && isBasicB) return 1;
+                return 0;
+            });
             setFilteredExercises(exercisesList);
         } catch (error) {
             console.error("Error loading data:", error);
@@ -62,11 +73,50 @@ export default function ExercisesPage() {
     const applyFilters = () => {
         let filtered = exercises;
 
+        // 0. Location Filter (Home vs Gym)
+        if (locationType === "home") {
+            // Filter for Bodyweight or "None" equipment
+            filtered = filtered.filter(ex => {
+                const eq = ex.equipment_required || [];
+                return eq.length === 0 || eq.includes("Peso corporal") || eq.includes("None") || eq.includes("Ninguno");
+            });
+        } else if (locationType === "gym") {
+            // Filter for exercises that REQUIRE equipment (excluding simple bodyweight)
+            filtered = filtered.filter(ex => {
+                const eq = ex.equipment_required || [];
+                return eq.length > 0 && !eq.includes("Peso corporal");
+            });
+        }
+
+        // 1. Search with synonyms
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
+            // Map common English terms to Spanish if needed
+            const synonyms: Record<string, string[]> = {
+                "push up": ["flexiones", "push-up", "pecho"],
+                "pull up": ["dominadas", "pull-up", "espalda"],
+                "run": ["correr", "trote", "cardio"],
+                "squat": ["sentadilla", "pierna"],
+                "lunge": ["zancada", "estocada"],
+                "bench press": ["press de banca", "pecho"],
+                "abs": ["abdomen", "plancha", "crunch"],
+                "calisthenics": ["peso corporal", "calistenia"]
+            };
+
+            let searchTerms = [query];
+            // Add synonyms to search terms
+            Object.keys(synonyms).forEach(key => {
+                if (query.includes(key)) {
+                    searchTerms = [...searchTerms, ...synonyms[key]];
+                }
+            });
+
             filtered = filtered.filter(ex =>
-                ex.title.toLowerCase().includes(query) ||
-                ex.description?.toLowerCase().includes(query)
+                searchTerms.some(term =>
+                    ex.title.toLowerCase().includes(term) ||
+                    ex.description?.toLowerCase().includes(term) ||
+                    ex.body_part?.toLowerCase().includes(term)
+                )
             );
         }
 
@@ -129,7 +179,29 @@ export default function ExercisesPage() {
                     </div>
 
                     {/* Filters */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {/* Location Type Filter */}
+                        <div className="md:col-span-4 flex gap-2 mb-2">
+                            <button
+                                onClick={() => setLocationType("all")}
+                                className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${locationType === "all" ? "bg-purple-500 text-white shadow-lg shadow-purple-500/30" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"}`}
+                            >
+                                ♾️ Todos
+                            </button>
+                            <button
+                                onClick={() => setLocationType("home")}
+                                className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${locationType === "home" ? "bg-green-500 text-white shadow-lg shadow-green-500/30" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"}`}
+                            >
+                                🏠 En Casa
+                            </button>
+                            <button
+                                onClick={() => setLocationType("gym")}
+                                className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${locationType === "gym" ? "bg-blue-500 text-white shadow-lg shadow-blue-500/30" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"}`}
+                            >
+                                🏋️ Gimnasio
+                            </button>
+                        </div>
+
                         <div>
                             <label className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2 block">
                                 Parte del cuerpo

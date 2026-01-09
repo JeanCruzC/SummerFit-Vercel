@@ -175,6 +175,7 @@ export interface Exercise {
     score_hypertrophy?: number; // 1-5
     score_difficulty?: number; // 1-5
     score_risk?: number; // 1-5
+    score_strength?: number; // 1-5
     score_stability?: number; // 1-5
     activation_profile?: {
         high: string[];

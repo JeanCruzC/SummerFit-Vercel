@@ -172,7 +172,7 @@ export class RoutineGenerator {
                 dayExercises.push({
                     exercise: winner.exercise,
                     sets: volume.sets,
-                    reps: winner.exercise.reps_sugeridas_por_objetivo?.[request.goal] || volume.reps, // Use specific if available
+                    reps: volume.reps,
                     rest: volume.rest,
                     reason: `Selected for ${slot.role} (Score: ${winner.score.toFixed(1)}/5)`
                 });

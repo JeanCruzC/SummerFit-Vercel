@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Filter, Star, Dumbbell, Zap, Heart, PlayCircle, BookOpen, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserEquipment, getExercisesByEquipment, searchExercises } from "@/lib/supabase/exercises";
 import type { Exercise, UserEquipment } from "@/types";
@@ -167,7 +166,10 @@ export default function ExercisesPage() {
                 <div className="bg-white dark:bg-gray-900 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
                     {/* Search */}
                     <div className="relative mb-6">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-purple-500" />
+                        <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-purple-500" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
                         <input
                             type="text"
                             value={searchQuery}
@@ -229,7 +231,9 @@ export default function ExercisesPage() {
                 {filteredExercises.length === 0 ? (
                     <div className="text-center py-20">
                         <div className="bg-purple-100 dark:bg-purple-900/20 h-20 w-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Dumbbell className="h-10 w-10 text-purple-500" />
+                            <svg className="h-10 w-10 text-purple-500" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M6.5 6.5h11" /><path d="M6.5 17.5h11" /><path d="M6.5 6.5l0 11" /><path d="M17.5 6.5l0 11" /><path d="M5 12h14" />
+                            </svg>
                         </div>
                         <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">No se encontraron resultados</h3>
                         <p className="text-zinc-500">Intenta ajustar tus filtros de búsqueda.</p>
@@ -345,6 +349,21 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
     // Scientific Data Available?
     const hasScience = !!exercise.score_hypertrophy;
 
+    // Smart Data Fallbacks
+    // Equipment: Filter out None/Ninguno
+    const cleanEquipment = (exercise.equipment_required || []).filter(e =>
+        e && !['none', 'ninguno', 'bodyweight', 'cuerpo'].includes(e.toLowerCase())
+    );
+    if (cleanEquipment.length === 0 && (exercise.equipment_required || []).some(e => e?.toLowerCase().includes('body'))) {
+        cleanEquipment.push('Peso Corporal');
+    }
+
+    // Muscles: Use Science Profile if DB is empty
+    const primaryMuscles = exercise.primary_muscles?.length ? exercise.primary_muscles : (exercise.activation_profile?.high || []);
+    const secondaryMuscles = (exercise.secondary_muscles?.length && exercise.secondary_muscles[0] !== '')
+        ? exercise.secondary_muscles
+        : (exercise.activation_profile?.medium || []);
+
     return (
         <div
             className="group relative bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 border border-gray-100 dark:border-gray-800 flex flex-col h-full"
@@ -376,7 +395,10 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
                     )
                 ) : (
                     <div className="flex items-center justify-center h-full text-zinc-300">
-                        <Dumbbell className="h-12 w-12" />
+                        {/* Dumbbell Icon SVG */}
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M6.5 6.5h11" /><path d="M6.5 17.5h11" /><path d="M6.5 6.5l0 11" /><path d="M17.5 6.5l0 11" /><path d="M5 12h14" />
+                        </svg>
                     </div>
                 )}
 
@@ -427,15 +449,15 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
                     )}
                 </div>
 
-                {/* Equipment chips */}
+                {/* Equipment chips (Cleaned) */}
                 <div className="flex flex-wrap gap-1.5 mb-4 mt-auto">
-                    {exercise.equipment_required && exercise.equipment_required.slice(0, 3).map((eq, i) => (
+                    {cleanEquipment.slice(0, 3).map((eq, i) => (
                         <span key={i} className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] font-semibold rounded-md border border-zinc-200 dark:border-zinc-700">
                             {eq}
                         </span>
                     ))}
-                    {(exercise.equipment_required?.length || 0) > 3 && (
-                        <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 text-[10px] font-semibold rounded-md">+{(exercise.equipment_required?.length || 0) - 3}</span>
+                    {cleanEquipment.length > 3 && (
+                        <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 text-[10px] font-semibold rounded-md">+{(cleanEquipment.length) - 3}</span>
                     )}
                 </div>
 
@@ -453,7 +475,11 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
                     <div className="flex justify-between items-center mb-4">
                         <h4 className="font-bold text-zinc-900 dark:text-white">Instrucciones</h4>
                         <button onClick={() => setShowDetails(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-                            <X className="h-5 w-5 text-zinc-500" />
+                            {/* Close Icon SVG */}
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
                         </button>
                     </div>
 
@@ -469,7 +495,7 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
                         <p className="text-sm text-zinc-500 italic">No hay instrucciones detalladas.</p>
                     )}
 
-                    {/* Scientific Activation Map */}
+                    {/* Scientific Activation Map Overlay */}
                     {hasScience && exercise.activation_profile && (
                         <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
                             <h5 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-600 mb-3">
@@ -508,21 +534,30 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
                         </div>
                     )}
 
-                    {/* Standard Muscle Data (Fallback or Complement) */}
+                    {/* Standard/Fallback Muscle Data */}
                     <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
                         <div className="grid grid-cols-2 gap-4 text-xs">
                             <div>
                                 <span className="block text-zinc-400 font-semibold mb-1">Músculos Primarios</span>
                                 <div className="flex flex-wrap gap-1">
-                                    {exercise.primary_muscles?.map(m => (
-                                        <span key={m} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-100">{m}</span>
+                                    {primaryMuscles.map(m => (
+                                        <span key={m} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-100 uppercase text-[10px]">{m}</span>
                                     ))}
+                                    {primaryMuscles.length === 0 && <span className="text-zinc-500 italic">No datos</span>}
                                 </div>
                             </div>
                             <div>
                                 <span className="block text-zinc-400 font-semibold mb-1">Músculos Secundarios</span>
                                 <div className="text-zinc-600">
-                                    {exercise.secondary_muscles?.join(", ") || "N/A"}
+                                    {secondaryMuscles.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1">
+                                            {secondaryMuscles.map(m => (
+                                                <span key={m} className="text-zinc-600 dark:text-zinc-400">{m}</span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <span className="text-zinc-400 italic">--</span>
+                                    )}
                                 </div>
                             </div>
                         </div>

@@ -201,21 +201,17 @@ export function calculateProjectionWithExercise(
 ): GoalProjection & { exercise_boost: number; total_deficit: number } {
 
     // AUDIT FIX #1: Prevent Double Counting
-    // Method 2: Use Sedentary Base (1.2) + Specific Calculated Exercise
+    // We use the higher value to ensure active jobs aren't penalized, 
+    // effectively treating "Activity Level" as a floor for non-exercise activity.
     let effectiveTDEE = tdee;
     if (weeklyExerciseCalories > 0) {
         const sedentaryTDEE = bmr * 1.2;
         const dailyExerciseAvg = weeklyExerciseCalories / 7;
-        // We use the higher value to ensure active jobs aren't penalized, 
-        // effectively treating "Activity Level" as a floor for non-exercise activity.
-        // If Plan > Lifestyle Gap, we use Plan.
-        effectiveTDEE = sedentaryTDEE + dailyExerciseAvg;
+        const calculatedTDEE = sedentaryTDEE + dailyExerciseAvg;
 
-        // Safety check: If user claimed "Very Active" but has a small plan, 
-        // we might be underestimating. 
-        // However, strictly following Audit Method 2 implies using Sedentary Base.
-        // We will stick to the Audit's logic: Base(1.2) + Exercise.
-        // Users should set Activity to 'Sedentary' or 'Light' if they rely on the Plan.
+        // If the calculated TDEE from the plan is higher than the profile's TDEE, use the higher one.
+        // This ensures the plan always adds value (or stays neutral).
+        effectiveTDEE = Math.max(tdee, calculatedTDEE);
     }
 
     const targetCalories = calculateTargetCalories(effectiveTDEE, goal, mode);

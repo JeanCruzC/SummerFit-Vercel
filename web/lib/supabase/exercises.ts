@@ -192,14 +192,28 @@ export async function getActiveWorkoutPlan(userId: string): Promise<WorkoutPlan 
     const supabase = createClient();
 
     const { data, error } = await supabase
-        .from('workout_plans')
+        .from('saved_routines')
         .select('*')
         .eq('user_id', userId)
         .eq('is_active', true)
         .single();
 
-    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
-    return data;
+    if (error && error.code !== 'PGRST116') throw error;
+
+    if (!data) return null;
+
+    return {
+        id: data.id,
+        user_id: data.user_id,
+        name: data.name,
+        description: data.configuration?.goal || '',
+        days_per_week: data.configuration?.daysAvailable || 0,
+        total_met_hours: data.total_met_hours || data.brain_state?.total_met_hours || 0,
+        estimated_calories_weekly: data.estimated_calories_weekly || data.brain_state?.estimated_calories_weekly || 0,
+        is_active: data.is_active,
+        created_at: data.created_at,
+        updated_at: data.created_at
+    };
 }
 
 /**

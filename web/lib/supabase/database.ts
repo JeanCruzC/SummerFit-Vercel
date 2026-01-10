@@ -205,9 +205,15 @@ export async function getWeightHistory(userId: string, limit = 30): Promise<{ re
     return data;
 }
 
+/**
+ * Record weight and automatically update profile for dashboard recalibration
+ * SCIENTIFIC UPDATE: Triggers automatic TDEE/calorie recalculation when weight changes
+ */
 export async function recordWeight(userId: string, date: string, weightKg: number): Promise<boolean> {
     const supabase = createClient();
-    const { error } = await supabase
+
+    // 1. Record weight in history
+    const { error: historyError } = await supabase
         .from('weight_history')
         .upsert({
             user_id: userId,
@@ -215,7 +221,19 @@ export async function recordWeight(userId: string, date: string, weightKg: numbe
             weight_kg: weightKg,
         }, { onConflict: 'user_id,recorded_at' });
 
-    return !error;
+    if (historyError) return false;
+
+    // 2. AUTO-RECALIBRATE: Update profile's current weight for dashboard recalculation
+    // This triggers automatic BMR/TDEE/calorie updates on next dashboard load
+    const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+            weight_kg: weightKg,
+            updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId);
+
+    return !profileError;
 }
 
 // ============ STATS ============

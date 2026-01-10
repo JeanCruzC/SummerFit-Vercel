@@ -62,8 +62,44 @@ export default function PlanEditorPage({ params }: { params: { id: string } }) {
                 .single();
             if (profile) setUserWeight(profile.weight_kg);
 
-            // 3. Get Plan Exercises
-            const planExercises = await getWorkoutPlanExercises(planId);
+            // 3. Get Plan Exercises - Try BOTH sources
+            // First try the workout_plan_exercises table
+            let planExercises = await getWorkoutPlanExercises(planId);
+
+            // If empty, try loading from saved_routines.schedule (AI-generated routines)
+            if (planExercises.length === 0) {
+                const { data: savedRoutine } = await supabase
+                    .from('saved_routines')
+                    .select('schedule')
+                    .eq('id', planId)
+                    .single();
+
+                if (savedRoutine?.schedule?.days) {
+                    // Transform saved_routines format to WorkoutPlanExercise format
+                    planExercises = savedRoutine.schedule.days.flatMap((day: any, dayIndex: number) =>
+                        (day.exercises || []).map((ex: any, exIndex: number) => ({
+                            id: ex.id || `${dayIndex}-${exIndex}`,
+                            workout_plan_id: planId,
+                            exercise_id: ex.id,
+                            day_of_week: dayIndex + 1,
+                            order_in_day: exIndex + 1,
+                            sets: ex.sets || 3,
+                            reps: ex.reps || 10,
+                            rir: ex.rir !== undefined ? ex.rir : 2,
+                            rest_seconds: ex.rest || 60,
+                            duration_minutes: ex.duration || 5,
+                            exercise: {
+                                id: ex.id,
+                                title: ex.name || ex.title,
+                                body_part: ex.bodyPart || ex.muscle,
+                                met: ex.met || 5,
+                                equipment: ex.equipment,
+                                image_url: ex.gifUrl || ex.image_url
+                            }
+                        }))
+                    );
+                }
+            }
             setExercises(planExercises);
 
             // 4. Pre-load available exercises (filtered by equipment)
@@ -268,6 +304,44 @@ export default function PlanEditorPage({ params }: { params: { id: string } }) {
                                                             />
                                                         </div>
                                                     </div>
+
+                                                    {/* RIR with Tooltip + Weight Progression */}
+                                                    <div className="mt-3 grid grid-cols-2 gap-2">
+                                                        <div className="relative group">
+                                                            <label className="block text-zinc-500 dark:text-zinc-400 text-xs mb-1">
+                                                                RIR
+                                                                <span className="ml-1 text-purple-500 cursor-help" title="Repeticiones en Reserva: Cuántas repeticiones más podrías hacer antes del fallo. RIR 0-2 es óptimo para hipertrofia (Schoenfeld 2021)">ⓘ</span>
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                max="5"
+                                                                className="w-full bg-zinc-50 border rounded px-2 py-1 text-xs"
+                                                                value={ex.rir !== undefined ? ex.rir : 2}
+                                                                onChange={(e) => handleUpdateStats(ex.id!, { rir: Number(e.target.value) })}
+                                                            />
+                                                            {/* Tooltip on hover */}
+                                                            <div className="absolute bottom-full left-0 mb-2 w-48 p-2 bg-zinc-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                                                <strong>RIR = Repeticiones en Reserva</strong><br />
+                                                                0 = Fallo total<br />
+                                                                1-2 = Óptimo para hipertrofia<br />
+                                                                3+ = Calentamiento/deload
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-zinc-500 dark:text-zinc-400 text-xs mb-1">
+                                                                Peso
+                                                                <span className="ml-1 text-purple-500 cursor-help" title="Peso sugerido basado en tu progreso. Regla 2-for-2: Si completaste todas las series con RIR≥2, sube peso.">ⓘ</span>
+                                                            </label>
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-xs font-bold text-zinc-700">--kg</span>
+                                                                {(ex.rir !== undefined && ex.rir >= 2) && (
+                                                                    <span className="text-xs text-green-600 font-bold" title="RIR alto: Considera aumentar peso +2.5kg">↑</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     {(ex.exercise?.met || 0) > 0 && (
                                                         <div className="mt-2 text-[10px] text-zinc-400 flex items-center gap-1">
                                                             <Zap className="h-3 w-3" /> MET: {ex.exercise?.met}

@@ -219,12 +219,14 @@ export interface WorkoutPlan {
 }
 
 export interface WorkoutPlanExercise {
-    id?: number;
+    id?: number | string;
     workout_plan_id: number;
     exercise_id: number;
     day_of_week: number; // 1-7
     sets: number;
     reps?: number;
+    rir?: number; // Reps In Reserve (0-5, optimal 0-2 for hypertrophy)
+    weight_kg?: number; // Weight used for progression tracking
     duration_minutes?: number;
     rest_seconds: number;
     notes?: string;

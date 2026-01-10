@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { ChevronLeft, ChevronRight, Calendar, Check, Plus, Clock, Target, TrendingDown, Sunrise, Sun, Moon, Flame, Dumbbell } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Check, Plus, Clock, Target, TrendingDown, Sunrise, Sun, Moon, Flame, Dumbbell, TrendingUp } from "lucide-react";
 import { calculateProjectionWithExercise, calculateBMR, calculateTDEE } from "@/lib/calculations";
+import { ProgressionSystem } from "@/lib/intelligence/progression_system";
 
 interface ScheduledDay {
     id?: number;
@@ -289,8 +290,8 @@ export default function WorkoutCalendarPage() {
                                                     <button
                                                         onClick={() => handleToggleComplete(date)}
                                                         className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${completed
-                                                                ? 'bg-green-500 border-green-500'
-                                                                : 'border-gray-300 hover:border-green-500'
+                                                            ? 'bg-green-500 border-green-500'
+                                                            : 'border-gray-300 hover:border-green-500'
                                                             } ${new Date(date).setHours(0, 0, 0, 0) > new Date().setHours(0, 0, 0, 0) ? 'opacity-30 cursor-not-allowed' : ''}`}
                                                     >
                                                         {completed && <Check className="h-4 w-4 text-white" />}
@@ -372,28 +373,59 @@ export default function WorkoutCalendarPage() {
                             </div>
 
                             <div className="space-y-4 mb-8">
-                                {selectedDay.exercises.map((ex: any, idx: number) => (
-                                    <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-800 transition-all hover:border-purple-300 group">
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-12 w-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center font-black text-purple-600 dark:text-purple-400">
-                                                {idx + 1}
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="font-bold text-zinc-900 dark:text-white group-hover:text-purple-500 transition-colors">
-                                                    {ex.exercise.title}
+                                {selectedDay.exercises.map((ex: any, idx: number) => {
+                                    // Phase 5: Analyze progression for weight suggestions
+                                    const mockLastSession = [
+                                        { reps_target: ex.reps || 10, reps_done: ex.reps || 10, weight: 0, rir: ex.rir || 2 }
+                                    ];
+                                    const isLowerBody = ['Piernas', 'Glúteos', 'Cuádriceps', 'Isquiotibiales'].some(
+                                        m => ex.exercise?.bodyPart?.toLowerCase().includes(m.toLowerCase()) ||
+                                            ex.exercise?.muscle?.toLowerCase().includes(m.toLowerCase())
+                                    );
+                                    const progression = ProgressionSystem.analyzeProgress(mockLastSession, isLowerBody);
+
+                                    return (
+                                        <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-800 transition-all hover:border-purple-300 group">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-12 w-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center font-black text-purple-600 dark:text-purple-400">
+                                                    {idx + 1}
                                                 </div>
-                                                <div className="text-sm text-zinc-500 flex gap-3 mt-1">
-                                                    <span className="flex items-center gap-1"><Dumbbell className="h-3 w-3" /> {ex.sets} x {ex.reps}</span>
-                                                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {ex.rest}</span>
+                                                <div className="flex-1">
+                                                    <div className="font-bold text-zinc-900 dark:text-white group-hover:text-purple-500 transition-colors">
+                                                        {ex.exercise.title}
+                                                    </div>
+                                                    <div className="text-sm text-zinc-500 flex gap-3 mt-1">
+                                                        <span className="flex items-center gap-1"><Dumbbell className="h-3 w-3" /> {ex.sets} x {ex.reps}</span>
+                                                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {ex.rest}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Intensidad</span>
+                                                    <span className="text-xs font-black text-zinc-600 dark:text-zinc-300">RIR {ex.rir || 2}</span>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Intensidad</span>
-                                                <span className="text-xs font-black text-zinc-600 dark:text-zinc-300">RIR {ex.rir || 2}</span>
-                                            </div>
+
+                                            {/* Phase 5: Progression Suggestion */}
+                                            {progression.action !== 'maintain' && (
+                                                <div className={`mt-3 p-2 rounded-lg text-xs flex items-center gap-2 ${progression.action === 'increase'
+                                                        ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                                                        : 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
+                                                    }`}>
+                                                    {progression.action === 'increase' ? (
+                                                        <TrendingUp className="h-4 w-4" />
+                                                    ) : (
+                                                        <TrendingDown className="h-4 w-4" />
+                                                    )}
+                                                    <span className="font-bold">
+                                                        {progression.action === 'increase'
+                                                            ? `↑ +${progression.amount_kg || 2.5}kg recomendado`
+                                                            : progression.reason}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
 
                             <button onClick={() => setSelectedDay(null)} className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-black text-lg transition-all shadow-lg shadow-purple-200 dark:shadow-none">

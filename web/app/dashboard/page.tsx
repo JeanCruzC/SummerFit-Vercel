@@ -12,6 +12,7 @@ import { getProfile, getWeightHistory, getMealEntries, getDailyLogsRange } from 
 import { getActiveWorkoutPlan } from "@/lib/supabase/exercises";
 import { calculateHealthMetrics, calculateMacros, calculateProjectionWithExercise } from "@/lib/calculations";
 import { getSupplementRecommendations } from "@/lib/supplements";
+import { AdaptationEngine } from "@/lib/intelligence/adaptation_engine";
 import { UserProfile, WorkoutPlan } from "@/types";
 
 export default function DashboardPage() {
@@ -135,6 +136,22 @@ export default function DashboardPage() {
         }));
     }, [weekLogs]);
 
+    // Phase 4: Adaptation Engine - Real-time weight progress alerts
+    const adaptationAlerts = useMemo(() => {
+        if (!profile || weightHistory.length < 2) return null;
+
+        const formattedHistory = weightHistory.map(w => ({
+            date: w.recorded_at,
+            weight: w.weight_kg
+        })).reverse(); // oldest first
+
+        return AdaptationEngine.generateAdaptationPlan(
+            profile,
+            formattedHistory,
+            [] // equipment array - empty for now
+        );
+    }, [profile, weightHistory]);
+
     if (loading || !profile || !metrics || !projection || !macros) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -178,12 +195,22 @@ export default function DashboardPage() {
 
             {/* Warnings */}
             {projection.warnings.length > 0 && (
-                <Alert type="warning">
-                    <div className="font-semibold mb-1">⚠️ Advertencia de Salud</div>
+                <Alert type="info">
+                    <div className="font-semibold mb-1">💡 Recomendaciones</div>
                     {projection.warnings.map((w, i) => <p key={i}>{w}</p>)}
-                    <p className="mt-2 text-xs opacity-80">
-                        SummerFit no se hace responsable de resultados adversos. Consulta a un profesional de la salud.
-                    </p>
+                </Alert>
+            )}
+
+            {/* Adaptation Alerts - Real-time weight progress feedback */}
+            {adaptationAlerts && adaptationAlerts.triggers.length > 0 && (
+                <Alert type={adaptationAlerts.priority === 'high' ? 'warning' : 'info'}>
+                    <div className="font-semibold mb-2">🧠 Coach Inteligente</div>
+                    <p className="text-sm mb-2">{adaptationAlerts.summary}</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                        {adaptationAlerts.triggers.map((t, i) => (
+                            <li key={i}>{t.recommendation}</li>
+                        ))}
+                    </ul>
                 </Alert>
             )}
 

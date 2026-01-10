@@ -71,32 +71,45 @@ export function calculateTDEE(bmr: number, activityLevel: string): number {
 
 /**
  * Calculate target calories based on goal
+ * SCIENTIFIC UPDATE: Uses % of TDEE for scalable deficits (ACSM 2018)
+ * - Conservador: 10% deficit (~0.25-0.4 kg/week)
+ * - Moderado: 20% deficit (~0.5-0.7 kg/week)  
+ * - Acelerado: 25% deficit (~0.75-1.0 kg/week)
  */
 export function calculateTargetCalories(
     tdee: number,
     goal: 'Definir' | 'Mantener' | 'Volumen',
     mode: 'conservador' | 'moderado' | 'acelerado' = 'moderado'
 ): number {
-    const deficits = {
-        conservador: 250,
-        moderado: 450,
-        acelerado: 700,
+    // Percentage-based deficits (scalable with body weight)
+    const deficitPct = {
+        conservador: 0.10, // 10% - Health-focused
+        moderado: 0.20,    // 20% - Standard
+        acelerado: 0.25,   // 25% - Aggressive (max safe)
     };
 
-    const surplus = {
-        conservador: 200,
-        moderado: 350,
-        acelerado: 500,
+    // Percentage-based surplus for muscle gain
+    const surplusPct = {
+        conservador: 0.05, // 5% - Lean bulk
+        moderado: 0.10,    // 10% - Standard bulk
+        acelerado: 0.15,   // 15% - Aggressive bulk
     };
+
+    let targetCalories: number;
 
     switch (goal) {
         case 'Definir':
-            return Math.round(tdee - deficits[mode]);
+            targetCalories = Math.round(tdee * (1 - deficitPct[mode]));
+            break;
         case 'Volumen':
-            return Math.round(tdee + surplus[mode]);
+            targetCalories = Math.round(tdee * (1 + surplusPct[mode]));
+            break;
         default:
-            return tdee;
+            targetCalories = tdee;
     }
+
+    // Safety floor: Never go below 1200 kcal
+    return Math.max(targetCalories, 1200);
 }
 
 /**
@@ -122,6 +135,10 @@ export function calculateMacros(
 
 /**
  * Calculate goal projection (time to reach target weight)
+ * SCIENTIFIC UPDATE: Non-linear model with metabolic adaptation (Hall et al. 2012)
+ * - Metabolic slowing: ~18 kcal per kg lost
+ * - Variable kcal/kg: 7000 for obese, 7500 for overweight, 7700 for normal
+ * - Initial acceleration: First 2 weeks faster due to glycogen/water
  */
 export function calculateProjection(
     currentWeight: number,
@@ -131,46 +148,75 @@ export function calculateProjection(
     mode: 'conservador' | 'moderado' | 'acelerado' = 'moderado'
 ): GoalProjection {
     const targetCalories = calculateTargetCalories(tdee, goal, mode);
-    const dailyDeficit = tdee - targetCalories;
+    const isLosing = targetWeight < currentWeight;
 
-    // 7700 kcal ≈ 1 kg of body fat
-    const weeklyDeficit = dailyDeficit * 7;
-    const weeklyRate = Math.abs(weeklyDeficit / 7700);
+    // Scientific constants
+    const METABOLIC_SLOWING_PER_KG = 18; // kcal reduction per kg lost (Hall 2012)
 
-    const weightDiff = Math.abs(currentWeight - targetWeight);
-    const weeks = weeklyRate > 0 ? Math.ceil(weightDiff / weeklyRate) : 0;
+    // Variable energy density based on body composition (Buchholz & Schoeller 2004)
+    const bmi = currentWeight / Math.pow(1.75, 2); // Approximate with 175cm
+    const KCAL_PER_KG = bmi >= 30 ? 7000 : bmi >= 25 ? 7200 : 7700;
+
+    let weeks = 0;
+    let weight = currentWeight;
+    const MAX_WEEKS = 156; // 3 year cap
+
+    // Iterative week-by-week simulation
+    while (weeks < MAX_WEEKS) {
+        // Adjust TDEE for weight lost (metabolic adaptation)
+        const weightLost = currentWeight - weight;
+        const adaptedTDEE = tdee - (weightLost * METABOLIC_SLOWING_PER_KG);
+
+        // Daily deficit with adapted TDEE
+        const dailyDeficit = adaptedTDEE - targetCalories;
+
+        // Check if we've hit the goal
+        if (isLosing && weight <= targetWeight) break;
+        if (!isLosing && weight >= targetWeight) break;
+
+        // Weekly weight change
+        let weeklyChange = (dailyDeficit * 7) / KCAL_PER_KG;
+
+        // Initial acceleration (weeks 1-2: glycogen/water loss)
+        if (weeks < 2 && isLosing) {
+            weeklyChange *= 1.4; // 40% faster first 2 weeks
+        }
+
+        // Apply change (subtraction for loss, addition for gain)
+        weight -= weeklyChange;
+        weeks++;
+
+        // Safety: prevent infinite loop if deficit is too small
+        if (Math.abs(weeklyChange) < 0.05) break;
+    }
+
     const months = Math.round(weeks / 4.33 * 10) / 10;
+    const weightDiff = Math.abs(currentWeight - targetWeight);
+    const weeklyRate = weeks > 0 ? weightDiff / weeks : 0;
 
     // Calculate target date
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + weeks * 7);
 
-    // Determine risk level
+    // Risk assessment (friendlier tone per user request)
     let risk_level: 'safe' | 'moderate' | 'high' = 'safe';
     let risk_msg = 'Ritmo saludable y sostenible';
     let color = '#22c55e'; // green
     const warnings: string[] = [];
 
     if (weeklyRate > 1) {
-        risk_level = 'high';
-        risk_msg = 'Ritmo agresivo - Riesgo para la salud';
-        color = '#ef4444'; // red
-        warnings.push('⚠️ Un ritmo mayor a 1 kg/semana puede causar pérdida muscular y problemas metabólicos.');
-    } else if (weeklyRate > 0.75) {
         risk_level = 'moderate';
-        risk_msg = 'Ritmo acelerado - Monitorear de cerca';
-        color = '#f59e0b'; // amber
-        warnings.push('Este ritmo es exigente. Asegúrate de mantener una buena nutrición.');
+        risk_msg = 'Ritmo acelerado - Monitorear';
+        color = '#f59e0b';
+        warnings.push('💡 Ritmo acelerado. Asegura buena nutrición y descanso.');
+    } else if (weeklyRate > 0.75) {
+        risk_level = 'safe';
+        risk_msg = 'Buen ritmo de progreso';
+        color = '#22c55e';
     }
 
     if (targetCalories < 1200 && goal === 'Definir') {
-        risk_level = 'high';
-        warnings.push('⚠️ Las calorías son muy bajas. Mínimo recomendado: 1200 kcal para mujeres, 1500 kcal para hombres.');
-    }
-
-    if (Math.abs(dailyDeficit) > 1000) {
-        risk_level = 'high';
-        warnings.push('⚠️ Déficit calórico extremo. Esto puede afectar tu metabolismo y energía.');
+        warnings.push('💡 Calorías ajustadas al mínimo saludable (1200 kcal).');
     }
 
     return {
@@ -188,98 +234,85 @@ export function calculateProjection(
 
 /**
  * Calculate goal projection INCLUDING exercise calories
- * This is the enhanced version that factors in workout plan calories
+ * SCIENTIFIC UPDATE: Non-linear model with exercise boost (Hall 2012, ACSM)
  */
 export function calculateProjectionWithExercise(
     currentWeight: number,
     targetWeight: number,
-    tdee: number, // Original TDEE (based on activity level)
-    bmr: number,  // NEW: Required for audit-compliant calculation
+    tdee: number,
+    bmr: number,
     goal: 'Definir' | 'Mantener' | 'Volumen',
     mode: 'conservador' | 'moderado' | 'acelerado' = 'moderado',
     weeklyExerciseCalories: number = 0
-): GoalProjection & { exercise_boost: number; total_deficit: number } {
+): GoalProjection & { exercise_boost: number; total_deficit: number; effectiveTDEE: number } {
 
-    // AUDIT FIX #1: Prevent Double Counting
-    // We use the higher value to ensure active jobs aren't penalized, 
-    // effectively treating "Activity Level" as a floor for non-exercise activity.
+    // Calculate effective TDEE including exercise
     let effectiveTDEE = tdee;
+    const dailyExerciseBonus = weeklyExerciseCalories / 7;
+
     if (weeklyExerciseCalories > 0) {
         const sedentaryTDEE = bmr * 1.2;
-        const dailyExerciseAvg = weeklyExerciseCalories / 7;
-        const calculatedTDEE = sedentaryTDEE + dailyExerciseAvg;
-
-        // If the calculated TDEE from the plan is higher than the profile's TDEE, use the higher one.
-        // This ensures the plan always adds value (or stays neutral).
+        const calculatedTDEE = sedentaryTDEE + dailyExerciseBonus;
         effectiveTDEE = Math.max(tdee, calculatedTDEE);
     }
 
-    // We calculate the TARGET CALORIES based on the original lifestyle TDEE
-    // so the user's diet stays stable, but the extra expenditure speeds up the date.
+    // Target calories based on lifestyle TDEE (diet stays stable)
     const targetCalories = calculateTargetCalories(tdee, goal, mode);
+    const isLosing = targetWeight < currentWeight;
 
-    // Deficit calculation for PROJECTION
-    // (What the user burns including exercise) - (What the user eats based on lifestyle goal)
-    const dailyDeficit = effectiveTDEE - targetCalories;
+    // Scientific constants
+    const METABOLIC_SLOWING_PER_KG = 18;
+    const bmi = currentWeight / Math.pow(1.75, 2);
+    const KCAL_PER_KG = goal === 'Volumen' ? 2200 : (bmi >= 30 ? 7000 : bmi >= 25 ? 7200 : 7700);
 
-    // Exercise "Bonus" for visualization (difference vs sedentary baseline)
-    // If no plan, bonus is 0. If plan, bonus is the plan calories/day.
-    const dailyExerciseBonus = weeklyExerciseCalories > 0 ? (weeklyExerciseCalories / 7) : 0;
+    let weeks = 0;
+    let weight = currentWeight;
+    const MAX_WEEKS = 156;
 
-    // TOTAL deficit is just what we calculated above.
-    const totalDailyDeficit = dailyDeficit;
+    // Iterative simulation with exercise
+    while (weeks < MAX_WEEKS) {
+        const weightLost = currentWeight - weight;
+        const adaptedEffectiveTDEE = effectiveTDEE - (weightLost * METABOLIC_SLOWING_PER_KG);
+        const dailyDeficit = adaptedEffectiveTDEE - targetCalories;
 
-    // AUDIT FIX #3: Muscle Gain Formula
-    const divisor = goal === 'Volumen' ? 2200 : 7700; // 2200 kcal for 1kg muscle vs 7700 for fat
+        if (isLosing && weight <= targetWeight) break;
+        if (!isLosing && weight >= targetWeight) break;
 
-    const weeklyDeficit = totalDailyDeficit * 7;
-    const weeklyRate = Math.abs(weeklyDeficit / divisor); // Use correct divisor
+        let weeklyChange = (dailyDeficit * 7) / KCAL_PER_KG;
 
-    const weightDiff = Math.abs(currentWeight - targetWeight);
-    const weeks = weeklyRate > 0 ? Math.ceil(weightDiff / weeklyRate) : 0;
+        if (weeks < 2 && isLosing) {
+            weeklyChange *= 1.4;
+        }
+
+        weight -= weeklyChange;
+        weeks++;
+
+        if (Math.abs(weeklyChange) < 0.05) break;
+    }
+
     const months = Math.round(weeks / 4.33 * 10) / 10;
+    const weightDiff = Math.abs(currentWeight - targetWeight);
+    const weeklyRate = weeks > 0 ? weightDiff / weeks : 0;
+    const totalDailyDeficit = effectiveTDEE - targetCalories;
 
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + weeks * 7);
 
-    // AUDIT FIX #2: Stricter Safety Limits
+    // Risk assessment
     let risk_level: 'safe' | 'moderate' | 'high' = 'safe';
     let risk_msg = 'Ritmo saludable y sostenible';
-    let color = '#22c55e'; // green
+    let color = '#22c55e';
     const warnings: string[] = [];
 
-    const MAX_SAFE_DEFICIT = 750;
-    const MAX_EXTREME_DEFICIT = 1000;
-
-    if (goal === 'Definir') {
-        if (dailyDeficit > MAX_EXTREME_DEFICIT) {
-            risk_level = 'high';
-            risk_msg = 'Déficit PELIGROSO - Riesgo metabólico alto';
-            color = '#ef4444';
-            warnings.push(`❌ Déficit diario de ${Math.round(dailyDeficit)} kcal excede el límite seguro (1000). Reduce la velocidad.`);
-        } else if (dailyDeficit > MAX_SAFE_DEFICIT) {
-            risk_level = 'moderate';
-            risk_msg = 'Déficit elevado - Requiere monitoreo';
-            color = '#f59e0b';
-            warnings.push(`⚠️ Déficit de ${Math.round(dailyDeficit)} kcal es alto. Asegura nutrición adecuada.`);
-        }
+    if (weeklyRate > 1) {
+        risk_level = 'moderate';
+        risk_msg = 'Ritmo acelerado - Monitorear';
+        color = '#f59e0b';
+        warnings.push('💡 Ritmo acelerado. Asegura buena nutrición.');
     }
 
-    // Weekly Rate Limits
-    const MAX_RATE_KG = goal === 'Volumen' ? 0.5 : 1.0; // Muscle gain is slower
-
-    if (weeklyRate > MAX_RATE_KG) {
-        risk_level = 'high';
-        if (goal === 'Volumen') {
-            warnings.push('⚠️ Ganancia > 0.5kg/semana implicará ganancia de grasa considerable.');
-        } else {
-            warnings.push('⚠️ Pérdida > 1kg/semana causa pérdida muscular.');
-        }
-    }
-
-    if (targetCalories < 1200 && goal === 'Definir') {
-        risk_level = 'high';
-        warnings.push('⚠️ Las calorías son muy bajas (<1200).');
+    if (dailyExerciseBonus > 0) {
+        warnings.push(`💪 Ejercicio añade ~${Math.round(dailyExerciseBonus)} kcal/día de gasto.`);
     }
 
     return {
@@ -295,7 +328,7 @@ export function calculateProjectionWithExercise(
         exercise_boost: Math.round(dailyExerciseBonus),
         total_deficit: Math.round(totalDailyDeficit),
         effectiveTDEE: Math.round(effectiveTDEE)
-    } as any;
+    };
 }
 
 

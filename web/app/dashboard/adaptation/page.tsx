@@ -12,7 +12,11 @@ export default function AdaptationPage() {
     const [profile, setProfile] = useState<any>(null);
     const [weightHistory, setWeightHistory] = useState<any[]>([]);
     const [equipment, setEquipment] = useState<string[]>([]);
-    const [adaptationPlan, setAdaptationPlan] = useState<any>(null);
+    const [adaptationPlan, setAdaptationPlan] = useState<{
+        triggers: any[];
+        priority: 'none' | 'low' | 'medium' | 'high';
+        summary: string;
+    } | null>(null);
 
     useEffect(() => {
         loadData();
@@ -96,20 +100,18 @@ export default function AdaptationPage() {
                                 {adaptationPlan.triggers.map((trigger: any, idx: number) => (
                                     <div key={idx} className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
                                         <div className="flex items-start gap-4">
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                                                trigger.severity === 'major' ? 'bg-red-100 text-red-600' :
-                                                trigger.severity === 'moderate' ? 'bg-yellow-100 text-yellow-600' :
-                                                'bg-blue-100 text-blue-600'
-                                            }`}>
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${trigger.severity === 'major' ? 'bg-red-100 text-red-600' :
+                                                    trigger.severity === 'moderate' ? 'bg-yellow-100 text-yellow-600' :
+                                                        'bg-blue-100 text-blue-600'
+                                                }`}>
                                                 {trigger.type === 'weight_change' ? '⚖️' : trigger.type === 'equipment_change' ? '🏋️' : '📊'}
                                             </div>
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                                        trigger.severity === 'major' ? 'bg-red-100 text-red-700' :
-                                                        trigger.severity === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
-                                                        'bg-blue-100 text-blue-700'
-                                                    }`}>
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${trigger.severity === 'major' ? 'bg-red-100 text-red-700' :
+                                                            trigger.severity === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
+                                                                'bg-blue-100 text-blue-700'
+                                                        }`}>
                                                         {trigger.severity === 'major' ? 'URGENTE' : trigger.severity === 'moderate' ? 'IMPORTANTE' : 'INFO'}
                                                     </span>
                                                     <span className="text-xs text-zinc-500 uppercase font-bold">{trigger.type.replace('_', ' ')}</span>
@@ -123,9 +125,9 @@ export default function AdaptationPage() {
                                                     className="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold hover:bg-purple-500 transition-all"
                                                 >
                                                     {trigger.action === 'change_split' ? 'Regenerar Rutina' :
-                                                     trigger.action === 'add_cardio' ? 'Ajustar Plan' :
-                                                     trigger.action === 'adjust_calories' ? 'Ajustar Nutrición' :
-                                                     'Ver Detalles'}
+                                                        trigger.action === 'add_cardio' ? 'Ajustar Plan' :
+                                                            trigger.action === 'adjust_calories' ? 'Ajustar Nutrición' :
+                                                                'Ver Detalles'}
                                                 </button>
                                             </div>
                                         </div>

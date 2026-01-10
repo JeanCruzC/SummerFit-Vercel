@@ -106,6 +106,11 @@ export default function GeneratorPage() {
                 .update({ is_active: false })
                 .eq('user_id', user.id);
 
+            await supabase
+                .from('saved_routines')
+                .update({ is_active: false })
+                .eq('user_id', user.id);
+
             // 2. Save to saved_routines (The History/AI Brain)
             const { data: savedRoutine, error: srError } = await supabase
                 .from('saved_routines')

@@ -183,10 +183,7 @@ export function calculateProjection(
         risk_msg,
         color,
         warnings,
-        exercise_boost: Math.round(dailyExerciseBonus),
-        total_deficit: Math.round(dailyDeficit),
-        effectiveTDEE: Math.round(effectiveTDEE)
-    } as any;
+    };
 }
 
 /**
@@ -297,7 +294,8 @@ export function calculateProjectionWithExercise(
         warnings,
         exercise_boost: Math.round(dailyExerciseBonus),
         total_deficit: Math.round(totalDailyDeficit),
-    };
+        effectiveTDEE: Math.round(effectiveTDEE)
+    } as any;
 }
 
 

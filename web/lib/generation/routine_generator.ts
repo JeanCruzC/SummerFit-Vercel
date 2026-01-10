@@ -17,6 +17,7 @@ export interface RoutineRequest {
     daysAvailable: number; // New Input
     timePerSession?: number; // Minutes
     equipment: UserEquipment[];
+    profile?: { weight_kg: number; height_cm: number; target_weight_kg: number; };
 }
 
 export interface GeneratedRoutine {
@@ -31,6 +32,15 @@ export interface GeneratedDay {
     dayName: string;
     focus: string;
     exercises: GeneratedExercise[];
+    cardio_session?: CardioSession;
+}
+
+export interface CardioSession {
+    type: 'low_impact' | 'moderate' | 'hiit' | 'optional';
+    duration: number; // minutes
+    frequency_per_week: number;
+    exercises: GeneratedExercise[];
+    timing: 'after_weights' | 'separate_session' | 'morning';
 }
 
 export interface GeneratedExercise {
@@ -333,6 +343,24 @@ export class RoutineGenerator {
         const candidates = await this.fetchCandidates(request.equipment);
         if (candidates.length < 10) throw new Error(`Insufficient exercise options (${candidates.length} found). Add more equipment types.`);
 
+        // 2.5 GENERATE CARDIO SESSION (if applicable)
+        let cardioSession: CardioSession | undefined;
+        if (request.profile) {
+            const { ProfileAnalyzer } = await import('../intelligence/profile_analyzer');
+            const equipmentTypes = request.equipment.map(e => e.equipment_type);
+            const analysis = ProfileAnalyzer.analyze(
+                request.profile.weight_kg,
+                request.profile.height_cm,
+                request.profile.target_weight_kg,
+                equipmentTypes
+            );
+            cardioSession = await this.generateCardioSession(
+                analysis.recommended_cardio,
+                request.equipment,
+                candidates
+            );
+        }
+
         // 3. SELECT TEMPLATE
         // Fallback to PPL if template not fully defined
         let template = SPLIT_TEMPLATES[recommendedSplit];
@@ -365,9 +393,30 @@ export class RoutineGenerator {
                 continue;
             }
 
-            generatedDays.push(
-                this.buildDay(templateDay.name, templateDay.focus, templateDay.slots, candidates, request, volumeTargets.optimal_sets)
-            );
+            const builtDay = this.buildDay(templateDay.name, templateDay.focus, templateDay.slots, candidates, request, volumeTargets.optimal_sets);
+
+            // Attach cardio to specific days based on frequency
+            if (cardioSession && cardioSession.timing === 'after_weights') {
+                // Add cardio after weights on strength training days (alternate days)
+                if (i % 2 === 0 && i < cardioSession.frequency_per_week) {
+                    builtDay.cardio_session = cardioSession;
+                }
+            }
+
+            generatedDays.push(builtDay);
+        }
+
+        // Add separate cardio days if needed (for low_impact/separate_session)
+        if (cardioSession && cardioSession.timing === 'separate_session') {
+            const cardioOnlyDays = Math.min(cardioSession.frequency_per_week, 7 - generatedDays.length);
+            for (let i = 0; i < cardioOnlyDays; i++) {
+                generatedDays.push({
+                    dayName: `Cardio Day ${i + 1}`,
+                    focus: `${cardioSession.type.toUpperCase()} Cardio`,
+                    exercises: [],
+                    cardio_session: cardioSession
+                });
+            }
         }
 
         return {
@@ -394,6 +443,60 @@ export class RoutineGenerator {
 
         if (error) throw error;
         return data || [];
+    }
+
+    private async generateCardioSession(
+        cardioRecommendation: { type: string; frequency: number; duration: number; options: string[]; },
+        equipment: UserEquipment[],
+        allExercises: Exercise[]
+    ): Promise<CardioSession | undefined> {
+        if (!cardioRecommendation || cardioRecommendation.frequency === 0) return undefined;
+
+        const availableEq = equipment.map(e => e.equipment_type);
+        const hasCinta = availableEq.some(e => e.toLowerCase().includes('cinta') || e.toLowerCase().includes('treadmill'));
+
+        // Filter cardio exercises based on type
+        const cardioType = cardioRecommendation.type;
+        let targetPattern: string;
+
+        if (cardioType === 'low_impact') {
+            targetPattern = 'cardio_low_impact';
+        } else if (cardioType === 'moderate' || cardioType === 'hiit') {
+            targetPattern = 'cardio_hiit';
+        } else {
+            targetPattern = 'cardio_steady';
+        }
+
+        // Find matching cardio exercises
+        const cardioExercises = allExercises.filter(ex =>
+            ex.type === 'Cardio' &&
+            ex.movement_pattern === targetPattern &&
+            ex.equipment_required && (
+                ex.equipment_required.includes('Peso corporal') ||
+                (hasCinta && ex.equipment_required.some(req => req.toLowerCase().includes('cinta')))
+            )
+        );
+
+        if (cardioExercises.length === 0) return undefined;
+
+        // Select best cardio exercise
+        const selectedCardio = cardioExercises.sort((a, b) => (b.ranking_score || 0) - (a.ranking_score || 0))[0];
+
+        return {
+            type: cardioType as 'low_impact' | 'moderate' | 'hiit' | 'optional',
+            duration: cardioRecommendation.duration,
+            frequency_per_week: cardioRecommendation.frequency,
+            exercises: [{
+                exercise: selectedCardio,
+                sets: 1,
+                reps: `${cardioRecommendation.duration}min`,
+                rest: 'N/A',
+                tempo: 'N/A',
+                rir: 'RPE 7-8',
+                reason: cardioRecommendation.options.join(', ')
+            }],
+            timing: cardioType === 'low_impact' ? 'separate_session' : 'after_weights'
+        };
     }
 
     private buildDay(

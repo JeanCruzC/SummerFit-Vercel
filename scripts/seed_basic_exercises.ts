@@ -45,12 +45,174 @@ const BASIC_EXERCISES = [
         movement_pattern: 'cardio_steady',
         mechanic: 'Compound',
         force: 'Push',
-        primary_muscles: ['quadriceps', 'cafs', 'heart'],
+        primary_muscles: ['quadriceps', 'calfs', 'heart'],
         secondary_muscles: ['hamstrings', 'glutes', 'core'],
         score_hypertrophy: 2,
         score_strength: 2,
         score_difficulty: 1,
-        score_risk: 2
+        score_risk: 2,
+        score_stability: 3,
+        exercise_media: [{
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1552674605-46d526776b2f?w=400',
+            order: 1
+        }]
+    },
+    {
+        slug: 'walking',
+        title: 'Caminata',
+        description: 'Cardio de bajo impacto ideal para principiantes y personas con obesidad. Protege las articulaciones.',
+        type: 'Cardio',
+        level: 'Principiante',
+        body_part: 'Full Body',
+        equipment_required: ['Peso corporal'],
+        met: 3.5,
+        ranking_score: 95,
+        movement_pattern: 'cardio_low_impact',
+        mechanic: 'Compound',
+        force: 'Push',
+        primary_muscles: ['quadriceps', 'calfs'],
+        secondary_muscles: ['glutes', 'core'],
+        score_hypertrophy: 1,
+        score_strength: 1,
+        score_difficulty: 1,
+        score_risk: 1,
+        score_stability: 5,
+        exercise_media: [{
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=400',
+            order: 1
+        }]
+    },
+    {
+        slug: 'treadmill-incline-walk',
+        title: 'Caminata Inclinada en Cinta',
+        description: 'Caminata con inclinación en cinta. Mayor quema calórica que caminata plana, bajo impacto.',
+        type: 'Cardio',
+        level: 'Principiante',
+        body_part: 'Full Body',
+        equipment_required: ['Cinta de correr'],
+        met: 5.0,
+        ranking_score: 92,
+        movement_pattern: 'cardio_low_impact',
+        mechanic: 'Compound',
+        force: 'Push',
+        primary_muscles: ['glutes', 'hamstrings'],
+        secondary_muscles: ['quadriceps', 'calfs'],
+        score_hypertrophy: 2,
+        score_strength: 2,
+        score_difficulty: 1,
+        score_risk: 1,
+        score_stability: 5,
+        exercise_media: [{
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1576678927484-cc907957088c?w=400',
+            order: 1
+        }]
+    },
+    {
+        slug: 'hiit-burpees',
+        title: 'HIIT - Burpees (20min)',
+        description: 'Entrenamiento HIIT de alta intensidad con burpees. 30seg trabajo, 30seg descanso. Quema calórica extrema.',
+        type: 'Cardio',
+        level: 'Intermedio',
+        body_part: 'Full Body',
+        equipment_required: ['Peso corporal'],
+        met: 12.0,
+        ranking_score: 88,
+        movement_pattern: 'cardio_hiit',
+        mechanic: 'Compound',
+        force: 'Push',
+        primary_muscles: ['quadriceps', 'pectorals', 'triceps'],
+        secondary_muscles: ['core', 'deltoids', 'hamstrings'],
+        score_hypertrophy: 3,
+        score_strength: 3,
+        score_difficulty: 4,
+        score_risk: 3,
+        score_stability: 2,
+        exercise_media: [{
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=400',
+            order: 1
+        }]
+    },
+    {
+        slug: 'hiit-sprints',
+        title: 'HIIT - Sprints (20min)',
+        description: 'Intervalos de sprints de alta intensidad. 30seg sprint, 60seg caminata. Ideal para pérdida de grasa.',
+        type: 'Cardio',
+        level: 'Intermedio',
+        body_part: 'Full Body',
+        equipment_required: ['Peso corporal'],
+        met: 10.0,
+        ranking_score: 90,
+        movement_pattern: 'cardio_hiit',
+        mechanic: 'Compound',
+        force: 'Push',
+        primary_muscles: ['quadriceps', 'calfs', 'glutes'],
+        secondary_muscles: ['hamstrings', 'core'],
+        score_hypertrophy: 2,
+        score_strength: 3,
+        score_difficulty: 4,
+        score_risk: 3,
+        score_stability: 3,
+        exercise_media: [{
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1562771379-e71d218a8781?w=400',
+            order: 1
+        }]
+    },
+    {
+        slug: 'treadmill-hiit',
+        title: 'HIIT en Cinta (20min)',
+        description: 'Intervalos de alta intensidad en cinta. Alterna velocidad alta (1min) con recuperación (1min).',
+        type: 'Cardio',
+        level: 'Intermedio',
+        body_part: 'Full Body',
+        equipment_required: ['Cinta de correr'],
+        met: 11.0,
+        ranking_score: 91,
+        movement_pattern: 'cardio_hiit',
+        mechanic: 'Compound',
+        force: 'Push',
+        primary_muscles: ['quadriceps', 'calfs'],
+        secondary_muscles: ['hamstrings', 'glutes', 'core'],
+        score_hypertrophy: 2,
+        score_strength: 3,
+        score_difficulty: 3,
+        score_risk: 2,
+        score_stability: 4,
+        exercise_media: [{
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1576678927484-cc907957088c?w=400',
+            order: 1
+        }]
+    },
+    {
+        slug: 'mountain-climbers',
+        title: 'Mountain Climbers (HIIT)',
+        description: 'Ejercicio de cardio HIIT explosivo. Trabaja core y cardio simultáneamente.',
+        type: 'Cardio',
+        level: 'Intermedio',
+        body_part: 'Full Body',
+        equipment_required: ['Peso corporal'],
+        met: 9.0,
+        ranking_score: 87,
+        movement_pattern: 'cardio_hiit',
+        mechanic: 'Compound',
+        force: 'Push',
+        primary_muscles: ['core', 'quadriceps'],
+        secondary_muscles: ['deltoids', 'hip_flexors'],
+        score_hypertrophy: 2,
+        score_strength: 2,
+        score_difficulty: 3,
+        score_risk: 2,
+        score_stability: 3,
+        exercise_media: [{
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1434608519344-49d77a699ded?w=400',
+            order: 1
+        }]
     },
     {
         slug: 'jumping-jacks',
@@ -70,7 +232,13 @@ const BASIC_EXERCISES = [
         score_hypertrophy: 1,
         score_strength: 1,
         score_difficulty: 1,
-        score_risk: 1
+        score_risk: 1,
+        score_stability: 4,
+        exercise_media: [{
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1544367563-12123d832d61?w=400',
+            order: 1
+        }]
     },
     {
         slug: 'burpees',
@@ -90,7 +258,13 @@ const BASIC_EXERCISES = [
         score_hypertrophy: 3,
         score_strength: 3,
         score_difficulty: 4,
-        score_risk: 3
+        score_risk: 3,
+        score_stability: 3,
+        exercise_media: [{
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=400',
+            order: 1
+        }]
     },
 
     // --- CHEST / PUSH (Home/Calisthenics) ---

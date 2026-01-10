@@ -72,19 +72,21 @@ export default function GeneratorPage() {
 
         try {
             const generator = new RoutineGenerator();
-            await new Promise(r => setTimeout(r, 1500));
-
-            const result = await generator.generate({
+            const generated = await generator.generate({
                 goal,
                 level,
                 daysAvailable,
-                equipment
+                equipment,
+                profile: profile ? {
+                    weight_kg: profile.weight_kg,
+                    height_cm: profile.height_cm,
+                    target_weight_kg: profile.target_weight_kg
+                } : undefined
             });
 
-            setRoutine(result);
+            setRoutine(generated);
         } catch (err: any) {
-            console.error(err);
-            setError(err.message || "Error al generar rutina.");
+            setError(err.message || "Error al generar rutina");
         } finally {
             setGenerating(false);
         }
@@ -347,6 +349,42 @@ export default function GeneratorPage() {
                                                 </div>
                                             </div>
                                         ))}
+
+                                        {/* Cardio Session  (if present) */}
+                                        {day.cardio_session && (
+                                            <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-2xl border-2 border-orange-200 dark:border-orange-800">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <Activity className="h-5 w-5 text-orange-600" />
+                                                    <h4 className="font-bold text-orange-900 dark:text-orange-100">
+                                                        Cardio - {day.cardio_session.type.replace('_', ' ').toUpperCase()}
+                                                    </h4>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3">
+                                                        <div className="text-xs text-zinc-500 mb-1">Duración</div>
+                                                        <div className="text-lg font-bold text-zinc-900 dark:text-white">{day.cardio_session.duration} min</div>
+                                                    </div>
+                                                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3">
+                                                        <div className="text-xs text-zinc-500 mb-1">Frecuencia</div>
+                                                        <div className="text-lg font-bold text-zinc-900 dark:text-white">{day.cardio_session.frequency_per_week}x/semana</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-sm text-orange-700 dark:text-orange-300 font-medium mb-2">
+                                                    📍 {day.cardio_session.timing === 'after_weights' ? 'Después de pesas' :
+                                                        day.cardio_session.timing === 'separate_session' ? 'Sesión separada' : 'Por la mañana'}
+                                                </div>
+                                                {day.cardio_session.exercises.map((ex, i) => (
+                                                    <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-3">
+                                                        <div className="font-bold text-sm text-zinc-900 dark:text-white mb-1">
+                                                            {ex.exercise.title}
+                                                        </div>
+                                                        <div className="text-xs text-zinc-600 dark:text-zinc-400">
+                                                            {ex.reason}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}

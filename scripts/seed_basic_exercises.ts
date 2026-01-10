@@ -1,3 +1,9 @@
+/**
+ * Seed Basic Exercises Script
+ * 
+ * Populates Supabase 'exercises' table with a curated list of basic exercises.
+ * Uses 'slug' as the unique identifier for upsert operations.
+ */
 
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';

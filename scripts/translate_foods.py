@@ -15,8 +15,12 @@ Usage:
 import os
 import time
 import json
+import logging
 from pathlib import Path
 from typing import List, Dict, Any
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 try:
     from supabase import create_client, Client
@@ -149,6 +153,7 @@ def process_foods():
                         updated += 1
                     except Exception as e:
                         print(f"  ❌ Failed to update {food_id}: {e}")
+                        # Continue to next item
             
         processed += len(foods)
         print(f"⏳ Progress: {processed}/{count} ({updated} updated)")

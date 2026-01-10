@@ -7,9 +7,8 @@ import pandas as pd
 
 
 def filter_by_diet(foods: pd.DataFrame, diet_type: str) -> pd.DataFrame:
-    df = foods.copy()
-    if "category" not in df.columns:
-        return df
+    if "category" not in foods.columns:
+        return foods
     exclusions = {
         "Keto": ["Grano", "Dulce"],
         "Vegana": ["Carne", "Pescado", "Lácteo", "Huevo"],
@@ -18,8 +17,10 @@ def filter_by_diet(foods: pd.DataFrame, diet_type: str) -> pd.DataFrame:
     }
     exclude = exclusions.get(diet_type, [])
     if exclude:
-        df = df[~df["category"].fillna("").str.contains("|".join(exclude), case=False, na=False)]
-    return df
+        # Use simple boolean masking without copy until return
+        pattern = "|".join(exclude)
+        return foods[~foods["category"].fillna("").str.contains(pattern, case=False, na=False)].copy()
+    return foods.copy()
 
 
 def build_option(protein, carb, fat, protein_target, carb_target, fat_target) -> Dict:

@@ -159,7 +159,7 @@ async function seed() {
         const batch = exercisesToInsert.slice(i, i + BATCH_SIZE);
         const { error } = await supabase.from('exercises').upsert(batch, { onConflict: 'slug' });
         if (error) {
-            console.error('❌ Error inserting exercises batch:', error);
+            console.error('❌ Error inserting exercises batch:', JSON.stringify(error));
         } else {
             process.stdout.write('.');
         }

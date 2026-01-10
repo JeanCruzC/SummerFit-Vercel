@@ -44,29 +44,34 @@ export async function searchExercises(
 ): Promise<Exercise[]> {
     const supabase = createClient();
 
-    let queryBuilder = supabase
-        .from('exercises')
-        .select('*, exercise_media(*)')
-        .or(`title.ilike.%${query}%,description.ilike.%${query}%`);
+    try {
+        let queryBuilder = supabase
+            .from('exercises')
+            .select('*, exercise_media(*)')
+            .or(`title.ilike.%${query}%,description.ilike.%${query}%`);
 
-    if (filters?.body_part) {
-        queryBuilder = queryBuilder.eq('body_part', filters.body_part);
+        if (filters?.body_part) {
+            queryBuilder = queryBuilder.eq('body_part', filters.body_part);
+        }
+
+        if (filters?.type) {
+            queryBuilder = queryBuilder.eq('type', filters.type);
+        }
+
+        if (filters?.level) {
+            queryBuilder = queryBuilder.eq('level', filters.level);
+        }
+
+        const { data, error } = await queryBuilder
+            .order('ranking_score', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+        return data || [];
+    } catch (err) {
+        console.error('Error searching exercises:', err);
+        return []; // Fail gracefully or rethrow depending on requirements. Returning empty list is safer for UI.
     }
-
-    if (filters?.type) {
-        queryBuilder = queryBuilder.eq('type', filters.type);
-    }
-
-    if (filters?.level) {
-        queryBuilder = queryBuilder.eq('level', filters.level);
-    }
-
-    const { data, error } = await queryBuilder
-        .order('ranking_score', { ascending: false })
-        .limit(50);
-
-    if (error) throw error;
-    return data || [];
 }
 
 /**

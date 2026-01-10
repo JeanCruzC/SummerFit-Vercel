@@ -131,6 +131,8 @@ export interface GoalProjection {
     risk_msg: string;
     color: string;
     warnings: string[];
+    exercise_boost?: number;
+    total_deficit?: number;
 }
 
 // Recipe suggestion

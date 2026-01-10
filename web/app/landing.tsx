@@ -34,7 +34,7 @@ export default function Landing() {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response: ${outcome}`);
+      // User response: outcome
       setDeferredPrompt(null);
     } else {
       // Fallback: redirect to register if install prompt not available
@@ -473,7 +473,7 @@ export default function Landing() {
 
 // COMPONENTS
 
-function FeatureCard({ icon: Icon, title, desc, delay }: { icon: any, title: string, desc: string, delay: number }) {
+function FeatureCard({ icon: Icon, title, desc, delay }: { icon: React.ElementType, title: string, desc: string, delay: number }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 

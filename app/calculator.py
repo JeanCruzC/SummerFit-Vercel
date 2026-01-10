@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime, timezone
 from typing import Dict, List
 
 
@@ -181,7 +181,8 @@ class GoalCalculator:
         if is_loss and (tdee - daily_calories) > tdee * 0.25:
             warnings.append("⚠️ Déficit calórico muy alto. Puede afectar metabolismo y energía.")
         
-        estimated_date = (date.today() + timedelta(weeks=weeks_needed)).strftime("%d %b %Y")
+        today_utc = datetime.now(timezone.utc).date()
+        estimated_date = (today_utc + timedelta(weeks=weeks_needed)).strftime("%d %b %Y")
 
         return ProjectionSnapshot(
             weeks=round(weeks_needed, 1),

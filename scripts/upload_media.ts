@@ -45,13 +45,23 @@ async function uploadDirectory(subDir: 'videos' | 'images', contentTypePrefix: s
         const batch = files.slice(i, i + BATCH_SIZE);
 
         await Promise.all(batch.map(async (filename) => {
+            // Prevent Path Traversal (CWE-22)
+            if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+                console.warn(`⚠️ Skipped suspicious filename: ${filename.replace(/[\r\n]/g, '')}`);
+                return;
+            }
+
             const filePath = path.join(dirPath, filename);
+
+            // Verify content is inside dirPath
+            if (!path.resolve(filePath).startsWith(path.resolve(dirPath))) {
+                console.warn(`⚠️ Security check failed for: ${filename.replace(/[\r\n]/g, '')}`);
+                return;
+            }
+
             const fileBuffer = fs.readFileSync(filePath);
             const storagePath = `${subDir}/${filename}`;
             const mimeType = `${contentTypePrefix}/${path.extname(filename).substring(1)}`;
-
-            // Check if exists (optional, saves bandwidth)
-            // For now, we just try to upload and overwrite or skip
 
             try {
                 // Try upload
@@ -63,19 +73,21 @@ async function uploadDirectory(subDir: 'videos' | 'images', contentTypePrefix: s
                     });
 
                 if (uploadError) {
+                    const cleanMsg = uploadError.message.replace(/[\r\n]/g, '');
+                    const cleanFile = filename.replace(/[\r\n]/g, '');
+
                     if (uploadError.message.includes('Duplicate') || uploadError.message === 'The resource already exists') {
-                        // console.log(`⏭️ Skipped (exists): ${filename}`);
                         skippedCount++;
                     } else {
-                        console.error(`❌ Failed ${filename}: ${uploadError.message}`);
+                        console.error(`❌ Failed ${cleanFile}: ${cleanMsg}`);
                         errorCount++;
                     }
                 } else {
-                    console.log(`✅ Uploaded: ${filename}`);
+                    console.log(`✅ Uploaded: ${filename.replace(/[\r\n]/g, '')}`);
                     uploadedCount++;
                 }
             } catch (err) {
-                console.error(`❌ Error ${filename}:`, err);
+                console.error(`❌ Error uploading file:`, err);
                 errorCount++;
             }
         }));

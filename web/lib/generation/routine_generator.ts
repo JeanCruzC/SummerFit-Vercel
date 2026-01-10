@@ -211,7 +211,7 @@ export class RoutineGenerator {
     private supabase = createClient();
 
     async generate(request: RoutineRequest): Promise<GeneratedRoutine> {
-        const sanitizedRequest = { ...request, equipment: `[${request.equipment.length} items]` };
+        const sanitizedRequest = JSON.stringify({ ...request, equipment: `[${request.equipment.length} items]` });
         console.log("🧠 Smart Coach Generating for:", sanitizedRequest);
 
         // 1. DIALOG WITH THE BRAIN
@@ -225,7 +225,7 @@ export class RoutineGenerator {
         const recommendedSplit = diagnosis.recommendations.split.split;
         const volumeTargets = diagnosis.recommendations.weekly_sets;
 
-        console.log("💡 Brain Recommendation:", { split: recommendedSplit, volume: volumeTargets.optimal_sets });
+        console.log("💡 Brain Recommendation:", JSON.stringify({ split: recommendedSplit, volume: volumeTargets.optimal_sets }));
 
         // 2. FETCH CANDIDATES
         const candidates = await this.fetchCandidates(request.equipment);
@@ -312,32 +312,22 @@ export class RoutineGenerator {
         // Simplified: 3-4 sets per main lift, 2-3 per accessory.
 
         for (const slot of slots) {
-            // Filter candidates
-            const slotCandidates = candidates.filter(ex =>
-                ex.movement_pattern === slot.pattern && !usedIds.has(ex.id)
-            );
-
-            // Score with old logic (still valid for selection)
-            const scored = slotCandidates.map(ex => ({
-                ex, score: this.calculateScore(ex, request)
-            })).sort((a, b) => b.score - a.score);
-
-            const winner = scored[0];
+            const winner = this.findBestExercise(slot, candidates, usedIds, request);
 
             if (winner) {
-                usedIds.add(winner.ex.id);
+                usedIds.add(winner.exercise.id);
 
                 // ASK THE INTENSITY MANAGER
-                const params = SmartCoach.getExerciseRole(request.goal, slot.role); // role: 'compound_heavy' etc
+                const params = SmartCoach.getExerciseRole(request.goal, slot.role);
 
                 // Determine sets based on role
                 const sets = slot.role.includes('heavy') ? 4 : 3;
 
                 dayExercises.push({
-                    exercise: winner.ex,
+                    exercise: winner.exercise,
                     sets: sets,
-                    reps: `${params.reps[0]}-${params.reps[1]}`, // "6-10"
-                    rest: `${params.rest[0]}-${params.rest[1]}s`, // "120-180s"
+                    reps: `${params.reps[0]}-${params.reps[1]}`,
+                    rest: `${params.rest[0]}-${params.rest[1]}s`,
                     tempo: params.tempo,
                     rir: `${params.rir[0]}-${params.rir[1]} RIR`,
                     reason: `Best fit for ${slot.role} (Score: ${winner.score.toFixed(1)})`,
@@ -349,9 +339,24 @@ export class RoutineGenerator {
         return { dayName, focus, exercises: dayExercises };
     }
 
+    private findBestExercise(slot: any, candidates: Exercise[], usedIds: Set<number>, request: RoutineRequest): { exercise: Exercise, score: number } | null {
+        // Filter candidates by pattern and usage
+        const slotCandidates = candidates.filter(ex =>
+            ex.movement_pattern === slot.pattern && !usedIds.has(ex.id)
+        );
+
+        // Score candidates
+        const scored = slotCandidates.map(ex => ({
+            exercise: ex,
+            score: this.calculateScore(ex, request)
+        })).sort((a, b) => b.score - a.score);
+
+        return scored.length > 0 ? scored[0] : null;
+    }
+
     private calculateScore(ex: Exercise, req: RoutineRequest): number {
         let score = 0;
-        
+
         if (req.goal === 'strength') {
             score = (ex.score_strength || 2.5) * 1.5;
         } else if (req.goal === 'fat_loss') {
@@ -359,7 +364,7 @@ export class RoutineGenerator {
         } else {
             score = ex.score_hypertrophy || 2.5;
         }
-        
+
         if (ex.equipment_required?.includes('barbell')) score += 0.5;
         return score;
     }

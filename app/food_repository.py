@@ -58,8 +58,12 @@ def normalize_food_rows(raw_rows: Sequence[FoodRow]) -> List[FoodRow]:
 
 def upsert_foods(rows: Sequence[FoodRow]) -> None:
     """Persist normalized food rows into Supabase with upsert semantics."""
-    client = get_supabase_client()
-    client.table("foods").upsert(list(rows)).execute()
+    try:
+        client = get_supabase_client()
+        client.table("foods").upsert(list(rows)).execute()
+    except Exception as e:
+        print(f"Error upserting foods: {e}")
+        # Optionally re-raise or handle specific DB errors
 
 
 def read_foods(limit: int | None = None) -> List[FoodRow]:

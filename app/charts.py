@@ -27,11 +27,11 @@ def calorie_gauge(value: int, label: str = "Kcal objetivo") -> go.Figure:
                 "bgcolor": "rgba(0,0,0,0)",
                 "borderwidth": 0,
                 "steps": [
-                    {"range": [0, 0.65 * max_value], "color": "rgba(94,240,198,0.15)"},
-                    {"range": [0.65 * max_value, 0.9 * max_value], "color": "rgba(125,200,255,0.18)"},
-                    {"range": [0.9 * max_value, max_value], "color": "rgba(255,107,107,0.14)"},
+                    {"range": [0, 0.65 * max_value], "color": f"{Palette['accent']}26"},  # 15% opacity approx
+                    {"range": [0.65 * max_value, 0.9 * max_value], "color": f"{Palette['accent2']}2E"}, # 18% opacity
+                    {"range": [0.9 * max_value, max_value], "color": f"{Palette['danger']}24"}, # 14% opacity
                 ],
-                "threshold": {"line": {"color": "#FF6B6B", "width": 4}, "thickness": 0.75, "value": value},
+                "threshold": {"line": {"color": Palette["danger"], "width": 4}, "thickness": 0.75, "value": value},
             },
             number={"valueformat": ",", "font": {"size": 32, "color": "#f6fbff"}},
         )
@@ -47,14 +47,14 @@ def calorie_gauge(value: int, label: str = "Kcal objetivo") -> go.Figure:
 def macro_rings(macros: Dict[str, int]) -> go.Figure:
     labels = list(macros.keys())
     values = list(macros.values())
-    colors = ["#5EF0C6", "#7DC8FF", "#F1C40F"]
+    colors = [Palette["accent"], Palette["accent2"], Palette["warning"]]
 
     fig = go.Figure(
         go.Pie(
             labels=labels,
             values=values,
             hole=0.6,
-            marker={"colors": colors, "line": {"color": "#0E172A", "width": 2}},
+            marker={"colors": colors, "line": {"color": Palette["bg"], "width": 2}},
             hovertemplate="%{label}: %{value:.0f}g<extra></extra>",
         )
     )
@@ -77,7 +77,7 @@ def weekly_progress(days: List[str], kcal: List[int], weights: List[float]) -> g
             y=kcal,
             mode="lines+markers",
             name="Calorías",
-            line=dict(color="#7DC8FF", width=3),
+            line=dict(color=Palette["accent2"], width=3),
             fill="tozeroy",
             hovertemplate="Día %{x}<br>Calorías %{y:,}<extra></extra>",
         )
@@ -89,7 +89,7 @@ def weekly_progress(days: List[str], kcal: List[int], weights: List[float]) -> g
             mode="lines+markers",
             name="Peso (kg)",
             yaxis="y2",
-            line=dict(color="#5EF0C6", width=3, dash="dot"),
+            line=dict(color=Palette["accent"], width=3, dash="dot"),
             hovertemplate="Día %{x}<br>Peso %{y:.1f} kg<extra></extra>",
         )
     )
@@ -113,7 +113,7 @@ def adherence_heatmap(days: List[str], macros: List[str], matrix: List[List[int]
             y=macros,
             colorscale=[
                 [0, "rgb(54, 84, 150)"],
-                [0.5, "rgb(94, 240, 198)"],
+                [0.5, Palette["accent"]],
                 [1, "rgb(255, 207, 64)"],
             ],
             hovertemplate="%{y} - %{x}: %{z} %<extra></extra>",
@@ -137,9 +137,9 @@ def github_calendar_heatmap(weeks: List[str], days: List[str], values: List[List
             colorscale=[
                 [0.0, "rgb(18, 29, 51)"],
                 [0.25, "rgb(36, 61, 100)"],
-                [0.5, "rgb(94, 240, 198)"],
+                [0.5, Palette["accent"]],
                 [0.75, "rgb(255, 207, 64)"],
-                [1.0, "rgb(255, 107, 107)"],
+                [1.0, Palette["danger"]],
             ],
             hovertemplate="Semana %{x}<br>%{y}: %{z}% cumplido<extra></extra>",
             showscale=False,
@@ -162,7 +162,7 @@ def body_composition_bar(comp: Dict[str, float]) -> go.Figure:
             x=list(comp.values()),
             y=["Composición"],
             orientation="h",
-            marker=dict(color=["#5EF0C6", "#7DC8FF", "#F1C40F"]),
+            marker=dict(color=[Palette["accent"], Palette["accent2"], Palette["warning"]]),
             hovertemplate="%{x}% %{customdata}<extra></extra>",
             customdata=list(comp.keys()),
         )
@@ -180,14 +180,14 @@ def body_composition_bar(comp: Dict[str, float]) -> go.Figure:
     return fig
 
 
-def radial_adherence(labels: List[str], values: List[int]) -> go.Figure:
+def create_radial_adherence_chart(labels: List[str], values: List[int]) -> go.Figure:
     fig = go.Figure(
         go.Barpolar(
             r=values,
             theta=labels,
             marker=dict(
-                color=["#5EF0C6", "#7DC8FF", "#F1C40F", "#FF6B6B"],
-                line=dict(color="#0E172A", width=2),
+                color=[Palette["accent"], Palette["accent2"], Palette["warning"], Palette["danger"]],
+                line=dict(color=Palette["bg"], width=2),
             ),
             opacity=0.95,
             hovertemplate="%{theta}: %{r} %<extra></extra>",

@@ -53,7 +53,9 @@ function parseArrayField(field: string): string[] | null {
         const parsed = JSON.parse(normalized);
         return Array.isArray(parsed) ? parsed : null;
     } catch (e) {
-        console.warn(`Failed to parse array field: ${field}`);
+        // Sanitize field for safe logging (CWE-117)
+        const cleanField = typeof field === 'string' ? field.replace(/[\r\n]/g, '') : 'unknown';
+        console.warn(`Failed to parse array field: ${cleanField}`);
         return null;
     }
 }

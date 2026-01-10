@@ -27,6 +27,8 @@ def body_metrics(height_cm: float, bmi: float, gender: str) -> BodyParams:
 
 
 def render_body_svg(height_cm: float, weight_kg: float, age: int, gender: str) -> str:
+    if height_cm <= 0:
+        return ""  # Or handle gracefully
     bmi = weight_kg / ((height_cm / 100) ** 2)
     params = body_metrics(height_cm, bmi, gender)
     shoulder = params.shoulder

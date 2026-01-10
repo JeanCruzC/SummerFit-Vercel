@@ -19,6 +19,7 @@ export default function DashboardPage() {
     const [userId, setUserId] = useState<string | null>(null);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [mode, setMode] = useState<"conservador" | "moderado" | "acelerado">("moderado");
     const [range, setRange] = useState("hoy");
     const [todayMeals, setTodayMeals] = useState<any[]>([]);
@@ -28,43 +29,49 @@ export default function DashboardPage() {
 
     useEffect(() => {
         const loadData = async () => {
-            const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
+            try {
+                const supabase = createClient();
+                const { data: { session } } = await supabase.auth.getSession();
 
-            if (!session) {
-                router.push("/login");
-                return;
+                if (!session) {
+                    router.push("/login");
+                    return;
+                }
+
+                setUserId(session.user.id);
+
+                const [profileData, weights, meals, logs, plan] = await Promise.all([
+                    getProfile(session.user.id),
+                    getWeightHistory(session.user.id, 14),
+                    getMealEntries(session.user.id, getUserLocalDate()),
+                    getDailyLogsRange(
+                        session.user.id,
+                        getUserLocalDate(new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)), // Last 14 days
+                        getUserLocalDate()
+                    ),
+                    getActiveWorkoutPlan(session.user.id),
+                ]);
+
+                // Check if onboarding is completed
+                if (!profileData?.onboarding_completed) {
+                    router.push("/onboarding");
+                    return;
+                }
+
+                setProfile(profileData || getDefaultProfile(session.user.id));
+                if (profileData?.goal_speed) {
+                    setMode(profileData.goal_speed);
+                }
+                setWeightHistory(weights);
+                setTodayMeals(meals);
+                setWeekLogs(logs);
+                setActivePlan(plan);
+            } catch (error) {
+                console.error("Failed to load dashboard data:", error);
+                setError("No pudimos cargar tu información. Por favor intenta de nuevo.");
+            } finally {
+                setLoading(false);
             }
-
-            setUserId(session.user.id);
-
-            const [profileData, weights, meals, logs, plan] = await Promise.all([
-                getProfile(session.user.id),
-                getWeightHistory(session.user.id, 14),
-                getMealEntries(session.user.id, getUserLocalDate()),
-                getDailyLogsRange(
-                    session.user.id,
-                    getUserLocalDate(new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)), // Last 14 days
-                    getUserLocalDate()
-                ),
-                getActiveWorkoutPlan(session.user.id),
-            ]);
-
-            // Check if onboarding is completed
-            if (!profileData?.onboarding_completed) {
-                router.push("/onboarding");
-                return;
-            }
-
-            setProfile(profileData || getDefaultProfile(session.user.id));
-            if (profileData?.goal_speed) {
-                setMode(profileData.goal_speed);
-            }
-            setWeightHistory(weights);
-            setTodayMeals(meals);
-            setWeekLogs(logs);
-            setActivePlan(plan);
-            setLoading(false);
         };
 
         loadData();
@@ -132,6 +139,17 @@ export default function DashboardPage() {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="h-12 w-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6">
+                <div className="text-red-500 mb-4 text-4xl">⚠️</div>
+                <h3 className="text-lg font-bold mb-2">Algo salió mal</h3>
+                <p className="text-gray-500 mb-4">{error}</p>
+                <Button onClick={() => window.location.reload()}>Reintentar</Button>
             </div>
         );
     }
@@ -225,10 +243,10 @@ export default function DashboardPage() {
                             <div>
                                 <div className="text-sm text-gray-500">Objetivo diario</div>
                                 <div className="text-4xl font-bold">{projection.daily_calories} <span className="text-lg font-normal text-gray-500">kcal</span></div>
-                                {(projection as any).exercise_boost > 0 && (
+                                {(projection.exercise_boost || 0) > 0 && (
                                     <div className="text-xs font-semibold text-purple-600 mt-1 flex items-center gap-1">
                                         <Zap className="h-3 w-3" />
-                                        +{(projection as any).exercise_boost} kcal quemadas (extra)
+                                        +{(projection.exercise_boost || 0)} kcal quemadas (extra)
                                     </div>
                                 )}
                             </div>

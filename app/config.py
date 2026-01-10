@@ -36,12 +36,4 @@ def get_foods_api_timeout() -> int:
     return max(timeout, 1)
 
 
-def get_streamlit_cache_ttl() -> int:
-    raw_ttl = os.getenv("STREAMLIT_CACHE_TTL_SECONDS", "").strip()
-    if not raw_ttl:
-        return 86_400  # 24h
-    try:
-        ttl = int(raw_ttl)
-    except ValueError as exc:  # pragma: no cover - defensive
-        raise ValueError("STREAMLIT_CACHE_TTL_SECONDS must be an integer") from exc
-    return max(ttl, 60)
+

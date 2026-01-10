@@ -76,6 +76,7 @@ def main():
             print(f"✅ [{processed+1}/{total}] Translated: {original_title} -> {title_es}")
         except Exception as e:
             print(f"❌ Error updating {original_title}: {e}")
+            # Continue to next exercise
         
         processed += 1
         # Sleep slightly to avoid hitting translation rate limits if necessary, though GoogleTranslator is usually permissive for low volume

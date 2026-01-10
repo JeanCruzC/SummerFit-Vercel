@@ -6,7 +6,7 @@ import { RoutineGenerator, type GeneratedRoutine, type RoutineGoal, type Routine
 import type { UserEquipment, UserProfile } from "@/types";
 import { useRouter } from "next/navigation";
 import { ProfileAnalyzer, type ProfileAnalysis } from "@/lib/intelligence/profile_analyzer";
-import { Brain, Target, Sparkles, Settings, CheckCircle } from "lucide-react";
+import { Brain, Target, Sparkles, Settings, CheckCircle, Activity } from "lucide-react";
 
 export default function GeneratorPage() {
     const router = useRouter();
@@ -22,6 +22,7 @@ export default function GeneratorPage() {
     const [daysAvailable, setDaysAvailable] = useState<number>(4);
     const [routine, setRoutine] = useState<GeneratedRoutine | null>(null);
     const [error, setError] = useState("");
+    const [selectedExercise, setSelectedExercise] = useState<any>(null);
 
     useEffect(() => {
         async function loadData() {
@@ -142,7 +143,7 @@ export default function GeneratorPage() {
                                         <CheckCircle className="inline h-4 w-4 mr-1" /> Objetivo recomendado: <span className="capitalize">{goal.replace('_', ' ')}</span>
                                     </p>
                                     <p className="text-sm text-blue-700 dark:text-blue-300 font-medium mt-1">
-                                        🏃 Cardio: {analysis.recommended_cardio.frequency}x/semana, {analysis.recommended_cardio.duration}min - {analysis.recommended_cardio.options.join(', ')}
+                                        <Activity className="inline h-4 w-4 mr-1" /> Cardio: {analysis.recommended_cardio.frequency}x/semana, {analysis.recommended_cardio.duration}min - {analysis.recommended_cardio.options.join(', ')}
                                     </p>
                                     {analysis.warnings.length > 0 && (
                                         <div className="mt-2 text-xs text-amber-600 dark:text-amber-400">
@@ -294,7 +295,9 @@ export default function GeneratorPage() {
                                         {day.exercises.map((exItem, i) => (
                                             <div key={i} className="p-3 mb-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
                                                 <div className="flex gap-3">
-                                                    <div className="w-16 h-16 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0 relative">
+                                                    <div className="w-16 h-16 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0 relative cursor-pointer hover:opacity-80 transition-opacity"
+                                                        onClick={() => setSelectedExercise(exItem)}
+                                                    >
                                                         {exItem.exercise.exercise_media?.[0]?.url ? (
                                                             // eslint-disable-next-line @next/next/no-img-element
                                                             <img
@@ -303,7 +306,7 @@ export default function GeneratorPage() {
                                                                 alt={exItem.exercise.title}
                                                             />
                                                         ) : (
-                                                            <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">img</div>
+                                                            <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No img</div>
                                                         )}
                                                         <div className="absolute bottom-0 right-0 bg-black/60 text-white text-[10px] px-1 font-bold">
                                                             {i + 1}
@@ -345,6 +348,72 @@ export default function GeneratorPage() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Exercise Image Modal */}
+                {selectedExercise && (
+                    <div
+                        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+                        onClick={() => setSelectedExercise(null)}
+                    >
+                        <div
+                            className="bg-white dark:bg-gray-900 rounded-3xl max-w-3xl w-full shadow-2xl overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="p-6">
+                                <h2 className="text-2xl font-black text-zinc-900 dark:text-white mb-4">{selectedExercise.exercise.title}</h2>
+
+                                {selectedExercise.exercise.exercise_media?.[0] ? (
+                                    <div className="mb-4 rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                        {selectedExercise.exercise.exercise_media[0].type === 'video' ? (
+                                            <video src={selectedExercise.exercise.exercise_media[0].url} controls className="w-full" />
+                                        ) : (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img src={selectedExercise.exercise.exercise_media[0].url} alt={selectedExercise.exercise.title} className="w-full" />
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 p-12 text-center">
+                                        <p className="text-gray-400">Sin imagen disponible</p>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                                        <div className="text-xs text-zinc-500 mb-1">Series x Reps</div>
+                                        <div className="text-lg font-bold text-zinc-900 dark:text-white">{selectedExercise.sets} x {selectedExercise.reps}</div>
+                                    </div>
+                                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                                        <div className="text-xs text-zinc-500 mb-1">Descanso</div>
+                                        <div className="text-lg font-bold text-zinc-900 dark:text-white">{selectedExercise.rest}</div>
+                                    </div>
+                                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                                        <div className="text-xs text-zinc-500 mb-1">RIR</div>
+                                        <div className="text-lg font-bold text-zinc-900 dark:text-white">{selectedExercise.rir}</div>
+                                    </div>
+                                    {selectedExercise.tempo && (
+                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                                            <div className="text-xs text-zinc-500 mb-1">Tempo</div>
+                                            <div className="text-lg font-bold text-zinc-900 dark:text-white">{selectedExercise.tempo}</div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {selectedExercise.reason && (
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 mb-4">
+                                        <div className="text-sm text-blue-900 dark:text-blue-100">{selectedExercise.reason}</div>
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={() => setSelectedExercise(null)}
+                                    className="w-full py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-bold hover:opacity-90 transition-all"
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

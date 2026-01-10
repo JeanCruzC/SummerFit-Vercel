@@ -21,7 +21,7 @@ export interface ProfileAnalysis {
 }
 
 export class ProfileAnalyzer {
-    
+
     static analyze(weight_kg: number, height_cm: number, target_weight_kg: number): ProfileAnalysis {
         const bmi = weight_kg / Math.pow(height_cm / 100, 2);
         const bmi_category = this.getBMICategory(bmi);
@@ -48,13 +48,13 @@ export class ProfileAnalyzer {
     private static getRecommendedGoal(bmi: number, weight: number, target: number): SmartGoal {
         // Obesidad → Fat Loss prioritario
         if (bmi >= 30) return 'fat_loss';
-        
+
         // Sobrepeso → Recomposition
         if (bmi >= 25) return 'recomposition';
-        
+
         // Bajo peso → Hypertrophy
         if (bmi < 18.5) return 'hypertrophy';
-        
+
         // Normal → Basado en objetivo
         if (target < weight) return 'fat_loss';
         if (target > weight) return 'hypertrophy';
@@ -68,7 +68,7 @@ export class ProfileAnalyzer {
                 type: 'low_impact' as CardioType,
                 frequency: 5,
                 duration: 40,
-                options: ['Caminata', 'Bicicleta estática', 'Natación', 'Elíptica'],
+                options: ['Caminata', 'Caminata inclinada en cinta', 'Marcha en el lugar'],
                 reasoning: 'Bajo impacto para proteger articulaciones. Alta frecuencia para déficit calórico.'
             };
         }
@@ -79,7 +79,7 @@ export class ProfileAnalyzer {
                 type: 'moderate' as CardioType,
                 frequency: 4,
                 duration: 30,
-                options: ['Trotar ligero', 'Ciclismo', 'Caminata rápida', 'Remo'],
+                options: ['Trotar ligero', 'Caminata rápida', 'Intervalos en cinta'],
                 reasoning: 'Cardio moderado para maximizar pérdida de grasa sin sobrecargar.'
             };
         }
@@ -90,7 +90,7 @@ export class ProfileAnalyzer {
                 type: 'moderate' as CardioType,
                 frequency: 3,
                 duration: 25,
-                options: ['HIIT 20min', 'Trotar', 'Ciclismo intervalos'],
+                options: ['HIIT 20min', 'Trotar', 'Sprints 30seg'],
                 reasoning: 'Combina LISS y HIIT para eficiencia metabólica.'
             };
         }
@@ -100,7 +100,7 @@ export class ProfileAnalyzer {
             type: 'optional' as CardioType,
             frequency: 2,
             duration: 20,
-            options: ['Caminata', 'Ciclismo ligero'],
+            options: ['Caminata', 'Caminata ligera'],
             reasoning: 'Cardio mínimo para salud cardiovascular sin interferir con ganancias.'
         };
     }

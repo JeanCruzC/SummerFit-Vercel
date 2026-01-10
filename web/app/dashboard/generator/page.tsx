@@ -100,7 +100,14 @@ export default function GeneratorPage() {
         if (!user) return;
 
         try {
-            const { data, error } = await supabase
+            // 1. Deactivate current active plans
+            await supabase
+                .from('workout_plans')
+                .update({ is_active: false })
+                .eq('user_id', user.id);
+
+            // 2. Save to saved_routines (The History/AI Brain)
+            const { data: savedRoutine, error: srError } = await supabase
                 .from('saved_routines')
                 .insert({
                     user_id: user.id,
@@ -116,17 +123,73 @@ export default function GeneratorPage() {
                         weeklyVolume: routine.weeklyVolume,
                         estimated_calories_weekly: routine.estimated_calories_burned
                     },
-                    estimated_calories_per_session: { weekly: routine.estimated_calories_burned }
+                    estimated_calories_weekly: routine.estimated_calories_burned,
+                    total_met_hours: routine.total_met_hours,
+                    recommended_schedule: routine.recommended_schedule
                 })
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (srError) throw srError;
 
-            // --- AUTO-POPULATE CALENDAR ---
-            const daysMap = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-            const dbDayIndices = [1, 2, 3, 4, 5, 6, 0]; // Monday=1, ..., Sunday=0
+            // 3. Save to workout_plans (The Dashboard Source)
+            const { data: mainPlan, error: mpError } = await supabase
+                .from('workout_plans')
+                .insert({
+                    user_id: user.id,
+                    name: routine.name,
+                    description: routine.description,
+                    days_per_week: daysAvailable,
+                    total_met_hours: routine.total_met_hours,
+                    estimated_calories_weekly: routine.estimated_calories_burned,
+                    is_active: true,
+                    brain_state: { split: routine.split, weeklyVolume: routine.weeklyVolume },
+                    cardio_plan: routine.cardio_plan,
+                    source_routine_id: savedRoutine.id
+                })
+                .select()
+                .single();
 
+            if (mpError) throw mpError;
+
+            // 4. Save individual exercises to workout_plan_exercises (Relational)
+            const exerciseInserts: any[] = [];
+            // We map indices from routine.recommended_schedule to real week days
+            // Monday=1 ... Sunday=7 for this table
+            const dayMapToIndices = { 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6, 'Domingo': 7 };
+
+            let currentDayIdx = 0;
+            if (routine.recommended_schedule) {
+                routine.recommended_schedule.forEach((dayName, scheduleIdx) => {
+                    if (dayName !== 'Rest') {
+                        const routineDay = routine.days[currentDayIdx % routine.days.length];
+                        const dayOfWeek = dayMapToIndices[Object.keys(dayMapToIndices)[scheduleIdx] as keyof typeof dayMapToIndices];
+
+                        routineDay.exercises.forEach((ex: any, order: number) => {
+                            exerciseInserts.push({
+                                workout_plan_id: mainPlan.id,
+                                exercise_id: ex.exercise.id,
+                                day_of_week: dayOfWeek,
+                                sets: ex.sets,
+                                reps: ex.reps,
+                                duration_minutes: ex.duration_minutes || 0,
+                                rest_seconds: parseInt(ex.rest) || 60,
+                                order_in_day: order
+                            });
+                        });
+                        currentDayIdx++;
+                    }
+                });
+
+                if (exerciseInserts.length > 0) {
+                    const { error: exError } = await supabase.from('workout_plan_exercises').insert(exerciseInserts);
+                    if (exError) console.error("Error inserting exercises:", exError);
+                }
+            }
+
+            // 5. --- AUTO-POPULATE CALENDAR ---
+            // user_schedule uses 0=Sunday, 1=Monday
+            const dbDayIndices = [1, 2, 3, 4, 5, 6, 0]; // Mon, Tue, Wed, Thu, Fri, Sat, Sun
             const scheduleInserts = [];
             let routineDayCounter = 0;
 
@@ -134,15 +197,11 @@ export default function GeneratorPage() {
                 for (let i = 0; i < routine.recommended_schedule.length; i++) {
                     const activity = routine.recommended_schedule[i];
                     if (activity !== 'Rest') {
-                        // Match activity name (e.g. "Upper") with day names (e.g. "Upper A")
-                        // For splits like Arnold (Chest/Back), we just use them in order
-                        const routineDay = routine.days[routineDayCounter % routine.days.length];
-
                         scheduleInserts.push({
                             user_id: user.id,
                             day_of_week: dbDayIndices[i],
-                            time_slot: 'morning', // Default
-                            saved_routine_id: data.id,
+                            time_slot: 'morning',
+                            saved_routine_id: savedRoutine.id,
                             routine_day_id: `day_${routineDayCounter % routine.days.length}`
                         });
                         routineDayCounter++;
@@ -154,7 +213,7 @@ export default function GeneratorPage() {
                 }
             }
 
-            router.push(`/dashboard/workout-plan/${data.id}/calendar`);
+            router.push(`/dashboard/workout-plan/${savedRoutine.id}/calendar`);
         } catch (err) {
             console.error(err);
             alert('Error al guardar rutina');

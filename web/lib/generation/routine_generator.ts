@@ -29,6 +29,7 @@ export interface GeneratedRoutine {
     cardio_plan?: CardioSession; // Separated scientific protocol
     estimated_calories_burned: number; // New Dynamic Forecasting
     total_met_hours: number;
+    recommended_schedule: string[]; // Added for calendar auto-population
 }
 
 export interface GeneratedDay {
@@ -398,6 +399,11 @@ export class RoutineGenerator {
         // We no longer integrate cardio into strength days ("The Gymrat Rule").
         // We return the raw prescription for the separate Cardio Module to handle.
 
+        const burnMetrics = {
+            calories: this.calculateEstimatedWeeklyBurn(generatedDays, cardioSession, request.profile?.weight_kg),
+            met_hours: this.calculateTotalMetHours(generatedDays, cardioSession)
+        };
+
         return {
             name: `${this.capitalize(request.goal)} ${this.capitalize(recommendedSplit)} Protocol`,
             description: diagnosis.recommendations.split.description,
@@ -405,8 +411,9 @@ export class RoutineGenerator {
             days: generatedDays,
             weeklyVolume: volumeTargets.optimal_sets,
             cardio_plan: cardioSession,
-            estimated_calories_burned: this.calculateEstimatedWeeklyBurn(generatedDays, cardioSession, request.profile?.weight_kg),
-            total_met_hours: this.calculateTotalMetHours(generatedDays, cardioSession)
+            estimated_calories_burned: burnMetrics.calories,
+            total_met_hours: burnMetrics.met_hours,
+            recommended_schedule: diagnosis.recommendations.split.example_schedule
         };
     }
 

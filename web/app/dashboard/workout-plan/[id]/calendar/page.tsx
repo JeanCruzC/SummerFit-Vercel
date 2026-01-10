@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Calendar, Clock, Check, Plus, Sunrise, Sun, Moon, Flame, BarChart3, Timer, Activity } from "lucide-react";
+import { Calendar, Clock, Check, Plus, Sunrise, Sun, Moon, Flame, BarChart3, Timer, Activity, Target, TrendingDown } from "lucide-react";
+import { calculateProjectionWithExercise, calculateBMR, calculateTDEE } from "@/lib/calculations";
 
 interface ScheduledDay {
     id?: number;
@@ -29,6 +30,8 @@ export default function WorkoutCalendarPage() {
     const [loading, setLoading] = useState(true);
     const [schedule, setSchedule] = useState<ScheduledDay[]>([]);
     const [routine, setRoutine] = useState<any>(null);
+    const [profile, setProfile] = useState<any>(null);
+    const [projection, setProjection] = useState<any>(null);
     const [completedToday, setCompletedToday] = useState<Set<string>>(new Set());
     const [selectedExercise, setSelectedExercise] = useState<any>(null);
 
@@ -66,6 +69,33 @@ export default function WorkoutCalendarPage() {
             });
 
             setSchedule(scheduledDays);
+
+            // Fetch Profile & Calculate Projection
+            const { data: profileData } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
+
+            if (profileData && routineData) {
+                setProfile(profileData);
+                const bmr = calculateBMR(profileData.weight_kg, profileData.height_cm, profileData.age, profileData.gender);
+                const tdee = calculateTDEE(bmr, profileData.activity_level);
+
+                // Get exercise calories from brain_state or root
+                const exerciseCals = routineData.brain_state?.estimated_calories_weekly || routineData.estimated_calories_per_session?.weekly || 0;
+
+                const proj = calculateProjectionWithExercise(
+                    profileData.weight_kg,
+                    profileData.target_weight_kg,
+                    tdee,
+                    bmr,
+                    profileData.goal === 'Definir' ? 'Definir' : profileData.goal === 'Volumen' ? 'Volumen' : 'Mantener',
+                    'moderado',
+                    exerciseCals
+                );
+                setProjection(proj);
+            }
         }
 
         setLoading(false);
@@ -146,6 +176,22 @@ export default function WorkoutCalendarPage() {
                             {routine?.name || 'Mi Rutina'}
                         </p>
                     </div>
+
+                    {projection && (
+                        <div className="flex flex-col items-end text-right">
+                            <div className="flex items-center gap-2 text-zinc-900 dark:text-white font-black text-lg">
+                                <Target className="h-5 w-5 text-purple-500" />
+                                <span>Fecha Objetivo: {projection.target_date}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-zinc-500 text-sm font-bold">
+                                <TrendingDown className="h-4 w-4 text-green-500" />
+                                <span>Ritmo: {projection.weekly_rate} kg/semana</span>
+                            </div>
+                            <div className="text-[10px] text-purple-600 font-bold uppercase tracking-widest mt-1">
+                                Faltan {projection.weeks} semanas para tu meta
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {todaySchedule.length > 0 && (
@@ -221,13 +267,15 @@ export default function WorkoutCalendarPage() {
                                         </div>
                                     ))}
 
-                                    <button
-                                        onClick={() => handleAddSchedule(dayIndex, 'morning')}
-                                        className="w-full py-2 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 text-gray-400 hover:border-purple-300 hover:text-purple-500 transition-all flex items-center justify-center gap-2 text-sm"
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                        Agregar
-                                    </button>
+                                    {daySchedule.length === 0 && (
+                                        <button
+                                            onClick={() => handleAddSchedule(dayIndex, 'morning')}
+                                            className="w-full py-2 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 text-gray-400 hover:border-purple-300 hover:text-purple-500 transition-all flex items-center justify-center gap-2 text-sm"
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                            Agregar
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         );

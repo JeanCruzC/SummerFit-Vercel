@@ -111,8 +111,8 @@ export default function GeneratorPage() {
                         days: routine.days.map((d, i) => ({ id: `day_${i}`, ...d })),
                         cardio: routine.cardio_plan
                     },
-                    brain_state: { 
-                        split: routine.split, 
+                    brain_state: {
+                        split: routine.split,
                         weeklyVolume: routine.weeklyVolume,
                         estimated_calories_weekly: routine.estimated_calories_burned
                     },
@@ -122,6 +122,38 @@ export default function GeneratorPage() {
                 .single();
 
             if (error) throw error;
+
+            // --- AUTO-POPULATE CALENDAR ---
+            const daysMap = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+            const dbDayIndices = [1, 2, 3, 4, 5, 6, 0]; // Monday=1, ..., Sunday=0
+
+            const scheduleInserts = [];
+            let routineDayCounter = 0;
+
+            if (routine.recommended_schedule) {
+                for (let i = 0; i < routine.recommended_schedule.length; i++) {
+                    const activity = routine.recommended_schedule[i];
+                    if (activity !== 'Rest') {
+                        // Match activity name (e.g. "Upper") with day names (e.g. "Upper A")
+                        // For splits like Arnold (Chest/Back), we just use them in order
+                        const routineDay = routine.days[routineDayCounter % routine.days.length];
+
+                        scheduleInserts.push({
+                            user_id: user.id,
+                            day_of_week: dbDayIndices[i],
+                            time_slot: 'morning', // Default
+                            saved_routine_id: data.id,
+                            routine_day_id: `day_${routineDayCounter % routine.days.length}`
+                        });
+                        routineDayCounter++;
+                    }
+                }
+
+                if (scheduleInserts.length > 0) {
+                    await supabase.from('user_schedule').insert(scheduleInserts);
+                }
+            }
+
             router.push(`/dashboard/workout-plan/${data.id}/calendar`);
         } catch (err) {
             console.error(err);

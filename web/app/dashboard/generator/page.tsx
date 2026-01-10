@@ -111,7 +111,12 @@ export default function GeneratorPage() {
                         days: routine.days.map((d, i) => ({ id: `day_${i}`, ...d })),
                         cardio: routine.cardio_plan
                     },
-                    brain_state: { split: routine.split, weeklyVolume: routine.weeklyVolume }
+                    brain_state: { 
+                        split: routine.split, 
+                        weeklyVolume: routine.weeklyVolume,
+                        estimated_calories_weekly: routine.estimated_calories_burned
+                    },
+                    estimated_calories_per_session: { weekly: routine.estimated_calories_burned }
                 })
                 .select()
                 .single();

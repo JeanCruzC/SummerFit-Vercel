@@ -27,6 +27,8 @@ export interface GeneratedRoutine {
     days: GeneratedDay[];
     weeklyVolume: number; // Sets per week suggestion
     cardio_plan?: CardioSession; // Separated scientific protocol
+    estimated_calories_burned: number; // New Dynamic Forecasting
+    total_met_hours: number;
 }
 
 export interface GeneratedDay {
@@ -371,22 +373,15 @@ export class RoutineGenerator {
         }
 
         // 4. BUILD DAYS
-        // We only generate unique days from the template to fit the daysAvailable
-        // e.g. if 3 days available and using Full Body template (which has A, B, C), we use A, B, C.
+        // We generate days up to request.daysAvailable, cycling through the template
         const generatedDays: GeneratedDay[] = [];
-
-        // Loop through the template days available
-        // Note: Logic here is simplified. In a real app we map "Monday -> Upper A", etc.
-        // For now we just return the days defined in the template up to a limit.
-        const daysToGenerate = Math.min(request.daysAvailable, template.length);
-
-        for (let i = 0; i < daysToGenerate; i++) {
-            const templateDay = template[i];
+        for (let i = 0; i < request.daysAvailable; i++) {
+            const templateDay = template[i % template.length];
 
             // Should be empty day? (e.g. for PPL placeholder)
             if (!templateDay.slots || templateDay.slots.length === 0) {
                 // Clone day 0 if needed (A/B cycle logic)
-                const cloneIndex = i % 3;
+                const cloneIndex = (i % template.length) % 3; // Cycle within first 3 patterns if needed
                 if (cloneIndex < generatedDays.length) {
                     const clone = generatedDays[cloneIndex];
                     generatedDays.push({ ...clone, dayName: templateDay.name || `Day ${i + 1}` });
@@ -394,7 +389,7 @@ export class RoutineGenerator {
                 continue;
             }
 
-            const builtDay = this.buildDay(templateDay.name, templateDay.focus, templateDay.slots, candidates, request, volumeTargets.optimal_sets);
+            const builtDay = this.buildDay(templateDay.name || `Day ${i + 1}`, templateDay.focus, templateDay.slots, candidates, request, volumeTargets.optimal_sets);
 
             generatedDays.push(builtDay);
         }
@@ -409,13 +404,72 @@ export class RoutineGenerator {
             split: recommendedSplit,
             days: generatedDays,
             weeklyVolume: volumeTargets.optimal_sets,
-            cardio_plan: cardioSession
+            cardio_plan: cardioSession,
+            estimated_calories_burned: this.calculateEstimatedWeeklyBurn(generatedDays, cardioSession, request.profile?.weight_kg),
+            total_met_hours: this.calculateTotalMetHours(generatedDays, cardioSession)
         };
     }
 
     // ----------------------------------------------------------------
     // Internal Logic
     // ----------------------------------------------------------------
+
+    private calculateTotalMetHours(days: GeneratedDay[], cardio: CardioSession | undefined): number {
+        let totalMetHours = 0;
+
+        // Strength: 4.5 METs
+        let totalStrengthSets = 0;
+        days.forEach(day => {
+            day.exercises.forEach(ex => {
+                totalStrengthSets += ex.sets;
+            });
+        });
+        const strengthHours = (totalStrengthSets * 2.5) / 60;
+        totalMetHours += 4.5 * strengthHours;
+
+        // Cardio
+        if (cardio) {
+            const cardioMet = cardio.type === 'low_impact' ? 3.5 : cardio.type === 'moderate' ? 7.0 : 8.5;
+            const cardioHours = (cardio.frequency_per_week * cardio.duration) / 60;
+            totalMetHours += cardioMet * cardioHours;
+        }
+
+        return Math.round(totalMetHours * 10) / 10;
+    }
+
+    private calculateEstimatedWeeklyBurn(days: GeneratedDay[], cardio: CardioSession | undefined, weightKg: number = 70): number {
+        let totalWeeklyBurn = 0;
+
+        // 1. Strength Training Burn
+        // Est: 4.5 METs (General Weight Lifting)
+        // Duration: Sets * 2.5 mins (Active + Rest)
+        const MET_STRENGTH = 4.5;
+        let totalStrengthSets = 0;
+
+        days.forEach(day => {
+            day.exercises.forEach(ex => {
+                totalStrengthSets += ex.sets;
+            });
+        });
+
+        const totalStrengthMinutes = totalStrengthSets * 2.5;
+        // Formula: Kcal = MET * Weight * (Hours)
+        const strengthBurn = MET_STRENGTH * weightKg * (totalStrengthMinutes / 60);
+        totalWeeklyBurn += strengthBurn;
+
+        // 2. Cardio Burn
+        if (cardio) {
+            let metric_met = 3.5; // Default Low Impact
+            if (cardio.type === 'moderate') metric_met = 7.0;
+            if (cardio.type === 'hiit') metric_met = 8.5;
+
+            const weeklyCardioMinutes = cardio.frequency_per_week * cardio.duration;
+            const cardioBurn = metric_met * weightKg * (weeklyCardioMinutes / 60);
+            totalWeeklyBurn += cardioBurn;
+        }
+
+        return Math.round(totalWeeklyBurn);
+    }
 
     private async fetchCandidates(equipment: UserEquipment[]): Promise<Exercise[]> {
         const availableEq = equipment.map(e => e.equipment_type);

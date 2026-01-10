@@ -107,7 +107,10 @@ export default function GeneratorPage() {
                     name: routine.name,
                     is_active: true,
                     configuration: { goal, level, daysAvailable, equipment: equipment.map(e => e.equipment_type) },
-                    schedule: { days: routine.days.map((d, i) => ({ id: `day_${i}`, ...d })) },
+                    schedule: {
+                        days: routine.days.map((d, i) => ({ id: `day_${i}`, ...d })),
+                        cardio: routine.cardio_plan
+                    },
                     brain_state: { split: routine.split, weeklyVolume: routine.weeklyVolume }
                 })
                 .select()
@@ -284,6 +287,69 @@ export default function GeneratorPage() {
                             <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-600/20 to-blue-600/20 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
                         </div>
 
+                        {/* Scientific Cardio Module (New) */}
+                        {routine.cardio_plan && (
+                            <div className="bg-orange-50 dark:bg-orange-950/20 rounded-3xl p-6 border-2 border-orange-100 dark:border-orange-900 mb-8">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-xl">
+                                        <Activity className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-orange-900 dark:text-orange-100 uppercase tracking-wide">
+                                            Protocolo Metabólico
+                                        </h3>
+                                        <div className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                                            Objetivo: {routine.cardio_plan.type === 'low_impact' ? 'Quema de Grasa (Protección Articular)' : routine.cardio_plan.type === 'hiit' ? 'Acondicionamiento Metabólico' : 'Salud Cardiovascular'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                    <div className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border border-orange-100 dark:border-orange-900/50">
+                                        <div className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">Dosis Semanal</div>
+                                        <div className="text-3xl font-black text-zinc-900 dark:text-white">
+                                            {routine.cardio_plan.frequency_per_week} <span className="text-lg font-bold text-zinc-400">sesiones</span>
+                                        </div>
+                                        <div className="text-xs font-medium text-orange-600 mt-1">Independiente de las pesas</div>
+                                    </div>
+                                    <div className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border border-orange-100 dark:border-orange-900/50">
+                                        <div className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">Duración</div>
+                                        <div className="text-3xl font-black text-zinc-900 dark:text-white">
+                                            {routine.cardio_plan.duration} <span className="text-lg font-bold text-zinc-400">min</span>
+                                        </div>
+                                        <div className="text-xs font-medium text-zinc-500 mt-1">Zona Recomendada: 2 (Conversacional)</div>
+                                    </div>
+                                    <div className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border border-orange-100 dark:border-orange-900/50">
+                                        <div className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">Timing Óptimo</div>
+                                        <div className="font-bold text-zinc-900 dark:text-white leading-tight">
+                                            {routine.cardio_plan.type === 'low_impact' ? 'Cualquier momento' : 'Lejos de pierna pesada'}
+                                        </div>
+                                        <div className="text-xs text-zinc-500 mt-2 leading-relaxed">
+                                            • Días de Pesas: <strong>Post-Entreno</strong><br />
+                                            • Días Libres: <strong>Sesión Única</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 className="font-bold text-orange-900 dark:text-orange-200 mb-3 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                                        Opciones Aprobadas
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {routine.cardio_plan.exercises[0].reason.split(', ').map((opt, i) => (
+                                            <div key={i} className="flex items-center gap-3 bg-white/50 dark:bg-black/20 p-3 rounded-xl border border-orange-100 dark:border-orange-900/30">
+                                                <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center text-orange-600 font-bold text-xs">
+                                                    {i + 1}
+                                                </div>
+                                                <span className="font-medium text-zinc-700 dark:text-zinc-300">{opt}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {routine.days.map((day, idx) => (
                                 <div key={idx} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden hover:border-purple-200 transition-colors shadow-lg shadow-gray-200/50 dark:shadow-none">
@@ -303,12 +369,24 @@ export default function GeneratorPage() {
                                                         onClick={() => setSelectedExercise(exItem)}
                                                     >
                                                         {exItem.exercise.exercise_media?.[0]?.url ? (
-                                                            // eslint-disable-next-line @next/next/no-img-element
-                                                            <img
-                                                                src={exItem.exercise.exercise_media[0].url}
-                                                                className="w-full h-full object-cover"
-                                                                alt={exItem.exercise.title}
-                                                            />
+                                                            exItem.exercise.exercise_media[0].type === 'video' ? (
+                                                                <video
+                                                                    src={exItem.exercise.exercise_media[0].url}
+                                                                    className="w-full h-full object-cover"
+                                                                    muted
+                                                                    loop
+                                                                    playsInline
+                                                                    onMouseOver={e => e.currentTarget.play()}
+                                                                    onMouseOut={e => e.currentTarget.pause()}
+                                                                />
+                                                            ) : (
+                                                                // eslint-disable-next-line @next/next/no-img-element
+                                                                <img
+                                                                    src={exItem.exercise.exercise_media[0].url}
+                                                                    className="w-full h-full object-cover"
+                                                                    alt={exItem.exercise.title}
+                                                                />
+                                                            )
                                                         ) : (
                                                             <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No img</div>
                                                         )}
@@ -350,41 +428,7 @@ export default function GeneratorPage() {
                                             </div>
                                         ))}
 
-                                        {/* Cardio Session  (if present) */}
-                                        {day.cardio_session && (
-                                            <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-2xl border-2 border-orange-200 dark:border-orange-800">
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <Activity className="h-5 w-5 text-orange-600" />
-                                                    <h4 className="font-bold text-orange-900 dark:text-orange-100">
-                                                        Cardio - {day.cardio_session.type.replace('_', ' ').toUpperCase()}
-                                                    </h4>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-3 mb-3">
-                                                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3">
-                                                        <div className="text-xs text-zinc-500 mb-1">Duración</div>
-                                                        <div className="text-lg font-bold text-zinc-900 dark:text-white">{day.cardio_session.duration} min</div>
-                                                    </div>
-                                                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3">
-                                                        <div className="text-xs text-zinc-500 mb-1">Frecuencia</div>
-                                                        <div className="text-lg font-bold text-zinc-900 dark:text-white">{day.cardio_session.frequency_per_week}x/semana</div>
-                                                    </div>
-                                                </div>
-                                                <div className="text-sm text-orange-700 dark:text-orange-300 font-medium mb-2">
-                                                    📍 {day.cardio_session.timing === 'after_weights' ? 'Después de pesas' :
-                                                        day.cardio_session.timing === 'separate_session' ? 'Sesión separada' : 'Por la mañana'}
-                                                </div>
-                                                {day.cardio_session.exercises.map((ex, i) => (
-                                                    <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-3">
-                                                        <div className="font-bold text-sm text-zinc-900 dark:text-white mb-1">
-                                                            {ex.exercise.title}
-                                                        </div>
-                                                        <div className="text-xs text-zinc-600 dark:text-zinc-400">
-                                                            {ex.reason}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
+
                                     </div>
                                 </div>
                             ))}

@@ -26,6 +26,7 @@ export interface GeneratedRoutine {
     split: SplitType;
     days: GeneratedDay[];
     weeklyVolume: number; // Sets per week suggestion
+    cardio_plan?: CardioSession; // Separated scientific protocol
 }
 
 export interface GeneratedDay {
@@ -398,82 +399,17 @@ export class RoutineGenerator {
             generatedDays.push(builtDay);
         }
 
-        // SMART CARDIO INTEGRATION LOGIC
-        // If we have separate cardio days but no extra days available, we must integrate them.
-        let cardioSessionsToSchedule = cardioSession ? cardioSession.frequency_per_week : 0;
-
-        // 1. Try to add "Separate Sessions" as extra days first
-        if (cardioSession && cardioSession.timing === 'separate_session') {
-            const extraDaysAvailable = request.daysAvailable - daysToGenerate;
-            const separateDaysToAdd = Math.min(cardioSessionsToSchedule, extraDaysAvailable);
-
-            for (let i = 0; i < separateDaysToAdd; i++) {
-                generatedDays.push({
-                    dayName: `Cardio Day ${i + 1}`,
-                    focus: `${cardioSession.type.replace('_', ' ').toUpperCase()} Focus`,
-                    exercises: [],
-                    cardio_session: cardioSession
-                });
-                cardioSessionsToSchedule--;
-            }
-        }
-
-        // 2. Distribute remaining sessions into existing workout days
-        if (cardioSessionsToSchedule > 0 && cardioSession) {
-            // Smart Placement Strategy:
-            // - If High Impact/HIIT: Avoid Leg Days (Squat/Hinge)
-            // - If Low Impact: Can go anywhere
-
-            let daysWithCardio = 0;
-
-            // Iterate existing days to attach cardio
-            for (let i = 0; i < generatedDays.length; i++) {
-                if (daysWithCardio >= cardioSessionsToSchedule) break;
-
-                const day = generatedDays[i];
-                const isLegDay = day.focus.toLowerCase().includes('leg') ||
-                    day.focus.toLowerCase().includes('squat') ||
-                    day.focus.toLowerCase().includes('hinge') ||
-                    day.focus.toLowerCase().includes('lower');
-
-                const isHighImpact = cardioSession.type === 'hiit';
-
-                // Skip Leg Days for High Impact if possible (unless we have no choice)
-                if (isHighImpact && isLegDay && generatedDays.length > cardioSessionsToSchedule) {
-                    continue;
-                }
-
-                // If day doesn't have cardio yet, add it
-                if (!day.cardio_session) {
-                    day.cardio_session = {
-                        ...cardioSession,
-                        timing: 'after_weights' // Force timing change if integrating
-                    };
-                    daysWithCardio++;
-                }
-            }
-
-            // If we still have sessions left (e.g. forced to use leg days), loop again without filters
-            if (daysWithCardio < cardioSessionsToSchedule) {
-                for (let i = 0; i < generatedDays.length; i++) {
-                    if (daysWithCardio >= cardioSessionsToSchedule) break;
-                    if (!generatedDays[i].cardio_session) {
-                        generatedDays[i].cardio_session = {
-                            ...cardioSession,
-                            timing: 'after_weights'
-                        };
-                        daysWithCardio++;
-                    }
-                }
-            }
-        }
+        // SMART CARDIO LOGIC (SEPARATED)
+        // We no longer integrate cardio into strength days ("The Gymrat Rule").
+        // We return the raw prescription for the separate Cardio Module to handle.
 
         return {
             name: `${this.capitalize(request.goal)} ${this.capitalize(recommendedSplit)} Protocol`,
             description: diagnosis.recommendations.split.description,
             split: recommendedSplit,
             days: generatedDays,
-            weeklyVolume: volumeTargets.optimal_sets
+            weeklyVolume: volumeTargets.optimal_sets,
+            cardio_plan: cardioSession
         };
     }
 

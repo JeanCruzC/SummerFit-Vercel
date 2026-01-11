@@ -75,11 +75,12 @@ export default function PlanEditorPage({ params }: { params: { id: string } }) {
             */
 
             // If still empty, try loading directly from saved_routines.schedule
-            if (planExercises.length === 0) {
+            // Use source_routine_id to find the correct saved_routine
+            if (planExercises.length === 0 && plan.source_routine_id) {
                 const { data: savedRoutine } = await supabase
                     .from('saved_routines')
                     .select('schedule')
-                    .eq('id', planId)
+                    .eq('id', plan.source_routine_id)
                     .single();
 
                 console.log('Saved routine schedule:', JSON.stringify(savedRoutine?.schedule?.days?.[0], null, 2)); // Debug

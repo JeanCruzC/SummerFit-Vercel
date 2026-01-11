@@ -541,18 +541,18 @@ export default function GeneratorPage() {
 
                                                         {/* Smart Prescription */}
                                                         <div className="mt-2 grid grid-cols-2 gap-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                                                            <div className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                                            <div className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="S×R = Series × Repeticiones">
                                                                 <Repeat className="h-3 w-3 text-purple-600" />
                                                                 <span className="font-bold text-purple-600">S×R</span> {exItem.sets} x {exItem.reps}
                                                             </div>
-                                                            <div className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                                            <div className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="Descanso entre series (segundos)">
                                                                 <Clock className="h-3 w-3 text-gray-500" /> {exItem.rest}
                                                             </div>
-                                                            <div className="bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded flex items-center gap-1" title="RIR = Reps en Reserva (0-2 óptimo para hipertrofia)">
+                                                            <div className="bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="RIR = Reps en Reserva (0-2 óptimo para hipertrofia)">
                                                                 <Gauge className="h-3 w-3" /> RIR {exItem.rir}
                                                             </div>
                                                             {exItem.tempo && (
-                                                                <div className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded flex items-center gap-1" title="Tempo = Cadencia del movimiento">
+                                                                <div className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="Tempo = Excéntrica-Pausa-Concéntrica-Pausa (ej: 2-0-1-0 = 2s bajar, 0s pausa, 1s subir, 0s arriba)">
                                                                     <Timer className="h-3 w-3" /> {exItem.tempo}
                                                                 </div>
                                                             )}

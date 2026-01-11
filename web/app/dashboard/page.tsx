@@ -159,17 +159,37 @@ export default function DashboardPage() {
         cutoffDate.setHours(0, 0, 0, 0);
 
         const cutoffStr = getUserLocalDate(cutoffDate);
+        const todayStr = getUserLocalDate();
 
-        // Filter logs using string comparison (robust for YYYY-MM-DD)
-        const validLogs = historyLogs.filter(l => l.log_date >= cutoffStr);
+        // 1. Filter historical logs
+        let validLogs = historyLogs.filter(l => l.log_date >= cutoffStr);
+
+        // 2. Check if today is already in logs. If not, and we have data, append it.
+        // This ensures "Semana" includes the calories you just tracked today.
+        const todayLogExists = validLogs.some(l => l.log_date === todayStr);
+        if (!todayLogExists && todayTotals.calories > 0 && profile) {
+            validLogs = [...validLogs, {
+                log_date: todayStr,
+                calories_consumed: todayTotals.calories,
+                protein_g: todayTotals.protein_g,
+                carbs_g: todayTotals.carbs_g,
+                fat_g: todayTotals.fat_g,
+                calories_burned: 0,
+                exercise_minutes: 0,
+                user_id: profile.user_id
+            }];
+        }
 
         if (validLogs.length === 0) return {
-            calories: 0, protein: 0, carbs: 0, fat: 0,
-            label: `Promedio (${days}d)`,
-            subLabel: "Sin datos registrados",
-            rateLabel: "Ritmo observado",
-            rateValue: 0,
-            isProjected: false
+            calories: projection?.daily_calories || 0,
+            protein: macros?.protein_g || 0,
+            carbs: macros?.carbs_g || 0,
+            fat: macros?.fat_g || 0,
+            label: `Plan (${days}d)`,
+            subLabel: "Proyección basada en tu meta",
+            rateLabel: "Ritmo estimado",
+            rateValue: projection?.weekly_rate || 0,
+            isProjected: true
         };
 
         const sums = validLogs.reduce((acc, log) => ({
@@ -213,7 +233,7 @@ export default function DashboardPage() {
             rateValue: observedRate,
             isProjected: false
         };
-    }, [range, todayTotals, historyLogs, projection, mode, weightHistory]);
+    }, [range, todayTotals, historyLogs, projection, mode, weightHistory, profile, macros]);
 
     const adherence = useMemo(() => {
         // Use last 7 days for adherence score
@@ -423,9 +443,22 @@ export default function DashboardPage() {
                                 <Flame className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                             </div>
                             <div>
-                                <div className="text-sm text-gray-500">{range === 'hoy' ? 'Objetivo diario' : 'Ingesta Media'}</div>
-                                <div className="text-4xl font-bold">{aggregatedMetrics.calories} <span className="text-lg font-normal text-gray-500">kcal</span></div>
-                                <div className="text-xs text-gray-400">Meta: {projection.daily_calories} kcal</div>
+                                <div className="text-sm text-gray-500 font-medium">
+                                    {range === 'hoy' ? 'Objetivo diario (Meta)' : 'Ingesta Media Diaria'}
+                                </div>
+                                <div className="text-4xl font-extrabold text-zinc-900 dark:text-white mt-1">
+                                    {range === 'hoy' ? projection.daily_calories : aggregatedMetrics.calories}
+                                    <span className="text-lg font-normal text-gray-500 ml-1">kcal</span>
+                                </div>
+                                {range === 'hoy' ? (
+                                    <div className="text-sm text-gray-400 mt-1 font-medium">
+                                        Consumidas: <span className={aggregatedMetrics.calories > projection.daily_calories ? "text-red-500" : "text-green-500"}>{aggregatedMetrics.calories}</span> kcal
+                                    </div>
+                                ) : (
+                                    <div className="text-xs text-gray-400 mt-1">
+                                        Meta: {projection.daily_calories} kcal
+                                    </div>
+                                )}
                                 {(projection.exercise_boost || 0) > 0 && range === 'hoy' && (
                                     <div className="text-xs font-semibold text-purple-600 mt-1 flex items-center gap-1">
                                         <Zap className="h-3 w-3" />
@@ -446,7 +479,9 @@ export default function DashboardPage() {
                             </div>
                             <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700">
                                 <div className="text-xs text-gray-500">Déficit Est.</div>
-                                <div className="text-lg font-semibold mt-1">{projection.daily_calories - aggregatedMetrics.calories - metrics.bmr < 0 ? metrics.bmr + (projection.daily_calories - aggregatedMetrics.calories) : "-"}</div>
+                                <div className="text-lg font-semibold mt-1">
+                                    {Math.round((projection.effectiveTDEE || metrics.tdee) - aggregatedMetrics.calories)}
+                                </div>
                             </div>
                         </div>
 
@@ -511,22 +546,36 @@ export default function DashboardPage() {
 
             {/* Macros Card */}
             <Card>
-                <h3 className="text-lg font-semibold mb-4">Macros ({range === 'hoy' ? 'hoy' : 'promedio'})</h3>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Macros ({range === 'hoy' ? 'hoy' : 'promedio'})</h3>
+                    <span className="text-xs font-medium px-2 py-1 bg-purple-50 text-purple-700 rounded-lg border border-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800">
+                        {profile.diet_type}
+                    </span>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700">
-                        <div className="text-sm text-gray-500">Proteína</div>
-                        <div className="text-2xl font-semibold mt-1">{aggregatedMetrics.protein} / {macros.protein_g} g</div>
-                        <div className="mt-3"><ProgressBar value={aggregatedMetrics.protein} max={macros.protein_g} color="purple" /></div>
+                        <div className="flex justify-between items-center mb-1">
+                            <div className="text-sm text-gray-500">Proteína</div>
+                            <div className="text-xs text-gray-400">Meta: {macros.protein_g}g</div>
+                        </div>
+                        <div className="text-2xl font-semibold">{aggregatedMetrics.protein} g</div>
+                        <div className="mt-2"><ProgressBar value={aggregatedMetrics.protein} max={macros.protein_g} color="purple" /></div>
                     </div>
                     <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700">
-                        <div className="text-sm text-gray-500">Carbohidratos</div>
-                        <div className="text-2xl font-semibold mt-1">{aggregatedMetrics.carbs} / {macros.carbs_g} g</div>
-                        <div className="mt-3"><ProgressBar value={aggregatedMetrics.carbs} max={macros.carbs_g} color="purple" /></div>
+                        <div className="flex justify-between items-center mb-1">
+                            <div className="text-sm text-gray-500">Carbos</div>
+                            <div className="text-xs text-gray-400">Meta: {macros.carbs_g}g</div>
+                        </div>
+                        <div className="text-2xl font-semibold">{aggregatedMetrics.carbs} g</div>
+                        <div className="mt-2"><ProgressBar value={aggregatedMetrics.carbs} max={macros.carbs_g} color="purple" /></div>
                     </div>
                     <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700">
-                        <div className="text-sm text-gray-500">Grasas</div>
-                        <div className="text-2xl font-semibold mt-1">{aggregatedMetrics.fat} / {macros.fat_g} g</div>
-                        <div className="mt-3"><ProgressBar value={aggregatedMetrics.fat} max={macros.fat_g} color="purple" /></div>
+                        <div className="flex justify-between items-center mb-1">
+                            <div className="text-sm text-gray-500">Grasas</div>
+                            <div className="text-xs text-gray-400">Meta: {macros.fat_g}g</div>
+                        </div>
+                        <div className="text-2xl font-semibold">{aggregatedMetrics.fat} g</div>
+                        <div className="mt-2"><ProgressBar value={aggregatedMetrics.fat} max={macros.fat_g} color="purple" /></div>
                     </div>
                 </div>
             </Card>

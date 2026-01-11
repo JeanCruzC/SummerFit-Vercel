@@ -112,75 +112,6 @@ export default function NutritionPage() {
                 </Card>
             </div>
 
-            {/* Mode Selector */}
-            <Card>
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div>
-                        <h2 className="text-lg font-semibold">Velocidad de progreso</h2>
-                        <p className="text-sm text-gray-500">Ajusta según tu preferencia</p>
-                    </div>
-                    <div className="flex gap-2">
-                        {(["conservador", "moderado", "acelerado"] as const).map(m => (
-                            <button
-                                key={m}
-                                onClick={() => handleModeChange(m)}
-                                className={`px-4 py-2 rounded-xl text-sm font-medium transition ${mode === m ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600"}`}
-                            >
-                                {m.charAt(0).toUpperCase() + m.slice(1)}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Two Projections: Diet Only vs Diet + Exercise */}
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Diet Only */}
-                    <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700">
-                        <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">Solo Dieta</h3>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                            <div>
-                                <div className="text-xs text-gray-500">Ritmo</div>
-                                <div className="text-lg font-semibold">{projectionDietOnly.weekly_rate} kg/sem</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-gray-500">Semanas</div>
-                                <div className="text-lg font-semibold">{projectionDietOnly.weeks}</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-gray-500">Fecha</div>
-                                <div className="text-lg font-semibold">{projectionDietOnly.target_date}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Diet + Exercise */}
-                    <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-300 dark:border-purple-700">
-                        <h3 className="text-sm font-semibold text-purple-600 dark:text-purple-400 mb-3 flex items-center gap-2">
-                            Dieta + Ejercicio
-                            {weeklyExerciseCalories > 0 && <span className="text-xs font-normal">({Math.round(weeklyExerciseCalories / 7)} kcal/día)</span>}
-                        </h3>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                            <div>
-                                <div className="text-xs text-gray-500">Ritmo</div>
-                                <div className="text-lg font-semibold text-purple-600">{projection.weekly_rate} kg/sem</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-gray-500">Semanas</div>
-                                <div className="text-lg font-semibold text-purple-600">{projection.weeks}</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-gray-500">Fecha</div>
-                                <div className="text-lg font-semibold text-purple-600">{projection.target_date}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mt-4 text-sm" style={{ color: projection.color }}>
-                    {projection.risk_msg}
-                </div>
-            </Card>
-
             {/* Macros Distribution */}
             <Card>
                 <h2 className="text-lg font-semibold mb-4">Distribución de Macros ({profile.diet_type})</h2>
@@ -221,18 +152,7 @@ export default function NutritionPage() {
                 </Card>
             </div>
 
-            {/* Formulas Info */}
-            <Card>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <Info className="h-5 w-5" /> Fórmulas Utilizadas
-                </h3>
-                <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-                    <p><strong>TMB (Mifflin-St Jeor):</strong> La fórmula más precisa para calcular el metabolismo basal.</p>
-                    <p><strong>TDEE:</strong> TMB × Factor de actividad ({profile.activity_level}).</p>
-                    <p><strong>Déficit/Superávit:</strong> Basado en 7700 kcal ≈ 1 kg de grasa corporal.</p>
-                    <p><strong>IMC:</strong> Peso(kg) / Altura(m)²</p>
-                </div>
-            </Card>
+
         </motion.div>
     );
 }

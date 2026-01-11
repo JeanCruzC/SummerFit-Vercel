@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Activity, Droplets, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Heart, MoreHorizontal, Info, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { getUserLocalDate } from "@/lib/date";
-import { Card, Button, ProgressBar } from "@/components/ui";
+import { Card, Button } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile, getMealEntries, deleteMealEntry } from "@/lib/supabase/database";
 import { calculateHealthMetrics, calculateMacros, calculateProjectionWithExercise } from "@/lib/calculations";
@@ -21,7 +21,7 @@ export default function TrackingPage() {
     const [deleting, setDeleting] = useState<number | null>(null);
     const [waterGlasses, setWaterGlasses] = useState(0);
 
-    // Generate week days centered on today
+    // Generate week days
     const weekDays = useMemo(() => {
         const today = new Date();
         const days = [];
@@ -87,6 +87,7 @@ export default function TrackingPage() {
     };
 
     const waterTarget = profile ? Math.round(profile.weight_kg * 0.033 * 10) / 10 : 3.0;
+    const targetCalories = projection?.daily_calories || 1500;
 
     if (loading) {
         return (
@@ -97,81 +98,92 @@ export default function TrackingPage() {
     }
 
     return (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 max-w-4xl mx-auto">
 
-            {/* Weekly Calendar Header */}
-            <Card className="!p-3">
+            {/* ========== WEEKLY CALENDAR - Fitia Style ========== */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
                 <div className="flex justify-between items-center">
                     {weekDays.map(day => (
                         <button
                             key={day.date}
                             onClick={() => setSelectedDate(day.date)}
-                            className={`flex flex-col items-center px-3 py-2 rounded-xl transition ${selectedDate === day.date
-                                    ? 'bg-purple-500 text-white'
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                                }`}
+                            className="flex flex-col items-center group"
                         >
-                            <span className="text-xs font-medium">{day.dayName}</span>
-                            <span className={`text-lg font-bold ${day.isToday && selectedDate !== day.date ? 'text-purple-500' : ''}`}>
+                            <span className="text-xs font-medium text-gray-400 mb-1">{day.dayName}</span>
+                            <div className={`
+                                w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold transition-all
+                                ${selectedDate === day.date
+                                    ? 'bg-purple-500 text-white'
+                                    : day.isToday
+                                        ? 'text-purple-500'
+                                        : 'text-gray-700 dark:text-gray-300 group-hover:bg-gray-100 dark:group-hover:bg-gray-800'
+                                }
+                            `}>
                                 {day.dayNumber}
-                            </span>
-                            <span className={`w-1.5 h-1.5 rounded-full mt-1 ${selectedDate === day.date ? 'bg-white' : 'bg-gray-300 dark:bg-gray-600'
+                            </div>
+                            <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${selectedDate === day.date ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'
                                 }`} />
                         </button>
                     ))}
                 </div>
-            </Card>
+            </div>
 
-            {/* Macro Summary - Fitia Style */}
-            <Card className="text-center !py-6">
-                <div className="text-4xl font-bold">
-                    <span className={totals.calories > 0 ? 'text-purple-600' : 'text-gray-400'}>{totals.calories}</span>
-                    <span className="text-gray-400"> / {projection?.daily_calories || 1500}</span>
-                </div>
-                <div className="text-sm text-gray-500 mt-1">kcal</div>
-
-                {/* Progress Bar */}
-                <div className="mt-4 mx-auto max-w-md">
-                    <div className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                            className="absolute h-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full transition-all"
-                            style={{ width: `${Math.min((totals.calories / (projection?.daily_calories || 1500)) * 100, 100)}%` }}
-                        />
-                        {/* Markers */}
-                        <div className="absolute h-full w-0.5 bg-gray-400" style={{ left: '80%' }} />
-                        <div className="absolute h-full w-0.5 bg-gray-400" style={{ left: '100%' }} />
+            {/* ========== MACRO SUMMARY CARD - Fitia Style ========== */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+                {/* Big Calorie Display */}
+                <div className="text-center mb-6">
+                    <div className="text-5xl font-bold tracking-tight">
+                        <span className={totals.calories > 0 ? 'text-gray-900 dark:text-white' : 'text-gray-300 dark:text-gray-600'}>
+                            {totals.calories}
+                        </span>
+                        <span className="text-gray-300 dark:text-gray-600"> / {targetCalories}</span>
                     </div>
-                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <div className="text-sm text-gray-400 mt-1">kcal</div>
+                </div>
+
+                {/* Progress Bar with Markers */}
+                <div className="relative mx-auto max-w-lg mb-6">
+                    <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-gradient-to-r from-purple-400 to-purple-500 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min((totals.calories / targetCalories) * 100, 100)}%` }}
+                        />
+                    </div>
+                    {/* Range Markers */}
+                    <div className="flex justify-between text-xs text-gray-400 mt-2">
                         <span></span>
-                        <span>{Math.round((projection?.daily_calories || 1500) * 0.8)}</span>
-                        <span>{projection?.daily_calories || 1500}</span>
+                        <span>{Math.round(targetCalories * 0.8)}</span>
+                        <span>{targetCalories}</span>
                     </div>
                 </div>
 
                 {/* Macro Grid */}
-                <div className="grid grid-cols-3 gap-4 mt-6 text-center">
+                <div className="grid grid-cols-3 gap-4 text-center border-t border-gray-100 dark:border-gray-800 pt-4">
                     <div>
-                        <div className="text-xs text-gray-500 uppercase tracking-wide">Proteínas</div>
-                        <div className="text-lg font-semibold mt-1">
-                            {totals.protein_g} / {macroTargets?.protein_g || 100} g
+                        <div className="text-xs text-gray-400 uppercase tracking-wider">Proteínas</div>
+                        <div className="text-base font-semibold mt-1">
+                            <span className="text-gray-900 dark:text-white">{totals.protein_g}</span>
+                            <span className="text-gray-400"> / {macroTargets?.protein_g || 100} g</span>
                         </div>
                     </div>
                     <div>
-                        <div className="text-xs text-gray-500 uppercase tracking-wide">Carbs Netos</div>
-                        <div className="text-lg font-semibold mt-1">
-                            {totals.carbs_g} / {macroTargets?.carbs_g || 50} g
+                        <div className="text-xs text-gray-400 uppercase tracking-wider">Carbs Netos</div>
+                        <div className="text-base font-semibold mt-1">
+                            <span className="text-gray-900 dark:text-white">{totals.carbs_g}</span>
+                            <span className="text-gray-400"> / {macroTargets?.carbs_g || 50} g</span>
                         </div>
                     </div>
                     <div>
-                        <div className="text-xs text-gray-500 uppercase tracking-wide">Grasas</div>
-                        <div className="text-lg font-semibold mt-1">
-                            {totals.fat_g} / {macroTargets?.fat_g || 80} g
+                        <div className="text-xs text-gray-400 uppercase tracking-wider">Grasas</div>
+                        <div className="text-base font-semibold mt-1">
+                            <span className="text-gray-900 dark:text-white">{totals.fat_g}</span>
+                            <span className="text-gray-400"> / {macroTargets?.fat_g || 80} g</span>
                         </div>
                     </div>
                 </div>
-            </Card>
+            </div>
 
-            {/* Meal Sections - Fitia Style */}
+            {/* ========== MEAL SECTIONS - Fitia Style ========== */}
             {(["Desayuno", "Almuerzo", "Cena", "Snack"] as const).map(type => {
                 const typeMeals = mealsByType[type];
                 const typeCalories = typeMeals.reduce((a, m) => a + (m.calories || 0), 0);
@@ -180,47 +192,51 @@ export default function TrackingPage() {
                 const typeFat = typeMeals.reduce((a, m) => a + (m.fat_g || 0), 0);
 
                 return (
-                    <Card key={type} className="!p-4">
-                        {/* Meal Header */}
-                        <div className="flex items-center justify-between mb-3">
+                    <div key={type} className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
+                        {/* Header */}
+                        <div className="flex items-start justify-between mb-2">
                             <div>
-                                <h3 className="text-lg font-bold">{type}</h3>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{type}</h3>
                                 {typeMeals.length > 0 && (
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-sm text-gray-400 mt-0.5">
                                         {typeCalories} kcal | {typeProtein} P | {typeCarbs} CN | {typeFat} G
                                     </p>
                                 )}
                             </div>
-                            <span className="text-purple-400 text-xs font-medium">SummerFit</span>
+                            <span className="text-xs text-purple-400 italic font-medium">SummerFit</span>
                         </div>
 
                         {/* Food Items */}
                         {typeMeals.length === 0 ? (
-                            <p className="text-gray-400 text-sm py-2">Sin alimentos registrados</p>
+                            <p className="text-gray-300 dark:text-gray-600 text-sm py-3">Sin alimentos registrados</p>
                         ) : (
-                            <div className="space-y-2 mb-3">
+                            <div className="divide-y divide-gray-100 dark:divide-gray-800">
                                 {typeMeals.map(meal => (
-                                    <div key={meal.id} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                                    <div key={meal.id} className="flex items-center justify-between py-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-sm">
-                                                🍽️
+                                            {/* Food Icon */}
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/30 dark:to-purple-800/20 flex items-center justify-center">
+                                                <span className="text-lg">🍽️</span>
                                             </div>
+                                            {/* Food Info */}
                                             <div>
-                                                <div className="font-medium text-sm">{meal.food_name}</div>
-                                                <div className="text-xs text-gray-400">({meal.grams}g)</div>
+                                                <div className="font-medium text-gray-900 dark:text-white">{meal.food_name}</div>
+                                                <div className="text-xs text-gray-400">(peso crudo)</div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-3">
+                                        {/* Right Side */}
+                                        <div className="flex items-center gap-4">
                                             <div className="text-right">
-                                                <div className="text-sm font-medium">{meal.grams}g</div>
+                                                <div className="text-sm text-gray-700 dark:text-gray-300">{meal.grams} g</div>
                                                 <div className="text-xs text-gray-400">{meal.calories} kcal</div>
                                             </div>
+                                            {/* Checkbox Circle */}
                                             <button
                                                 onClick={() => meal.id && handleDelete(meal.id)}
                                                 disabled={deleting === meal.id}
-                                                className="text-gray-300 hover:text-red-500 transition"
+                                                className="w-6 h-6 rounded-full border-2 border-gray-200 dark:border-gray-700 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition flex items-center justify-center"
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                {deleting === meal.id && <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />}
                                             </button>
                                         </div>
                                     </div>
@@ -231,76 +247,85 @@ export default function TrackingPage() {
                         {/* Add Button */}
                         <button
                             onClick={() => router.push("/dashboard/foods")}
-                            className="w-full py-3 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-gray-400 hover:border-purple-300 hover:text-purple-500 transition flex items-center justify-center gap-2"
+                            className="w-full mt-3 py-3 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-gray-400 hover:border-purple-300 hover:text-purple-500 transition flex items-center justify-center"
                         >
-                            <Plus className="h-4 w-4" />
+                            <Plus className="h-5 w-5" />
                         </button>
-                    </Card>
+                    </div>
                 );
             })}
 
-            {/* Activity Section */}
-            <Card className="!p-4">
+            {/* ========== ACTIVITY SECTION - Fitia Style ========== */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                            <Activity className="h-5 w-5 text-orange-500" />
+                        {/* Activity Icon */}
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-900/30 dark:to-amber-800/20 flex items-center justify-center">
+                            <span className="text-lg">🏃</span>
                         </div>
                         <div>
-                            <h3 className="font-bold">Actividad</h3>
-                            <p className="text-xs text-gray-500">NEAT — 0 kcal</p>
+                            <h3 className="font-bold text-gray-900 dark:text-white">Actividad</h3>
+                            <p className="text-sm text-gray-400">NEAT — 0 kcal</p>
                         </div>
                     </div>
-                    <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition">
-                        <Plus className="h-5 w-5 text-gray-400" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <Heart className="h-5 w-5 text-red-400" fill="#f87171" />
+                        <MoreHorizontal className="h-5 w-5 text-gray-400" />
+                    </div>
                 </div>
-            </Card>
+            </div>
 
-            {/* Water Tracking */}
-            <Card className="!p-4">
+            {/* ========== WATER TRACKING - Fitia Style ========== */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
+                {/* Header */}
                 <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <Droplets className="h-5 w-5 text-blue-500" />
-                        <div>
-                            <span className="font-bold">Agua</span>
-                            <span className="text-gray-400 text-sm ml-2">ⓘ</span>
-                        </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-lg">💧</span>
+                        <span className="font-bold text-gray-900 dark:text-white">Agua</span>
+                        <Info className="h-4 w-4 text-gray-400" />
                     </div>
-                    <span className="text-sm text-gray-500">{(waterGlasses * 0.25).toFixed(1)} / {waterTarget} L</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">{(waterGlasses * 0.25).toFixed(1)} / {waterTarget} L</span>
+                        <MoreHorizontal className="h-5 w-5 text-gray-400" />
+                    </div>
                 </div>
 
-                {/* Water Glasses Grid */}
-                <div className="grid grid-cols-5 gap-2">
+                {/* Water Glasses Grid - Fitia Style */}
+                <div className="grid grid-cols-5 gap-3">
                     {[...Array(10)].map((_, i) => (
                         <button
                             key={i}
                             onClick={() => setWaterGlasses(i < waterGlasses ? i : i + 1)}
-                            className={`aspect-square rounded-lg border-2 transition flex items-center justify-center ${i < waterGlasses
-                                    ? 'bg-blue-100 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700'
-                                    : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700'
-                                }`}
+                            className="group"
                         >
-                            <svg viewBox="0 0 24 32" className="w-6 h-8">
-                                {/* Glass outline */}
-                                <path
-                                    d="M4 4 L6 28 L18 28 L20 4 Z"
-                                    fill="none"
-                                    stroke={i < waterGlasses ? '#3b82f6' : '#d1d5db'}
-                                    strokeWidth="2"
+                            <div className={`
+                                aspect-[3/4] rounded-lg border-2 transition-all flex flex-col justify-end overflow-hidden
+                                ${i < waterGlasses
+                                    ? 'border-blue-300 dark:border-blue-600'
+                                    : 'border-gray-200 dark:border-gray-700 group-hover:border-blue-200'
+                                }
+                            `}>
+                                {/* Water Level */}
+                                <div
+                                    className={`
+                                        w-full transition-all duration-300 bg-gradient-to-t from-blue-400 to-blue-300
+                                        ${i < waterGlasses ? 'opacity-100' : 'opacity-0'}
+                                    `}
+                                    style={{ height: '40%' }}
                                 />
-                                {/* Water fill */}
-                                {i < waterGlasses && (
-                                    <path
-                                        d="M5.5 12 L6.5 26 L17.5 26 L18.5 12 Z"
-                                        fill="#93c5fd"
-                                    />
+                                {/* Glass Icon when empty */}
+                                {i >= waterGlasses && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <svg viewBox="0 0 24 32" className="w-6 h-8 text-gray-200 dark:text-gray-700">
+                                            <path d="M6 4h12l-1.5 24h-9L6 4z" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                                        </svg>
+                                    </div>
                                 )}
-                            </svg>
+                            </div>
                         </button>
                     ))}
                 </div>
-            </Card>
+            </div>
 
         </motion.div>
     );

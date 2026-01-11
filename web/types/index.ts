@@ -124,6 +124,7 @@ export interface Supplement {
 export interface GoalProjection {
     daily_calories: number;
     weekly_rate: number;
+    average_weekly_rate?: number;
     weeks: number;
     months: number;
     target_date: string;
@@ -133,6 +134,7 @@ export interface GoalProjection {
     warnings: string[];
     exercise_boost?: number;
     total_deficit?: number;
+    effectiveTDEE?: number;
 }
 
 // Recipe suggestion

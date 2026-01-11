@@ -344,7 +344,14 @@ export function calculateProjectionWithExercise(
 
     const months = Math.round(weeks / 4.33 * 10) / 10;
     const weightDiff = Math.abs(currentWeight - targetWeight);
-    const weeklyRate = weeks > 0 ? weightDiff / weeks : 0;
+
+    // INITIAL weekly rate based on current deficit (what user expects to see)
+    const initialDailyDeficit = effectiveTDEE - targetCalories;
+    const initialWeeklyRate = (initialDailyDeficit * 7) / KCAL_PER_KG;
+
+    // Average rate over entire period (accounting for metabolic adaptation)
+    const averageWeeklyRate = weeks > 0 ? weightDiff / weeks : 0;
+
     const totalDailyDeficit = effectiveTDEE - targetCalories;
 
     const targetDate = new Date();
@@ -356,7 +363,7 @@ export function calculateProjectionWithExercise(
     let color = '#22c55e';
     const warnings: string[] = [];
 
-    if (weeklyRate > 1) {
+    if (initialWeeklyRate > 1) {
         risk_level = 'moderate';
         risk_msg = 'Ritmo acelerado - Monitorear';
         color = '#f59e0b';
@@ -369,7 +376,8 @@ export function calculateProjectionWithExercise(
 
     return {
         daily_calories: targetCalories,
-        weekly_rate: Math.round(weeklyRate * 100) / 100,
+        weekly_rate: Math.round(initialWeeklyRate * 100) / 100, // INITIAL rate (what user expects)
+        average_weekly_rate: Math.round(averageWeeklyRate * 100) / 100, // Average over period
         weeks,
         months,
         target_date: targetDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),

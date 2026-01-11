@@ -137,9 +137,14 @@ export default function DashboardPage() {
 
     // Derived state for time range aggregation
     const aggregatedMetrics = useMemo(() => {
+        const days = range === 'hoy' ? 1 : range === 'semana' ? 7 : 30;
+        const periodLabel = range === 'hoy' ? 'Hoy' : range === 'semana' ? 'Semana' : 'Mes';
+
+        // ========== HOY ==========
         if (range === 'hoy') {
             return {
                 calories: todayTotals.calories,
+                targetCalories: projection?.daily_calories || 0,
                 protein: todayTotals.protein_g,
                 carbs: todayTotals.carbs_g,
                 fat: todayTotals.fat_g,
@@ -147,13 +152,12 @@ export default function DashboardPage() {
                 subLabel: `Plan ${mode.charAt(0).toUpperCase() + mode.slice(1)}`,
                 rateLabel: "Ritmo estimado",
                 rateValue: projection?.weekly_rate || 0,
+                deficit: ((projection?.effectiveTDEE || metrics?.tdee || 0) - todayTotals.calories),
                 isProjected: true
             };
         }
 
-        const days = range === 'semana' ? 7 : 30;
-
-        // Normalize to midnight to include the full boundary day
+        // ========== SEMANA / MES ==========
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - days);
         cutoffDate.setHours(0, 0, 0, 0);
@@ -161,11 +165,10 @@ export default function DashboardPage() {
         const cutoffStr = getUserLocalDate(cutoffDate);
         const todayStr = getUserLocalDate();
 
-        // 1. Filter historical logs
+        // Filter historical logs
         let validLogs = historyLogs.filter(l => l.log_date >= cutoffStr);
 
-        // 2. Check if today is already in logs. If not, and we have data, append it.
-        // This ensures "Semana" includes the calories you just tracked today.
+        // Include today's live data if not already in logs
         const todayLogExists = validLogs.some(l => l.log_date === todayStr);
         if (!todayLogExists && todayTotals.calories > 0 && profile) {
             validLogs = [...validLogs, {
@@ -180,18 +183,28 @@ export default function DashboardPage() {
             }];
         }
 
-        if (validLogs.length === 0) return {
-            calories: projection?.daily_calories || 0,
-            protein: macros?.protein_g || 0,
-            carbs: macros?.carbs_g || 0,
-            fat: macros?.fat_g || 0,
-            label: `Plan (${days}d)`,
-            subLabel: "Proyección basada en tu meta",
-            rateLabel: "Ritmo estimado",
-            rateValue: projection?.weekly_rate || 0,
-            isProjected: true
-        };
+        // ---------- PROJECTED (No History) ----------
+        if (validLogs.length === 0) {
+            const dailyTarget = projection?.daily_calories || 0;
+            const dailyTDEE = (projection?.effectiveTDEE || metrics?.tdee || 0);
+            const dailyDeficit = dailyTDEE - dailyTarget;
 
+            return {
+                calories: dailyTarget * days, // TOTAL for period
+                targetCalories: dailyTarget * days,
+                protein: (macros?.protein_g || 0) * days,
+                carbs: (macros?.carbs_g || 0) * days,
+                fat: (macros?.fat_g || 0) * days,
+                label: `Plan ${periodLabel}`,
+                subLabel: `Proyección de ${days} días`,
+                rateLabel: "Ritmo estimado",
+                rateValue: projection?.weekly_rate || 0,
+                deficit: dailyDeficit * days,
+                isProjected: true
+            };
+        }
+
+        // ---------- REAL DATA (Has History) ----------
         const sums = validLogs.reduce((acc, log) => ({
             calories: acc.calories + log.calories_consumed,
             protein: acc.protein + log.protein_g,
@@ -199,15 +212,12 @@ export default function DashboardPage() {
             fat: acc.fat + log.fat_g
         }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
-        // Calculate Average
-        const avg = {
-            calories: Math.round(sums.calories / validLogs.length),
-            protein: Math.round(sums.protein / validLogs.length),
-            carbs: Math.round(sums.carbs / validLogs.length),
-            fat: Math.round(sums.fat / validLogs.length)
-        };
+        // Target for the period
+        const targetCaloriesTotal = (projection?.daily_calories || 0) * days;
+        const tdeeTotal = ((projection?.effectiveTDEE || metrics?.tdee || 0)) * days;
+        const deficitReal = tdeeTotal - sums.calories;
 
-        // Calculate Observed Rate if weight data exists within this range
+        // Calculate Observed Rate from weight history
         let observedRate = 0;
         const weightsInRange = weightHistory
             .filter(w => new Date(w.recorded_at) >= cutoffDate)
@@ -216,24 +226,26 @@ export default function DashboardPage() {
         if (weightsInRange.length >= 2) {
             const first = weightsInRange[0];
             const last = weightsInRange[weightsInRange.length - 1];
-            // Difference in weeks
             const weeksDiff = (new Date(last.recorded_at).getTime() - new Date(first.recorded_at).getTime()) / (1000 * 60 * 60 * 24 * 7);
-
-            if (weeksDiff > 0.1) { // At least some time passed
-                // Weight Loss = First - Last (Positive value means loss)
+            if (weeksDiff > 0.1) {
                 observedRate = Number(((first.weight_kg - last.weight_kg) / weeksDiff).toFixed(2));
             }
         }
 
         return {
-            ...avg,
-            label: `Promedio (${days}d)`,
+            calories: sums.calories, // TOTAL consumed
+            targetCalories: targetCaloriesTotal,
+            protein: sums.protein,
+            carbs: sums.carbs,
+            fat: sums.fat,
+            label: `Total ${periodLabel}`,
             subLabel: `${validLogs.length} días registrados`,
             rateLabel: "Ritmo observado",
             rateValue: observedRate,
+            deficit: deficitReal,
             isProjected: false
         };
-    }, [range, todayTotals, historyLogs, projection, mode, weightHistory, profile, macros]);
+    }, [range, todayTotals, historyLogs, projection, mode, weightHistory, profile, macros, metrics]);
 
     const adherence = useMemo(() => {
         // Use last 7 days for adherence score
@@ -444,21 +456,15 @@ export default function DashboardPage() {
                             </div>
                             <div>
                                 <div className="text-sm text-gray-500 font-medium">
-                                    {range === 'hoy' ? 'Objetivo diario (Meta)' : 'Ingesta Media Diaria'}
+                                    {range === 'hoy' ? 'Objetivo diario' : `Meta ${range === 'semana' ? 'Semanal' : 'Mensual'}`}
                                 </div>
                                 <div className="text-4xl font-extrabold text-zinc-900 dark:text-white mt-1">
-                                    {range === 'hoy' ? projection.daily_calories : aggregatedMetrics.calories}
+                                    {aggregatedMetrics.targetCalories}
                                     <span className="text-lg font-normal text-gray-500 ml-1">kcal</span>
                                 </div>
-                                {range === 'hoy' ? (
-                                    <div className="text-sm text-gray-400 mt-1 font-medium">
-                                        Consumidas: <span className={aggregatedMetrics.calories > projection.daily_calories ? "text-red-500" : "text-green-500"}>{aggregatedMetrics.calories}</span> kcal
-                                    </div>
-                                ) : (
-                                    <div className="text-xs text-gray-400 mt-1">
-                                        Meta: {projection.daily_calories} kcal
-                                    </div>
-                                )}
+                                <div className="text-sm text-gray-400 mt-1 font-medium">
+                                    {range === 'hoy' ? 'Consumidas' : 'Ingesta real'}: <span className={aggregatedMetrics.calories > aggregatedMetrics.targetCalories ? "text-red-500" : "text-green-500"}>{aggregatedMetrics.calories}</span> kcal
+                                </div>
                                 {(projection.exercise_boost || 0) > 0 && range === 'hoy' && (
                                     <div className="text-xs font-semibold text-purple-600 mt-1 flex items-center gap-1">
                                         <Zap className="h-3 w-3" />
@@ -470,22 +476,22 @@ export default function DashboardPage() {
 
                         <div className="grid grid-cols-3 gap-3 mb-4">
                             <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700">
-                                <div className="text-xs text-gray-500">{range === 'hoy' ? 'Consumidas' : 'Ingesta'}</div>
+                                <div className="text-xs text-gray-500">{range === 'hoy' ? 'Consumidas' : 'Ingesta Total'}</div>
                                 <div className="text-lg font-semibold mt-1">{aggregatedMetrics.calories}</div>
                             </div>
                             <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700">
                                 <div className="text-xs text-gray-500">Restantes</div>
-                                <div className="text-lg font-semibold mt-1">{Math.max(0, projection.daily_calories - aggregatedMetrics.calories)}</div>
+                                <div className="text-lg font-semibold mt-1">{Math.max(0, aggregatedMetrics.targetCalories - aggregatedMetrics.calories)}</div>
                             </div>
                             <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700">
-                                <div className="text-xs text-gray-500">Déficit Est.</div>
+                                <div className="text-xs text-gray-500">{range === 'hoy' ? 'Déficit Est.' : `Déficit ${range === 'semana' ? 'Sem.' : 'Mes'}`}</div>
                                 <div className="text-lg font-semibold mt-1">
-                                    {Math.round((projection.effectiveTDEE || metrics.tdee) - aggregatedMetrics.calories)}
+                                    {Math.round(aggregatedMetrics.deficit)}
                                 </div>
                             </div>
                         </div>
 
-                        <ProgressBar value={aggregatedMetrics.calories} max={projection.daily_calories} color="purple" />
+                        <ProgressBar value={aggregatedMetrics.calories} max={aggregatedMetrics.targetCalories} color="purple" />
 
                         <div className="flex items-center gap-2 mt-4">
                             <Chip color="purple">Plan: {mode}</Chip>

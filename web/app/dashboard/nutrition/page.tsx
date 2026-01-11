@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Calculator, Info } from "lucide-react";
+import { Calculator, Info, Droplets, Scale } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, Select, Alert, ProgressBar } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile, upsertProfile } from "@/lib/supabase/database";
-import { calculateHealthMetrics, calculateMacros, calculateProjection, calculateIdealWeightRange, calculateWaterIntake } from "@/lib/calculations";
+import { calculateHealthMetrics, calculateMacros, calculateProjectionWithExercise, calculateIdealWeightRange, calculateWaterIntake } from "@/lib/calculations";
 import { DIET_MACROS, getMacroDistribution } from "@/lib/diets";
 import { UserProfile, DietType } from "@/types";
 
@@ -16,6 +16,7 @@ export default function NutritionPage() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [mode, setMode] = useState<"conservador" | "moderado" | "acelerado">("moderado");
     const [loading, setLoading] = useState(true);
+    const [weeklyExerciseCalories, setWeeklyExerciseCalories] = useState(0);
 
     useEffect(() => {
         const load = async () => {
@@ -28,6 +29,19 @@ export default function NutritionPage() {
             if (prof?.goal_speed) {
                 setMode(prof.goal_speed);
             }
+
+            // Fetch weekly exercise calories from active workout plan
+            const { data: activePlan } = await supabase
+                .from('workout_plans')
+                .select('weekly_calories_burned')
+                .eq('user_id', session.user.id)
+                .eq('is_active', true)
+                .single();
+
+            if (activePlan?.weekly_calories_burned) {
+                setWeeklyExerciseCalories(activePlan.weekly_calories_burned);
+            }
+
             setLoading(false);
         };
         load();
@@ -43,7 +57,7 @@ export default function NutritionPage() {
     };
 
     const metrics = useMemo(() => profile ? calculateHealthMetrics(profile, mode) : null, [profile, mode]);
-    const projection = useMemo(() => profile && metrics ? calculateProjection(profile.weight_kg, profile.target_weight_kg, metrics.tdee, profile.goal, mode) : null, [profile, metrics, mode]);
+    const projection = useMemo(() => profile && metrics ? calculateProjectionWithExercise(profile.weight_kg, profile.target_weight_kg, metrics.tdee, metrics.bmr, profile.goal, mode, weeklyExerciseCalories) : null, [profile, metrics, mode, weeklyExerciseCalories]);
     const macros = useMemo(() => projection && profile ? calculateMacros(projection.daily_calories, profile.diet_type) : null, [projection, profile]);
     const idealWeight = useMemo(() => profile ? calculateIdealWeightRange(profile.height_cm) : null, [profile]);
     const waterIntake = useMemo(() => profile ? calculateWaterIntake(profile.weight_kg, profile.activity_level) : 2.5, [profile]);
@@ -163,12 +177,12 @@ export default function NutritionPage() {
             {/* Additional Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
-                    <h3 className="text-lg font-semibold mb-3">💧 Hidratación</h3>
+                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2"><Droplets className="h-5 w-5 text-blue-500" /> Hidratación</h3>
                     <div className="text-3xl font-bold text-blue-500">{waterIntake} L</div>
                     <p className="text-sm text-gray-500 mt-1">Agua recomendada por día</p>
                 </Card>
                 <Card>
-                    <h3 className="text-lg font-semibold mb-3">⚖️ Peso Ideal</h3>
+                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2"><Scale className="h-5 w-5 text-amber-500" /> Peso Ideal</h3>
                     <div className="text-2xl font-bold">{idealWeight?.min} - {idealWeight?.max} kg</div>
                     <p className="text-sm text-gray-500 mt-1">Rango saludable para tu altura</p>
                 </Card>

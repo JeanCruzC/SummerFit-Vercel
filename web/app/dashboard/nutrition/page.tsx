@@ -57,13 +57,17 @@ export default function NutritionPage() {
     };
 
     const metrics = useMemo(() => profile ? calculateHealthMetrics(profile, mode) : null, [profile, mode]);
+
+    // Two projections: Diet Only vs Diet + Exercise
+    const projectionDietOnly = useMemo(() => profile && metrics ? calculateProjectionWithExercise(profile.weight_kg, profile.target_weight_kg, metrics.tdee, metrics.bmr, profile.goal, mode, 0) : null, [profile, metrics, mode]);
     const projection = useMemo(() => profile && metrics ? calculateProjectionWithExercise(profile.weight_kg, profile.target_weight_kg, metrics.tdee, metrics.bmr, profile.goal, mode, weeklyExerciseCalories) : null, [profile, metrics, mode, weeklyExerciseCalories]);
+
     const macros = useMemo(() => projection && profile ? calculateMacros(projection.daily_calories, profile.diet_type) : null, [projection, profile]);
     const idealWeight = useMemo(() => profile ? calculateIdealWeightRange(profile.height_cm) : null, [profile]);
     const waterIntake = useMemo(() => profile ? calculateWaterIntake(profile.weight_kg, profile.activity_level) : 2.5, [profile]);
     const macroDist = useMemo(() => profile ? getMacroDistribution(profile.diet_type) : null, [profile]);
 
-    if (loading || !profile || !metrics || !projection || !macros) {
+    if (loading || !profile || !metrics || !projection || !projectionDietOnly || !macros) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="h-12 w-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
@@ -128,18 +132,47 @@ export default function NutritionPage() {
                     </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-                    <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
-                        <div className="text-sm text-gray-500">Ritmo</div>
-                        <div className="text-xl font-semibold">{projection.weekly_rate} kg/sem</div>
+                {/* Two Projections: Diet Only vs Diet + Exercise */}
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Diet Only */}
+                    <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700">
+                        <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">Solo Dieta</h3>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <div className="text-xs text-gray-500">Ritmo</div>
+                                <div className="text-lg font-semibold">{projectionDietOnly.weekly_rate} kg/sem</div>
+                            </div>
+                            <div>
+                                <div className="text-xs text-gray-500">Semanas</div>
+                                <div className="text-lg font-semibold">{projectionDietOnly.weeks}</div>
+                            </div>
+                            <div>
+                                <div className="text-xs text-gray-500">Fecha</div>
+                                <div className="text-lg font-semibold">{projectionDietOnly.target_date}</div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
-                        <div className="text-sm text-gray-500">Semanas</div>
-                        <div className="text-xl font-semibold">{projection.weeks}</div>
-                    </div>
-                    <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
-                        <div className="text-sm text-gray-500">Fecha objetivo</div>
-                        <div className="text-xl font-semibold">{projection.target_date}</div>
+
+                    {/* Diet + Exercise */}
+                    <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-300 dark:border-purple-700">
+                        <h3 className="text-sm font-semibold text-purple-600 dark:text-purple-400 mb-3 flex items-center gap-2">
+                            Dieta + Ejercicio
+                            {weeklyExerciseCalories > 0 && <span className="text-xs font-normal">({Math.round(weeklyExerciseCalories / 7)} kcal/día)</span>}
+                        </h3>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <div className="text-xs text-gray-500">Ritmo</div>
+                                <div className="text-lg font-semibold text-purple-600">{projection.weekly_rate} kg/sem</div>
+                            </div>
+                            <div>
+                                <div className="text-xs text-gray-500">Semanas</div>
+                                <div className="text-lg font-semibold text-purple-600">{projection.weeks}</div>
+                            </div>
+                            <div>
+                                <div className="text-xs text-gray-500">Fecha</div>
+                                <div className="text-lg font-semibold text-purple-600">{projection.target_date}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

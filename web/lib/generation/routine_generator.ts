@@ -14,6 +14,7 @@ export type RoutineLevel = 'beginner' | 'intermediate' | 'advanced';
 export interface RoutineRequest {
     goal: RoutineGoal;
     level: RoutineLevel;
+    gender: 'M' | 'F';  // Gender for biomechanics-aware selection
     daysAvailable: number; // New Input
     timePerSession?: number; // Minutes
     equipment: UserEquipment[];
@@ -610,9 +611,36 @@ export class RoutineGenerator {
 
     private findBestExercise(slot: any, candidates: Exercise[], usedIds: Set<number>, request: RoutineRequest): { exercise: Exercise, score: number } | null {
         // Filter candidates by pattern and usage
-        const slotCandidates = candidates.filter(ex =>
+        let slotCandidates = candidates.filter(ex =>
             ex.movement_pattern === slot.pattern && !usedIds.has(ex.id)
         );
+
+        // GENDER-AWARE DIFFICULTY FILTERING
+        // For beginners (especially women), exclude advanced exercises
+        if (request.level === 'beginner') {
+            const advancedExercises = [
+                'diamond push-up', 'diamond push up', 'muscle up', 'muscle-up',
+                'pistol squat', 'one arm push up', 'planche', 'front lever',
+                'back lever', 'handstand push up', 'archer push up',
+                'dragon flag', 'human flag', 'l-sit', 'v-sit'
+            ];
+
+            slotCandidates = slotCandidates.filter(ex => {
+                const nameLower = ex.title.toLowerCase();
+                const isAdvanced = advancedExercises.some(adv => nameLower.includes(adv));
+
+                // For women beginners, also exclude certain compound movements
+                if (request.gender === 'F' && isAdvanced) {
+                    console.log(`🚫 Excluding advanced exercise for beginner woman: ${ex.title}`);
+                    return false;
+                }
+                if (isAdvanced) {
+                    console.log(`⚠️ Excluding advanced exercise for beginner: ${ex.title}`);
+                    return false;
+                }
+                return true;
+            });
+        }
 
         // Score candidates
         const scored = slotCandidates.map(ex => ({
@@ -634,7 +662,24 @@ export class RoutineGenerator {
             score = ex.score_hypertrophy || 2.5;
         }
 
+        // Equipment bonus
         if (ex.equipment_required?.includes('barbell')) score += 0.5;
+
+        // GENDER-AWARE SCORING
+        // Prioritize beginner-friendly exercises for women beginners
+        if (req.level === 'beginner' && req.gender === 'F') {
+            const beginnerFriendly = [
+                'wall push', 'incline push', 'knee push', 'assisted',
+                'goblet squat', 'bodyweight squat', 'hip thrust',
+                'lat pulldown', 'cable', 'machine', 'dumbbell'
+            ];
+            const nameLower = ex.title.toLowerCase();
+            const isFriendly = beginnerFriendly.some(bf => nameLower.includes(bf));
+            if (isFriendly) {
+                score += 1.5; // Boost beginner-friendly exercises
+            }
+        }
+
         return score;
     }
 

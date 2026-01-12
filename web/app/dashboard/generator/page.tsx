@@ -75,6 +75,7 @@ export default function GeneratorPage() {
             const generated = await generator.generate({
                 goal,
                 level,
+                gender: (profile?.gender as 'M' | 'F') || 'M',  // Gender-aware selection
                 daysAvailable,
                 equipment,
                 profile: profile ? {

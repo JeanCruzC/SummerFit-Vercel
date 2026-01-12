@@ -59,8 +59,8 @@ export default function NutritionPage() {
     const metrics = useMemo(() => profile ? calculateHealthMetrics(profile, mode) : null, [profile, mode]);
 
     // Two projections: Diet Only vs Diet + Exercise
-    const projectionDietOnly = useMemo(() => profile && metrics ? calculateProjectionWithExercise(profile.weight_kg, profile.target_weight_kg, metrics.tdee, metrics.bmr, profile.goal, mode, 0) : null, [profile, metrics, mode]);
-    const projection = useMemo(() => profile && metrics ? calculateProjectionWithExercise(profile.weight_kg, profile.target_weight_kg, metrics.tdee, metrics.bmr, profile.goal, mode, weeklyExerciseCalories) : null, [profile, metrics, mode, weeklyExerciseCalories]);
+    const projectionDietOnly = useMemo(() => profile && metrics ? calculateProjectionWithExercise(profile.weight_kg, profile.target_weight_kg, metrics.tdee, metrics.bmr, profile.goal, mode, 0, profile.gender as 'M' | 'F') : null, [profile, metrics, mode]);
+    const projection = useMemo(() => profile && metrics ? calculateProjectionWithExercise(profile.weight_kg, profile.target_weight_kg, metrics.tdee, metrics.bmr, profile.goal, mode, weeklyExerciseCalories, profile.gender as 'M' | 'F') : null, [profile, metrics, mode, weeklyExerciseCalories]);
 
     const macros = useMemo(() => projection && profile ? calculateMacros(projection.daily_calories, profile.diet_type) : null, [projection, profile]);
     const idealWeight = useMemo(() => profile ? calculateIdealWeightRange(profile.height_cm) : null, [profile]);

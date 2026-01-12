@@ -105,7 +105,8 @@ export default function DashboardPage() {
             metrics.bmr,
             profile.goal,
             mode, // Use UI state directly
-            activePlan?.estimated_calories_weekly || 0
+            activePlan?.estimated_calories_weekly || 0,
+            profile.gender as 'M' | 'F'  // Pass gender for correct calorie floor
         );
 
         // Debug logging - remove after verification

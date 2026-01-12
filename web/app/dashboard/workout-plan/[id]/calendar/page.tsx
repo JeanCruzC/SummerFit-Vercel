@@ -134,7 +134,8 @@ export default function WorkoutCalendarPage() {
                     bmr,
                     profileData.goal === 'Definir' ? 'Definir' : profileData.goal === 'Volumen' ? 'Volumen' : 'Mantener',
                     'moderado',
-                    exerciseCals
+                    exerciseCals,
+                    profileData.gender as 'M' | 'F'
                 );
                 setProjection(proj);
             }

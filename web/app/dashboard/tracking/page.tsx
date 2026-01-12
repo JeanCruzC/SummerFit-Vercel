@@ -76,7 +76,7 @@ export default function TrackingPage() {
     const metrics = profile ? calculateHealthMetrics(profile, profile.goal_speed || "moderado") : null;
     const projection = profile && metrics ? calculateProjectionWithExercise(
         profile.weight_kg, profile.target_weight_kg, metrics.tdee, metrics.bmr,
-        profile.goal, profile.goal_speed || "moderado", 0
+        profile.goal, profile.goal_speed || "moderado", 0, profile.gender as 'M' | 'F'
     ) : null;
     const macroTargets = projection && profile ? calculateMacros(projection.daily_calories, profile.diet_type) : null;
 

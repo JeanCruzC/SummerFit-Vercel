@@ -295,7 +295,8 @@ export function calculateProjectionWithExercise(
     bmr: number,
     goal: 'Definir' | 'Mantener' | 'Volumen',
     mode: 'conservador' | 'moderado' | 'acelerado' = 'moderado',
-    weeklyExerciseCalories: number = 0
+    weeklyExerciseCalories: number = 0,
+    gender: 'M' | 'F' = 'M'  // Add gender for correct calorie floor
 ): GoalProjection & { exercise_boost: number; total_deficit: number; effectiveTDEE: number } {
 
     // Calculate effective TDEE including exercise
@@ -309,7 +310,8 @@ export function calculateProjectionWithExercise(
     }
 
     // Target calories based on lifestyle TDEE (diet stays stable)
-    const targetCalories = calculateTargetCalories(tdee, goal, mode);
+    // IMPORTANT: Pass gender to use correct calorie floor (1200F, 1500M)
+    const targetCalories = calculateTargetCalories(tdee, goal, mode, gender);
     const isLosing = targetWeight < currentWeight;
 
     // Scientific constants

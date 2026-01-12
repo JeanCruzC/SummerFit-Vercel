@@ -3,10 +3,31 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { RoutineGenerator, type GeneratedRoutine, type RoutineGoal, type RoutineLevel } from "@/lib/generation/routine_generator";
-import type { UserEquipment, UserProfile } from "@/types";
+import type { UserEquipment, UserProfile, Exercise } from "@/types";
 import { useRouter } from "next/navigation";
 import { ProfileAnalyzer, type ProfileAnalysis } from "@/lib/intelligence/profile_analyzer";
 import { Brain, Target, Sparkles, Settings, CheckCircle, Activity, Clock, Gauge, Timer, Repeat, Info } from "lucide-react";
+
+/**
+ * Select the best media for the user's gender
+ * Priority: 1. Matching gender, 2. Fallback to any available
+ */
+function getGenderMedia(exercise: Exercise, userGender: 'M' | 'F') {
+    const media = exercise.exercise_media;
+    if (!media || media.length === 0) return undefined;
+
+    // Try to find matching gender first
+    const genderMatch = media.find(m =>
+        m.gender?.toLowerCase() === (userGender === 'F' ? 'female' : 'male') ||
+        m.gender?.toLowerCase() === (userGender === 'F' ? 'f' : 'm') ||
+        m.gender?.toLowerCase() === (userGender === 'F' ? 'mujer' : 'hombre')
+    );
+
+    if (genderMatch) return genderMatch;
+
+    // Fallback to first available
+    return media[0];
+}
 
 export default function GeneratorPage() {
     const router = useRouter();
@@ -502,72 +523,76 @@ export default function GeneratorPage() {
                                     </div>
 
                                     <div className="p-2 flex-1 overflow-y-auto">
-                                        {day.exercises.map((exItem, i) => (
-                                            <div key={i} className="p-3 mb-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                                                <div className="flex gap-3">
-                                                    <div className="w-16 h-16 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0 relative cursor-pointer hover:opacity-80 transition-opacity"
-                                                        onClick={() => setSelectedExercise(exItem)}
-                                                    >
-                                                        {exItem.exercise.exercise_media?.[0]?.url ? (
-                                                            exItem.exercise.exercise_media[0].type === 'video' ? (
-                                                                <video
-                                                                    src={exItem.exercise.exercise_media[0].url}
-                                                                    className="w-full h-full object-cover"
-                                                                    muted
-                                                                    loop
-                                                                    playsInline
-                                                                    onMouseOver={e => e.currentTarget.play()}
-                                                                    onMouseOut={e => e.currentTarget.pause()}
-                                                                />
+                                        {day.exercises.map((exItem, i) => {
+                                            // Get gender-appropriate media
+                                            const media = getGenderMedia(exItem.exercise, (profile?.gender as 'M' | 'F') || 'M');
+                                            return (
+                                                <div key={i} className="p-3 mb-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+                                                    <div className="flex gap-3">
+                                                        <div className="w-16 h-16 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0 relative cursor-pointer hover:opacity-80 transition-opacity"
+                                                            onClick={() => setSelectedExercise(exItem)}
+                                                        >
+                                                            {media?.url ? (
+                                                                media.type === 'video' ? (
+                                                                    <video
+                                                                        src={media.url}
+                                                                        className="w-full h-full object-cover"
+                                                                        muted
+                                                                        loop
+                                                                        playsInline
+                                                                        onMouseOver={e => e.currentTarget.play()}
+                                                                        onMouseOut={e => e.currentTarget.pause()}
+                                                                    />
+                                                                ) : (
+                                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                                    <img
+                                                                        src={media.url}
+                                                                        className="w-full h-full object-cover"
+                                                                        alt={exItem.exercise.title}
+                                                                    />
+                                                                )
                                                             ) : (
-                                                                // eslint-disable-next-line @next/next/no-img-element
-                                                                <img
-                                                                    src={exItem.exercise.exercise_media[0].url}
-                                                                    className="w-full h-full object-cover"
-                                                                    alt={exItem.exercise.title}
-                                                                />
-                                                            )
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No img</div>
-                                                        )}
-                                                        <div className="absolute bottom-0 right-0 bg-black/60 text-white text-[10px] px-1 font-bold">
-                                                            {i + 1}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="font-bold text-zinc-900 dark:text-white text-sm truncate leading-tight">
-                                                            {exItem.exercise.title}
-                                                        </h4>
-
-                                                        {/* Smart Prescription */}
-                                                        <div className="mt-2 grid grid-cols-2 gap-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                                                            <div className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="S×R = Series × Repeticiones">
-                                                                <Repeat className="h-3 w-3 text-purple-600" />
-                                                                <span className="font-bold text-purple-600">S×R</span> {exItem.sets} x {exItem.reps}
-                                                            </div>
-                                                            <div className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="Descanso entre series (segundos)">
-                                                                <Clock className="h-3 w-3 text-gray-500" /> {exItem.rest}
-                                                            </div>
-                                                            <div className="bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="RIR = Reps en Reserva (0-2 óptimo para hipertrofia)">
-                                                                <Gauge className="h-3 w-3" /> RIR {exItem.rir}
-                                                            </div>
-                                                            {exItem.tempo && (
-                                                                <div className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="Tempo = Excéntrica-Pausa-Concéntrica-Pausa (ej: 2-0-1-0 = 2s bajar, 0s pausa, 1s subir, 0s arriba)">
-                                                                    <Timer className="h-3 w-3" /> {exItem.tempo}
-                                                                </div>
+                                                                <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No img</div>
                                                             )}
+                                                            <div className="absolute bottom-0 right-0 bg-black/60 text-white text-[10px] px-1 font-bold">
+                                                                {i + 1}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="font-bold text-zinc-900 dark:text-white text-sm truncate leading-tight">
+                                                                {exItem.exercise.title}
+                                                            </h4>
+
+                                                            {/* Smart Prescription */}
+                                                            <div className="mt-2 grid grid-cols-2 gap-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
+                                                                <div className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="S×R = Series × Repeticiones">
+                                                                    <Repeat className="h-3 w-3 text-purple-600" />
+                                                                    <span className="font-bold text-purple-600">S×R</span> {exItem.sets} x {exItem.reps}
+                                                                </div>
+                                                                <div className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="Descanso entre series (segundos)">
+                                                                    <Clock className="h-3 w-3 text-gray-500" /> {exItem.rest}
+                                                                </div>
+                                                                <div className="bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="RIR = Reps en Reserva (0-2 óptimo para hipertrofia)">
+                                                                    <Gauge className="h-3 w-3" /> RIR {exItem.rir}
+                                                                </div>
+                                                                {exItem.tempo && (
+                                                                    <div className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="Tempo = Excéntrica-Pausa-Concéntrica-Pausa (ej: 2-0-1-0 = 2s bajar, 0s pausa, 1s subir, 0s arriba)">
+                                                                        <Timer className="h-3 w-3" /> {exItem.tempo}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                {/* Reasoning */}
-                                                <div className="mt-2 ml-[76px] text-[10px] text-zinc-400 border-l-2 border-purple-200 pl-2">
-                                                    {exItem.reason}
-                                                    {exItem.note && <span className="block text-purple-500 font-medium mt-0.5">{exItem.note}</span>}
+                                                    {/* Reasoning */}
+                                                    <div className="mt-2 ml-[76px] text-[10px] text-zinc-400 border-l-2 border-purple-200 pl-2">
+                                                        {exItem.reason}
+                                                        {exItem.note && <span className="block text-purple-500 font-medium mt-0.5">{exItem.note}</span>}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
 
 
                                     </div>

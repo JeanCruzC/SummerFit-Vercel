@@ -299,76 +299,80 @@ export default function WorkoutCalendarPage() {
                         </button>
                     </div>
 
-                    {/* Days of Week */}
-                    <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800">
-                        {DAYS.map(day => (
-                            <div key={day} className="p-4 text-center font-bold text-sm text-zinc-500 uppercase">
-                                {day}
+                    {/* Days of Week - Scrollable on mobile */}
+                    <div className="overflow-x-auto">
+                        <div className="min-w-[600px]">
+                            <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800">
+                                {DAYS.map(day => (
+                                    <div key={day} className="p-3 sm:p-4 text-center font-bold text-xs sm:text-sm text-zinc-500 uppercase">
+                                        {day}
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
 
-                    {/* Calendar Grid */}
-                    <div className="grid grid-cols-7">
-                        {daysInMonth.map((date, idx) => {
-                            const workout = getWorkoutForDate(date);
-                            const today = isToday(date);
-                            const completed = isCompleted(date);
+                            {/* Calendar Grid */}
+                            <div className="grid grid-cols-7">
+                                {daysInMonth.map((date, idx) => {
+                                    const workout = getWorkoutForDate(date);
+                                    const today = isToday(date);
+                                    const completed = isCompleted(date);
 
-                            return (
-                                <div
-                                    key={idx}
-                                    className={`min-h-[120px] p-3 border-b border-r border-gray-200 dark:border-gray-800 ${!date ? 'bg-gray-50 dark:bg-gray-900/50' : ''
-                                        } ${today ? 'bg-purple-50 dark:bg-purple-900/20' : ''}`}
-                                >
-                                    {date && (
-                                        <>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className={`text-sm font-bold ${today ? 'text-purple-600' : 'text-zinc-900 dark:text-white'}`}>
-                                                    {date.getDate()}
-                                                </span>
-                                                {workout && (
-                                                    <button
-                                                        onClick={() => handleToggleComplete(date)}
-                                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${completed
-                                                            ? 'bg-green-500 border-green-500'
-                                                            : 'border-gray-300 hover:border-green-500'
-                                                            } ${new Date(date).setHours(0, 0, 0, 0) > new Date().setHours(0, 0, 0, 0) ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                                    >
-                                                        {completed && <Check className="h-4 w-4 text-white" />}
-                                                    </button>
-                                                )}
-                                            </div>
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className={`min-h-[120px] p-3 border-b border-r border-gray-200 dark:border-gray-800 ${!date ? 'bg-gray-50 dark:bg-gray-900/50' : ''
+                                                } ${today ? 'bg-purple-50 dark:bg-purple-900/20' : ''}`}
+                                        >
+                                            {date && (
+                                                <>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className={`text-sm font-bold ${today ? 'text-purple-600' : 'text-zinc-900 dark:text-white'}`}>
+                                                            {date.getDate()}
+                                                        </span>
+                                                        {workout && (
+                                                            <button
+                                                                onClick={() => handleToggleComplete(date)}
+                                                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${completed
+                                                                    ? 'bg-green-500 border-green-500'
+                                                                    : 'border-gray-300 hover:border-green-500'
+                                                                    } ${new Date(date).setHours(0, 0, 0, 0) > new Date().setHours(0, 0, 0, 0) ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                {completed && <Check className="h-4 w-4 text-white" />}
+                                                            </button>
+                                                        )}
+                                                    </div>
 
-                                            {workout ? (
-                                                <div
-                                                    onClick={() => setSelectedDay(workout)}
-                                                    className="bg-purple-100 dark:bg-purple-900/30 rounded-lg p-2 cursor-pointer hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors border border-purple-200 dark:border-purple-800/30"
-                                                >
-                                                    <div className="text-[10px] font-black text-purple-900 dark:text-purple-100 mb-1 truncate uppercase tracking-tighter">
-                                                        {workout.day_name}
-                                                    </div>
-                                                    <div className="text-[10px] text-purple-700 dark:text-purple-300 flex items-center gap-1">
-                                                        {TIME_SLOTS[workout.time_slot as keyof typeof TIME_SLOTS].icon}
-                                                        <span className="truncate">{workout.exercises.length} ejercicios</span>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div
-                                                    className="text-[10px] text-gray-400 text-center py-4 flex flex-col items-center gap-1 group cursor-pointer"
-                                                    onClick={() => {/* Open manual add modal if needed */ }}
-                                                >
-                                                    <span className="opacity-0 group-hover:opacity-100 transition-opacity uppercase font-bold tracking-widest text-[8px]">Descanso</span>
-                                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-gray-100 dark:bg-gray-800 rounded-full hover:text-purple-500">
-                                                        <Plus className="h-3 w-3" />
-                                                    </div>
-                                                </div>
+                                                    {workout ? (
+                                                        <div
+                                                            onClick={() => setSelectedDay(workout)}
+                                                            className="bg-purple-100 dark:bg-purple-900/30 rounded-lg p-2 cursor-pointer hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors border border-purple-200 dark:border-purple-800/30"
+                                                        >
+                                                            <div className="text-[10px] font-black text-purple-900 dark:text-purple-100 mb-1 truncate uppercase tracking-tighter">
+                                                                {workout.day_name}
+                                                            </div>
+                                                            <div className="text-[10px] text-purple-700 dark:text-purple-300 flex items-center gap-1">
+                                                                {TIME_SLOTS[workout.time_slot as keyof typeof TIME_SLOTS].icon}
+                                                                <span className="truncate">{workout.exercises.length} ejercicios</span>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div
+                                                            className="text-[10px] text-gray-400 text-center py-4 flex flex-col items-center gap-1 group cursor-pointer"
+                                                            onClick={() => {/* Open manual add modal if needed */ }}
+                                                        >
+                                                            <span className="opacity-0 group-hover:opacity-100 transition-opacity uppercase font-bold tracking-widest text-[8px]">Descanso</span>
+                                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-gray-100 dark:bg-gray-800 rounded-full hover:text-purple-500">
+                                                                <Plus className="h-3 w-3" />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
-                                        </>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </div>
                 </div>
 

@@ -215,7 +215,7 @@ export default function TrackingPage() {
                     </div>
 
                     {/* Macro Bars */}
-                    <div className="grid grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {/* Proteínas */}
                         <div>
                             <div className="flex items-baseline justify-between mb-2">
@@ -392,7 +392,7 @@ export default function TrackingPage() {
                     </div>
 
                     {/* Water Glasses Grid - Fitia Style (6 columns, 2 rows = 12 glasses) */}
-                    <div className="grid grid-cols-5 gap-3">
+                    <div className="grid grid-cols-5 gap-2 sm:gap-3">
                         {[...Array(10)].map((_, i) => {
                             const isFilled = i < waterGlasses;
 

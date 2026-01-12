@@ -116,6 +116,18 @@ export function calculateTargetCalories(
 
     // Gender-specific safety floors (NIH/WebMD guidelines)
     const calorieFloor = gender === 'F' ? 1200 : 1500;
+
+    // DEBUG: Log to verify correct gender is being used
+    console.log('🎯 calculateTargetCalories:', {
+        tdee,
+        goal,
+        mode,
+        gender,
+        rawCalories: targetCalories,
+        floor: calorieFloor,
+        final: Math.max(targetCalories, calorieFloor)
+    });
+
     return Math.max(targetCalories, calorieFloor);
 }
 

@@ -109,7 +109,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="Juan Pérez"
                   required
-                  className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white border-2 border-zinc-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition font-medium"
+                  className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white border-2 border-zinc-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition font-medium text-zinc-900 placeholder:text-zinc-400"
                 />
               </div>
             </div>
@@ -127,7 +127,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="tu@email.com"
                   required
-                  className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white border-2 border-zinc-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition font-medium"
+                  className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white border-2 border-zinc-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition font-medium text-zinc-900 placeholder:text-zinc-400"
                 />
               </div>
             </div>
@@ -145,7 +145,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="Mínimo 6 caracteres"
                   required
-                  className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-white border-2 border-zinc-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition font-medium"
+                  className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-white border-2 border-zinc-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition font-medium text-zinc-900 placeholder:text-zinc-400"
                 />
                 <button
                   type="button"
@@ -170,7 +170,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="Repite tu contraseña"
                   required
-                  className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white border-2 border-zinc-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition font-medium"
+                  className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white border-2 border-zinc-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition font-medium text-zinc-900 placeholder:text-zinc-400"
                 />
               </div>
             </div>

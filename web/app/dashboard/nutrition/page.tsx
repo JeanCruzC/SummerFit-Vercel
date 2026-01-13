@@ -152,6 +152,22 @@ export default function NutritionPage() {
                 </Card>
             </div>
 
+            {/* Meal Generator CTA */}
+            <Card className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h3 className="text-xl font-bold mb-2">¿No sabes qué comer hoy?</h3>
+                        <p className="text-purple-100">Genera un plan de 1 día adaptado a tus macros y objetivos automáticamenete.</p>
+                    </div>
+                    <button
+                        onClick={() => router.push('/dashboard/meal-generator')}
+                        className="px-6 py-3 bg-white text-purple-600 font-bold rounded-xl hover:bg-gray-100 transition-colors whitespace-nowrap"
+                    >
+                        Generar Menú
+                    </button>
+                </div>
+            </Card>
+
 
         </motion.div>
     );

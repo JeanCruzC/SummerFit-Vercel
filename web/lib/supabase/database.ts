@@ -128,6 +128,15 @@ export async function addMealEntry(entry: Omit<MealEntry, 'id' | 'created_at'>):
     return !error;
 }
 
+export async function saveMealPlan(entries: Omit<MealEntry, 'id' | 'created_at'>[]): Promise<boolean> {
+    const supabase = createClient();
+    const { error } = await supabase
+        .from('meal_entries')
+        .insert(entries);
+
+    return !error;
+}
+
 export async function deleteMealEntry(id: number): Promise<boolean> {
     const supabase = createClient();
     const { error } = await supabase

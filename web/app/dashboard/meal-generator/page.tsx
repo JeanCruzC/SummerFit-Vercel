@@ -11,13 +11,17 @@ import {
     SIMPLE_FOODS
 } from "@/lib/mealGenerator";
 import { createClient } from "@/lib/supabase/client";
-import { getProfile } from "@/lib/supabase/database";
+import { getProfile, saveMealPlan } from "@/lib/supabase/database";
+import { getUserLocalDate } from "@/lib/date";
+import { useRouter } from "next/navigation";
 import { UserProfile } from "@/types";
 
 export default function MealGeneratorPage() {
+    const router = useRouter();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     // User inputs
     const [targetCalories, setTargetCalories] = useState(2000);
@@ -112,6 +116,38 @@ export default function MealGeneratorPage() {
         if (ratio < 0.9) return 'bg-yellow-500';
         if (ratio > 1.1) return 'bg-red-500';
         return 'bg-green-500';
+    };
+
+    const handleSave = async () => {
+        if (!mealPlan || !profile) return;
+        setSaving(true);
+        try {
+            const entries = [];
+            for (const meal of mealPlan.meals) {
+                // Determine meal_type string expected by DB
+                const dbMealType = meal.type_es;
+
+                for (const item of meal.items) {
+                    entries.push({
+                        user_id: profile.user_id,
+                        log_date: getUserLocalDate(),
+                        meal_type: dbMealType as any,
+                        food_name: item.food.name_es || item.food.name,
+                        grams: item.portion_g,
+                        calories: item.macros.kcal,
+                        protein_g: item.macros.protein,
+                        carbs_g: item.macros.carbs,
+                        fat_g: item.macros.fat,
+                    });
+                }
+            }
+            await saveMealPlan(entries);
+            router.push('/dashboard/tracking');
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setSaving(false);
+        }
     };
 
     if (loading) {
@@ -222,6 +258,17 @@ export default function MealGeneratorPage() {
                             )}
                             {generating ? 'Generando...' : 'Generar Plan'}
                         </Button>
+
+                        {/* Save Button */}
+                        {mealPlan && (
+                            <Button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="w-full mt-3 py-3 text-lg bg-green-600 hover:bg-green-700 text-white"
+                            >
+                                {saving ? 'Guardando...' : 'Guardar en Diario de Seguimiento'}
+                            </Button>
+                        )}
                     </Card>
                 </motion.div>
 

@@ -10,6 +10,7 @@ export const DIET_MACROS: Record<DietType, MacroDistribution> = {
     'Paleo': { protein_pct: 30, carbs_pct: 35, fat_pct: 35 },
     'Mediterránea': { protein_pct: 20, carbs_pct: 50, fat_pct: 30 },
     'Alta Proteína': { protein_pct: 40, carbs_pct: 35, fat_pct: 25 },
+    'Diabéticos': { protein_pct: 30, carbs_pct: 26, fat_pct: 44 },
 };
 
 // Diet descriptions
@@ -54,6 +55,11 @@ export const DIET_INFO: Record<DietType, { description: string; benefits: string
         benefits: ['Ganancia muscular', 'Saciedad', 'Recuperación deportiva'],
         restrictions: [],
     },
+    'Diabéticos': {
+        description: 'Baja en carbohidratos simples y enfocada en el control glucémico (USDA DGA).',
+        benefits: ['Control de azúcar en sangre', 'Prevención de picos de insulina', 'Pérdida de peso segura'],
+        restrictions: ['Azúcares refinados', 'Bebidas azucaradas', 'Harinas blancas', 'Dulces'],
+    },
 };
 
 // Foods to avoid per diet
@@ -62,6 +68,7 @@ export const DIET_AVOID_CATEGORIES: Partial<Record<DietType, string[]>> = {
     'Vegana': ['Beef Products', 'Poultry Products', 'Pork Products', 'Lamb, Veal, and Game Products', 'Finfish and Shellfish Products', 'Dairy and Egg Products', 'Sausages and Luncheon Meats'],
     'Vegetariana': ['Beef Products', 'Poultry Products', 'Pork Products', 'Lamb, Veal, and Game Products', 'Finfish and Shellfish Products', 'Sausages and Luncheon Meats'],
     'Paleo': ['Baked Foods', 'Dairy and Egg Products', 'Legumes', 'Grains and Pasta'],
+    'Diabéticos': ['Sweets', 'Baked Foods', 'Breakfast Cereals (High Sugar)', 'Beverages (Sugary)'],
 };
 
 // Get macro distribution for a diet type

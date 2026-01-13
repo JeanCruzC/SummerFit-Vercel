@@ -20,6 +20,7 @@ const DIET_OPTIONS: { value: DietType; label: string }[] = [
     { value: "Paleo", label: "Paleo" },
     { value: "Mediterránea", label: "Mediterránea" },
     { value: "Alta Proteína", label: "Alta Proteína" },
+    { value: "Diabéticos", label: "Diabéticos (Bajo Indice Glucémico)" },
 ];
 
 const ACTIVITY_OPTIONS = [

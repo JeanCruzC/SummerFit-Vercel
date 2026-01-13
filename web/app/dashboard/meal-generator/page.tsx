@@ -69,7 +69,8 @@ export default function MealGeneratorPage() {
                                 'Vegetariana': 'vegetarian',
                                 'Paleo': 'paleo',
                                 'Mediterránea': 'mediterranean',
-                                'Alta Proteína': 'high_protein'
+                                'Alta Proteína': 'high_protein',
+                                'Diabéticos': 'diabetes_friendly'
                             };
                             const mappedType = dietMap[userProfile.diet_type] || 'balanced';
                             setDietType(mappedType);

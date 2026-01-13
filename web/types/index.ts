@@ -24,7 +24,8 @@ export type DietType =
     | 'Vegetariana'
     | 'Paleo'
     | 'Mediterránea'
-    | 'Alta Proteína';
+    | 'Alta Proteína'
+    | 'Diabéticos';
 
 // Macro distribution
 export interface MacroDistribution {

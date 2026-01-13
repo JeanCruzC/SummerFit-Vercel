@@ -2,101 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, X, Leaf, UtensilsCrossed, LayoutGrid } from "lucide-react";
+import { Search, Plus, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, Button, Input, Alert } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { searchFoods, getFoodCategories, addMealEntry, getProfile, getRandomFoods } from "@/lib/supabase/database";
 import { FoodItem, UserProfile } from "@/types";
-
-const CATEGORY_TRANSLATIONS: Record<string, string> = {
-    // Actual DB categories
-    "Meats": "Carnes",
-    "Vegetables": "Verduras",
-    "Fruits": "Frutas",
-    "Fish": "Pescados",
-    "Beans and Lentils": "Legumbres",
-    "Grains and Pasta": "Granos y Pasta",
-    "Baked Foods": "Panadería",
-    "Soups and Sauces": "Sopas y Salsas",
-    "American Indian": "Comida Nativa",
-    // Standard USDA categories
-    "Dairy and Egg Products": "Lácteos y Huevos",
-    "Spices and Herbs": "Especias y Hierbas",
-    "Baby Foods": "Bebés",
-    "Fats and Oils": "Grasas y Aceites",
-    "Poultry Products": "Aves y Pollo",
-    "Soups, Sauces, and Gravies": "Sopas y Salsas",
-    "Sausages and Luncheon Meats": "Embutidos",
-    "Breakfast Cereals": "Cereales",
-    "Fruits and Fruit Juices": "Frutas",
-    "Pork Products": "Cerdo",
-    "Vegetables and Vegetable Products": "Verduras",
-    "Nut and Seed Products": "Nueces y Semillas",
-    "Beef Products": "Ternera",
-    "Beverages": "Bebidas",
-    "Finfish and Shellfish Products": "Pescados y Mariscos",
-    "Legumes and Legume Products": "Legumbres",
-    "Lamb, Veal, and Game Products": "Cordero y Caza",
-    "Baked Products": "Panadería",
-    "Sweets": "Dulces",
-    "Cereal Grains and Pasta": "Granos y Pasta",
-    "Fast Foods": "Comida Rápida",
-    "Meals, Entrees, and Side Dishes": "Platos Preparados",
-    "Snacks": "Snacks",
-    "American Indian/Alaska Native Foods": "Comida Nativa",
-    "Restaurant Foods": "Restaurante",
-};
-
-const translateCategory = (cat: string) => CATEGORY_TRANSLATIONS[cat] || cat;
-
-// Categories that are "basic" ingredients vs prepared dishes
-// Based on actual database category values
-const BASIC_CATEGORIES = [
-    // Actual DB categories
-    "Meats",
-    "Vegetables",
-    "Fruits",
-    "Fish",
-    "Beans and Lentils",
-    "Grains and Pasta",
-    // Standard USDA categories (for compatibility)
-    "Dairy and Egg Products",
-    "Fats and Oils",
-    "Poultry Products",
-    "Fruits and Fruit Juices",
-    "Pork Products",
-    "Vegetables and Vegetable Products",
-    "Nut and Seed Products",
-    "Beef Products",
-    "Finfish and Shellfish Products",
-    "Legumes and Legume Products",
-    "Lamb, Veal, and Game Products",
-    "Cereal Grains and Pasta",
-    "Spices and Herbs",
-    "Beverages",
-];
-
-const PREPARED_CATEGORIES = [
-    // Actual DB categories
-    "Baked Foods",
-    "Soups and Sauces",
-    "Restaurant Foods",
-    "Sweets",
-    "Snacks",
-    "Baby Foods",
-    "Breakfast Cereals",
-    "American Indian",
-    // Standard USDA categories (for compatibility)
-    "Fast Foods",
-    "Meals, Entrees, and Side Dishes",
-    "Baked Products",
-    "Sausages and Luncheon Meats",
-    "Soups, Sauces, and Gravies",
-];
-
-const isBasicFood = (category: string | null | undefined) => BASIC_CATEGORIES.includes(category || "");
-const isPreparedFood = (category: string | null | undefined) => PREPARED_CATEGORIES.includes(category || "");
 
 export default function FoodsPage() {
     const router = useRouter();
@@ -106,7 +17,6 @@ export default function FoodsPage() {
     const [foods, setFoods] = useState<FoodItem[]>([]);
     const [categories, setCategories] = useState<string[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("");
-    const [foodType, setFoodType] = useState<"all" | "basic" | "prepared">("all");
     const [loading, setLoading] = useState(false);
     const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
     const [grams, setGrams] = useState(100);
@@ -128,7 +38,7 @@ export default function FoodsPage() {
             setCategories(cats);
             setProfile(prof);
 
-            // Load initial popular foods
+            // Load initial random foods
             const initialFoods = await getRandomFoods(30);
             initialFoods.sort((a, b) => (a.name?.length || 0) - (b.name?.length || 0));
             setFoods(initialFoods);
@@ -140,16 +50,7 @@ export default function FoodsPage() {
         if (!query.trim()) return;
         setLoading(true);
         const results = await searchFoods(query, 50);
-
-        // Sort by length to prioritize basics (e.g. "Arroz" < "Snacks de Arroz...")
-        // And push "Restaurant" or "Snacks" to the bottom if needed?
-        // Length sort is usually sufficient for "Basics first"
-        results.sort((a, b) => {
-            // Priority check: Put "Raw" or simple categories first if possible?
-            // For now, Length is the best heuristic.
-            return a.name.length - b.name.length;
-        });
-
+        results.sort((a, b) => a.name.length - b.name.length);
         setFoods(results);
         setLoading(false);
     };
@@ -190,14 +91,19 @@ export default function FoodsPage() {
         };
     };
 
+    // Filter foods by selected category
+    const filteredFoods = selectedCategory
+        ? foods.filter(f => f.category === selectedCategory)
+        : foods;
+
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold">Buscar Alimentos</h1>
-                <p className="text-gray-500 mt-1">Base de datos con más de 14,000 alimentos.</p>
+                <h1 className="text-3xl font-bold">Food Search</h1>
+                <p className="text-gray-500 mt-1">USDA Database with 8,000+ foods.</p>
             </div>
 
-            {added && <Alert type="success">✅ Alimento agregado a tu registro.</Alert>}
+            {added && <Alert type="success">✅ Food added to your log.</Alert>}
 
             {/* Search */}
             <Card>
@@ -206,7 +112,7 @@ export default function FoodsPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Buscar alimento (ej: pollo, arroz, manzana...)"
+                            placeholder="Search food (e.g: chicken, rice, apple...)"
                             value={query}
                             onChange={e => setQuery(e.target.value)}
                             onKeyDown={e => e.key === "Enter" && handleSearch()}
@@ -214,101 +120,61 @@ export default function FoodsPage() {
                         />
                     </div>
                     <Button onClick={handleSearch} disabled={loading}>
-                        {loading ? "Buscando..." : "Buscar"}
+                        {loading ? "Searching..." : "Search"}
                     </Button>
                 </div>
 
-                {/* Food Type Filter (Básicos vs Preparados) */}
-                <div className="mt-4 flex gap-2">
-                    <button
-                        onClick={() => setFoodType("all")}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-1.5 ${foodType === "all" ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
-                    >
-                        <LayoutGrid className="h-4 w-4" />
-                        Todos
-                    </button>
-                    <button
-                        onClick={() => setFoodType("basic")}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-1.5 ${foodType === "basic" ? "bg-green-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
-                    >
-                        <Leaf className="h-4 w-4" />
-                        Básicos
-                    </button>
-                    <button
-                        onClick={() => setFoodType("prepared")}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-1.5 ${foodType === "prepared" ? "bg-orange-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
-                    >
-                        <UtensilsCrossed className="h-4 w-4" />
-                        Preparados
-                    </button>
-                </div>
-
-                {/* Category filter */}
+                {/* Category filter - Dynamic from DB */}
                 <div className="mt-3 flex flex-wrap gap-2">
                     <button
                         onClick={() => setSelectedCategory("")}
                         className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${!selectedCategory ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"}`}
                     >
-                        Todas categorías
+                        All Categories
                     </button>
-                    {categories
-                        .filter(cat => {
-                            if (foodType === "basic") return isBasicFood(cat);
-                            if (foodType === "prepared") return isPreparedFood(cat);
-                            return true;
-                        })
-                        .slice(0, 8).map(cat => (
-                            <button
-                                key={cat}
-                                onClick={() => setSelectedCategory(cat)}
-                                className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedCategory === cat ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"}`}
-                            >
-                                {translateCategory(cat)}
-                            </button>
-                        ))}
+                    {categories.slice(0, 12).map(cat => (
+                        <button
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat)}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedCategory === cat ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"}`}
+                        >
+                            {cat}
+                        </button>
+                    ))}
                 </div>
             </Card>
 
             {/* Results */}
-            {foods.length > 0 && (
+            {filteredFoods.length > 0 && (
                 <Card>
-                    <h3 className="text-lg font-semibold mb-4">{foods.length} resultados</h3>
+                    <h3 className="text-lg font-semibold mb-4">{filteredFoods.length} results</h3>
                     <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                        {foods
-                            .filter(f => {
-                                // Apply category filter
-                                if (selectedCategory && f.category !== selectedCategory) return false;
-                                // Apply food type filter
-                                if (foodType === "basic" && !isBasicFood(f.category)) return false;
-                                if (foodType === "prepared" && !isPreparedFood(f.category)) return false;
-                                return true;
-                            })
-                            .map(food => {
-                                const n = calcNutrients(food, 100);
-                                return (
-                                    <div
-                                        key={food.id}
-                                        onClick={() => setSelectedFood(food)}
-                                        className={`p-3 rounded-xl border cursor-pointer transition ${selectedFood?.id === food.id ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20" : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <div className="font-medium text-gray-900 dark:text-white">{food.name}</div>
-                                                <div className="text-xs text-gray-500">{translateCategory(food.category || "")}</div>
-                                            </div>
-                                            <div className="text-right text-sm">
-                                                <div className="font-semibold text-purple-600">{n.kcal} kcal</div>
-                                                <div className="text-xs text-gray-500">por 100g</div>
-                                            </div>
+                        {filteredFoods.map(food => {
+                            const n = calcNutrients(food, 100);
+                            return (
+                                <div
+                                    key={food.id}
+                                    onClick={() => setSelectedFood(food)}
+                                    className={`p-3 rounded-xl border cursor-pointer transition ${selectedFood?.id === food.id ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20" : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <div className="font-medium text-gray-900 dark:text-white">{food.name}</div>
+                                            <div className="text-xs text-gray-500">{food.category || ""}</div>
                                         </div>
-                                        <div className="mt-2 flex gap-4 text-xs text-gray-500">
-                                            <span>🥩 {n.protein}g P</span>
-                                            <span>🍞 {n.carbs}g C</span>
-                                            <span>🥑 {n.fat}g G</span>
+                                        <div className="text-right text-sm">
+                                            <div className="font-semibold text-purple-600">{n.kcal} kcal</div>
+                                            <div className="text-xs text-gray-500">per 100g</div>
                                         </div>
                                     </div>
-                                );
-                            })}
+                                    <div className="mt-2 flex gap-4 text-xs text-gray-500">
+                                        <span>🥩 {n.protein}g P</span>
+                                        <span>🍞 {n.carbs}g C</span>
+                                        <span>🥑 {n.fat}g G</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </Card>
             )}
@@ -325,11 +191,11 @@ export default function FoodsPage() {
                         </button>
 
                         <h3 className="text-xl font-semibold pr-8">{selectedFood.name}</h3>
-                        <p className="text-sm text-gray-500 mt-1">{translateCategory(selectedFood.category || "")}</p>
+                        <p className="text-sm text-gray-500 mt-1">{selectedFood.category || ""}</p>
 
                         <div className="mt-4">
                             <Input
-                                label="Cantidad (gramos)"
+                                label="Amount (grams)"
                                 type="number"
                                 min={1}
                                 value={grams}
@@ -367,36 +233,36 @@ export default function FoodsPage() {
                                         </div>
                                         <div className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20">
                                             <div className="text-xl font-bold text-red-600">{n.protein}g</div>
-                                            <div className="text-xs text-gray-500">Proteína</div>
+                                            <div className="text-xs text-gray-500">Protein</div>
                                         </div>
                                         <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20">
                                             <div className="text-xl font-bold text-amber-600">{n.carbs}g</div>
-                                            <div className="text-xs text-gray-500">Carbos</div>
+                                            <div className="text-xs text-gray-500">Carbs</div>
                                         </div>
                                         <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
                                             <div className="text-xl font-bold text-green-600">{n.fat}g</div>
-                                            <div className="text-xs text-gray-500">Grasas</div>
+                                            <div className="text-xs text-gray-500">Fat</div>
                                         </div>
                                     </div>
 
                                     {/* Detailed nutrition */}
                                     <div className="border-t pt-3 dark:border-gray-700">
-                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Detalles Nutricionales</h4>
+                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Nutrition Details</h4>
                                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500">Fibra</span>
+                                                <span className="text-gray-500">Fiber</span>
                                                 <span className="font-medium">{n.fiber}g</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500">Azúcar</span>
+                                                <span className="text-gray-500">Sugar</span>
                                                 <span className="font-medium">{n.sugar}g</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500">Grasa Saturada</span>
+                                                <span className="text-gray-500">Saturated Fat</span>
                                                 <span className="font-medium">{n.saturatedFat}g</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500">Colesterol</span>
+                                                <span className="text-gray-500">Cholesterol</span>
                                                 <span className="font-medium">{n.cholesterol}mg</span>
                                             </div>
                                         </div>
@@ -404,22 +270,22 @@ export default function FoodsPage() {
 
                                     {/* Minerals */}
                                     <div className="border-t pt-3 dark:border-gray-700">
-                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Minerales</h4>
+                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Minerals</h4>
                                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500">Sodio</span>
+                                                <span className="text-gray-500">Sodium</span>
                                                 <span className="font-medium">{n.sodium}mg</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500">Potasio</span>
+                                                <span className="text-gray-500">Potassium</span>
                                                 <span className="font-medium">{n.potassium}mg</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500">Calcio</span>
+                                                <span className="text-gray-500">Calcium</span>
                                                 <span className="font-medium">{n.calcium}mg</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500">Hierro</span>
+                                                <span className="text-gray-500">Iron</span>
                                                 <span className="font-medium">{n.iron}mg</span>
                                             </div>
                                         </div>
@@ -427,7 +293,7 @@ export default function FoodsPage() {
 
                                     {/* Vitamins */}
                                     <div className="border-t pt-3 dark:border-gray-700">
-                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Vitaminas</h4>
+                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Vitamins</h4>
                                         <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-sm">
                                             <div className="flex justify-between">
                                                 <span className="text-gray-500">Vit. A</span>
@@ -448,7 +314,7 @@ export default function FoodsPage() {
                         })()}
 
                         <div className="mt-4">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Comida</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Meal</label>
                             <div className="flex gap-2">
                                 {(["Desayuno", "Almuerzo", "Cena", "Snack"] as const).map(m => (
                                     <button
@@ -463,7 +329,7 @@ export default function FoodsPage() {
                         </div>
 
                         <Button onClick={handleAddToDay} disabled={adding} className="w-full mt-6">
-                            <Plus className="h-4 w-4" /> {adding ? "Agregando..." : "Agregar a mi día"}
+                            <Plus className="h-4 w-4" /> {adding ? "Adding..." : "Add to my day"}
                         </Button>
                     </Card>
                 </div>

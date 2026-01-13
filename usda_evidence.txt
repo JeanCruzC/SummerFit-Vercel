@@ -1,0 +1,1385 @@
+Evidencia Científica para la Construcción del
+JSON Nutricional (USDA DGA 2025–2030)
+Introducción
+Las Guías Alimentarias para Estadounidenses 2025–2030 representan una actualización fundamental
+de la política nutricional federal en Estados Unidos, con un énfasis sin precedentes en la alimentación
+basada en comida real y mínimamente procesada 1 . El mensaje central es sencillo: priorizar
+alimentos integrales y densos en nutrientes – como verduras, frutas, proteínas de alta calidad,
+lácteos, grasas saludables y granos enteros – a la vez que se reducen drásticamente los productos
+ultraprocesados ricos en azúcares añadidos, harinas refinadas, sodio excesivo, grasas poco saludables
+y aditivos químicos 1 2 . Esta orientación surge como respuesta a la crisis de salud pública actual:
+cerca del 70% de los adultos estadounidenses tiene sobrepeso u obesidad, y la prevalencia de diabetes tipo
+2 y otras enfermedades crónicas relacionadas con la dieta se ha disparado en las últimas décadas 3 .
+Las Guías 2025–2030 reconocen que gran parte de estas enfermedades no son un destino genético
+inevitable, sino consecuencia predecible de patrones dietéticos poco saludables (apodados la “dieta
+americana estándar”) combinados con estilos de vida sedentarios 4 5 .
+
+Figura 1: Tendencias históricas de obesidad y diabetes en Estados Unidos. La proporción de adultos con
+obesidad (línea dorada) aumentó de ~13% en 1965 a ~43% en 2020, mientras que la diabetes (línea
+azul) pasó de ~6.6% a ~14%. En jóvenes de 2–19 años (panel B, derecha) la obesidad subió de ~5% en
+1975 a >20% en 2020. La obesidad severa (línea roja) también se incrementó marcadamente. Fuente:
+Scientific Report 2025–2030, fig. 1.1 6 7 .
+Ante este panorama, las Guías Alimentarias 2025–2030 plantean un “reinicio” de la política
+nutricional basada en el retorno a los fundamentos de la alimentación saludable 8 . Se propone
+realinear el sistema alimentario para apoyar la producción y accesibilidad de comida real (vegetales,
+frutas, granos enteros, carnes, huevos, lácteos, legumbres, pescados, nueces, etc.) por encima de los
+comestibles altamente industrializados 9 10 . Esta edición de las Guías enfatiza la integridad científica
+y el sentido común, rescatando conceptos tradicionales como la pirámide alimentaria para su verdadero
+
+1
+
+propósito de educar y nutrir a la población 10 . La meta declarada es “Make America Healthy Again”
+(“Hacer a América saludable de nuevo”), llamando a todos – familias, agricultores, profesionales de la
+salud, industria y gobiernos – a colaborar en el cambio hacia patrones alimentarios que favorezcan la
+densidad nutricional, la prevención y la salud a largo plazo 11 12 . En este documento sintetizamos la
+evidencia científica utilizada para construir el JSON nutricional basado en dichas Guías (Scientific
+Report, Apéndices, Serving Sizes y DGA 2025–2030), incluyendo citas textuales, tablas, figuras y notas
+metodológicas. La información se organiza según las secciones clave del JSON original – patrones
+dietéticos (“dietas”), macronutrientes, calorías y porciones, condiciones médicas especiales, etc. –
+proporcionando el contexto y la relevancia de cada fragmento usado en la toma de decisiones
+nutricionales.
+
+Metodología y Base Científica de las Guías 2025–2030
+El desarrollo de las Guías 2025–2030 se sustentó en un riguroso proceso de revisión de evidencia
+científica. Antes de iniciar la revisión, un panel metodológico estableció protocolos estandarizados para
+la inclusión y exclusión de estudios, evaluando la calidad de la evidencia y el riesgo de sesgo de cada
+publicación considerada 13 . Se incorporaron principios del sistema NESR (Nutrition Evidence
+Systematic Review) y del marco GRADE para garantizar transparencia, rigor y consistencia en la
+evaluación de la fuerza de la evidencia 14 . Además, dos revisores externos independientes evaluaron cada
+sección del informe científico, en un proceso coordinado por la Oficina de Investigación en Nutrición de
+NIH, para asegurar la precisión y coherencia del documento 15 . Las recomendaciones finales surgen
+de una síntesis de múltiples líneas de evidencia: revisiones sistemáticas, metaanálisis, ensayos clínicos
+controlados (cuando disponibles) y estudios de cohorte de alta calidad, dando mayor peso a los diseños
+con capacidad de inferir causalidad (ej. ensayos aleatorizados) 14 16 .
+Es importante señalar que la edición 2025–2030 se diferencia de guías previas en tres aspectos clave: (1)
+pone al frente el principio de fomentar alimentos mínimamente procesados y naturalmente densos en
+nutrientes en todos los grupos de alimentos, (2) señala las limitaciones de la evidencia previa (p. ej.,
+dependencia excesiva de estudios observacionales con posible sesgo de “usuario sano”) y reexamina
+dogmas nutrimentales sostenidos con evidencia contradictoria, y (3) busca simplificar el mensaje para
+que sea accionable por la población general 17 18 . Por ejemplo, el Scientific Report re-evaluó el
+fundamento científico de guías históricas (como el énfasis en reducir grasas saturadas) a la luz de
+evidencia moderna, discutiendo cómo la publicación selectiva de resultados y el uso de marcadores
+sustitutos (p. ej. LDL colesterol en vez de eventos clínicos) pudieron haber sostenido recomendaciones
+tradicionales a pesar de ensayos clínicos neutrales o desfavorables 19 20 . Este análisis crítico permitió
+actualizar las recomendaciones haciendo hincapié en patrones de alimentación completos más que en
+nutrientes aislados.
+Desde el punto de vista metodológico, las Guías emplearon modelos dietéticos para garantizar la
+adecuación de nutrientes en distintos niveles de calorías. En dichos modelos se asume el consumo de
+alimentos en su forma más nutritiva (p. ej., con poco o nada de azúcares añadidos, harinas refinadas
+o aditivos) dentro de cada grupo, de modo que cumplan con los requerimientos de vitaminas,
+minerales, proteína, fibra, etc., sin exceder las calorías ni los límites de componentes como grasas
+saturadas o sodio 21 . Esto implica que las recomendaciones de porciones por grupo se basan en
+alimentos densos en nutrientes. Por ejemplo, en el patrón diseñado no se incluyen bebidas azucaradas ni
+postres dulces, y se asume el uso moderado de aceites o grasas para cocinar 21 22 . También se
+consideraron necesidades especiales en etapas de vida críticas (infancia, embarazo, lactancia, vejez) y en
+patrones vegetarianos/veganos, identificando posibles brechas nutricionales y estrategias para
+mitigarlas (p. ej., suplementación de B12, vitamina D, hierro en veganos) 23 24 . Estas consideraciones
+aparecen desarrolladas en el capítulo 8 del Scientific Report y en apéndices dedicados (Apéndice 4.11
+sobre etapas de vida y 4.12 sobre dietas vegetarianas/veganas) 25 26 . En suma, la construcción del
+
+2
+
+JSON nutricional se apoyó en esta base metodológica robusta, garantizando que cada parámetro
+(porciones, límites, metas de nutrientes) esté respaldado por la mejor evidencia disponible y refleje
+recomendaciones fiables para la salud.
+
+Patrones Dietéticos Recomendados (“Dietas”)
+Hacia un patrón alimentario único y flexible: Las Guías 2025–2030 proponen un patrón dietético
+integrado denominado extraoficialmente “Eat Healthy Your Way” (“Come Saludable a Tu Manera”), en
+lugar de patrones separados (como el “estilo USDA”, “Mediterráneo” o “Vegetariano” de ediciones
+anteriores). El Comité asesor sugirió desarrollar un solo patrón alimentario inclusivo con flexibilidad para
+preferencias individuales 27 , realizando adaptaciones en nombre y presentación para hacerlo más
+comprensible al público 28 . Se recomienda que las core elements (elementos centrales) de este
+patrón permitan variaciones – por ejemplo, distintas proporciones de alimentos de origen animal vs
+vegetal – sin dejar de cumplir con los principios generales 29 . En otras palabras, se puede comer
+saludable a la manera propia, acomodando diferencias culturales, regionales, éticas (vegetarianismo) o
+de gustos personales, siempre que se respeten las pautas de equilibrio y calidad nutricional 30 31 . El
+Scientific Report enfatiza la importancia de proveer orientación adaptable a diversos contextos sociales,
+económicos y culturales, y sugiere investigar más sobre cómo implementar con éxito estos patrones
+variados en la población 32 33 .
+Componentes del patrón saludable: El patrón propuesto se basa en grupos de alimentos definidos y
+sus cantidades recomendadas. Las categorías principales incluyen: Vegetales, Frutas, Proteínas
+(alimentos proteicos de origen animal y vegetal), Lácteos, Granos Integrales y Grasas saludables. En
+términos cualitativos, se insta a que la dieta diaria se construya mayormente con estos alimentos
+mínimamente procesados, aprovechando su densidad de nutrientes, y desplazando a los productos
+ultraprocesados. La guía resume: “Los hogares estadounidenses deben priorizar dietas basadas en
+alimentos enteros y densos en nutrientes – proteínas, lácteos, verduras, frutas, grasas saludables y granos
+integrales – junto con una reducción drástica de alimentos altamente procesados cargados de carbohidratos
+refinados, azúcares añadidos, sodio excesivo, grasas poco saludables y aditivos” 1 34 .
+• Vegetales: Deben consumirse verduras de todos los subgrupos (verde oscuro; rojo y
+anaranjado; leguminosas como frijoles, arvejas y lentejas; feculentos; y otros) en abundancia. Se
+aconseja incorporar ~3 porciones diarias de vegetales en una dieta de ~2000 kcal 35 ,
+equivalentes a ~3 tazas (dado que 1 porción se define como 1 taza de vegetales crudos o
+cocidos, o 2 tazas de hojas verdes crudas 36 ). Las Guías enfatizan “come una variedad de
+vegetales coloridos y frutas a lo largo del día” 37 , recomendando preferirlos enteros y
+frescos o mínimamente procesados. También señalan que, de requerir saborizar, es preferible
+usar pequeñas cantidades de sal, especias y hierbas, antes que aderezos con azúcar o salsas
+ultraprocesadas 38 . Los jugos 100% de fruta o verdura pueden tomarse en porciones limitadas
+y diluidos en agua, mientras que los productos enlatados o congelados sin sodio ni azúcar
+añadida son alternativas aceptables a los frescos 39 38 .
+• Frutas: Se recomiendan ~2 porciones diarias de frutas en el patrón de 2000 kcal 35 , lo que
+equivale aproximadamente a 2 tazas de fruta fresca (1 porción = 1 taza de fruta picada o una
+fruta mediana; ½ taza si es fruta seca) 40 . Al igual que con las verduras, se sugiere consumir
+frutas enteras en su forma original siempre que sea posible, limitando los jugos y evitando
+azúcares añadidos. Frutas frescas, congeladas o en conserva sin azúcar son todas opciones
+válidas. La recomendación enfatiza la variedad de frutas de todos los tipos (incluyendo cítricos,
+bayas, frutas tropicales, etc.) como parte de la dieta diaria 41 .
+
+3
+
+• Alimentos proteicos: El patrón incluye tanto proteínas de origen animal como vegetal,
+haciendo hincapié en su calidad y modo de preparación. Se propone consumir alimentos con
+proteína en cada comida principal (“Priorizar alimentos proteicos en cada comida” es un lema
+de las Guías) para asegurar la ingesta adecuada y distribución a lo largo del día 42 . Las
+porciones diarias de “Protein Foods” recomendadas oscilan ~2.5 a 3.5 porciones para un
+adulto con dieta de ~2000 kcal 43 . Una porción de este grupo se define aproximadamente
+como 90 g (3 onzas) de carne magra cocida, pollo o pescado; ó 1 huevo; ó ½ taza de legumbres
+cocidas (frijoles, lentejas); ó 1 onza (~28 g) de nueces o semillas; ó 2 cucharadas de mantequilla de
+maní o semillas; ó ~85 g de tofu/soya 44 . En términos absolutos, esto equivale a unos ~170–200 g
+de carnes magras o equivalentes al día. Las Guías no imponen una proporción fija entre
+proteínas animales vs vegetales, pero sugieren aumentar la participación de fuentes vegetales
+(leguminosas, nueces, semillas, soya) y reducir el consumo de carnes rojas y procesadas 45 . De
+hecho, uno de los cambios recomendados es destacar las legumbres (frijoles, lentejas, arvejas)
+como proteína principal con mayor frecuencia, mientras se limitan las carnes rojas y embutidos por
+sus vínculos con riesgos de salud 45 46 . Las carnes procesadas – como embutidos, salchichas,
+tocino – contienen alto sodio, nitritos y compuestos potencialmente dañinos formados en su
+elaboración, por lo que se aconseja moderación en su consumo 47 (Apéndice 4.10 del Informe
+explora sus riesgos en detalle). En cambio, se invita a elegir carnes frescas y magras, pescados,
+aves, huevos, legumbres y derivados de soya como tofu, preparándolos con métodos
+saludables (horneados, a la plancha, al vapor) en lugar de fritos o rebozados 48 . Las proteínas
+tanto animales como vegetales aportan nutrientes esenciales (aminoácidos, hierro, zinc,
+vitaminas B12 y B6, etc.) y pueden formar parte de patrones saludables siempre que se
+consuman en formas mínimamente procesadas 49 . Por ejemplo, se prefiere el pollo al horno vs.
+empanizado frito, o frijoles enteros vs. ultraprocesados en snacks salados.
+• Lácteos: Continúan considerándose un grupo importante por su densidad de nutrientes críticos
+(proteína de alto valor biológico, calcio, vitamina D, potasio, entre otros). La recomendación
+general para adultos es de ~3 porciones diarias de lácteos (leche o derivados) en un patrón de
+~2000 kcal 50 , ajustando según necesidades individuales. Una porción equivale a 1 taza (240 ml)
+de leche o bebida de soya fortificada; ó ¾ taza de yogurt; ó ~42 g (1.5 onzas) de queso natural 36 . Se
+enfatiza el consumo de lácteos sin azúcares añadidos – por ejemplo, yogur natural o leche
+blanca – y, novedosamente, se reconoce el valor de los lácteos enteros (grasa completa)
+dentro de una dieta saludable 42 . A diferencia de ediciones anteriores que promovían solo
+lácteos descremados o bajos en grasa, las Guías 2025–2030 afirman: “Al consumir lácteos, incluya
+productos enteros sin azúcares añadidos. Los lácteos son excelente fuente de proteína, grasas
+saludables, vitaminas y minerales” 42 . Esto refleja evidencia reciente de que productos lácteos
+fermentados y enteros (ej. yogur natural, queso) pueden asociarse a beneficios metabólicos,
+siempre y cuando se consuman en cantidades adecuadas. Se aclara que las versiones bajas en
+lactosa o las bebidas de soya fortificadas son opciones válidas para quienes las necesiten 51 .
+La meta de 3 porciones diarias aplica para patrones de ~2000 kcal; en calorías menores (p. ej.
+1200–1400) puede ser ~2 porciones, y en adolescentes o adultos jóvenes con más requerimiento
+se podría subir ligeramente 36 . En cualquier caso, los lácteos aportan nutrimentos de
+preocupación pública (calcio, vitamina D, potasio, proteína) y su inclusión diaria es recomendada
+salvo contraindicación médica.
+• Granos integrales: El patrón hace hincapié en cereales integrales como fuente de
+carbohidratos complejos, fibra, vitaminas del grupo B y minerales. La guía aconseja priorizar
+granos enteros ricos en fibra y reducir significativamente el consumo de carbohidratos refinados
+altamente procesados (pan blanco, productos de bollería industrial, cereales azucarados, etc.) 52
+53 . Las porciones diarias de granos recomendadas varían en un rango para permitir
+flexibilidad: alrededor de 2 a 4 porciones de granos integrales al día en la dieta de 2000 kcal
+
+4
+
+54 . Una porción de granos equivale a ½ taza de arroz integral, avena cocida u otro grano cocido; ó
+1 rebanada de pan 100% integral; ó 1 tortilla integral (aprox. 30 g) 55 . Por tanto, 2–4 porciones
+corresponden aproximadamente a 1–2 tazas de cereal cocido o 2–4 rebanadas de pan al día,
+según la mezcla de productos. Las Guías remarcan que al menos la mitad de los granos
+consumidos deben ser integrales – idealmente más. En el nuevo esquema, incluso se propuso
+eliminar la frase “hasta X calorías de granos refinados” que existía antes como “calorías
+discrecionales” 29 . Ahora la consigna es clara: limitar al mínimo los granos refinados, ya que su
+alto consumo se asocia a mayor riesgo de enfermedades crónicas, mientras que sustituirlos por
+integrales se vincula con menor riesgo de mortalidad, obesidad, diabetes tipo 2 y enfermedad
+cardiovascular 56 57 . Evidencia resumida en el Scientific Report indica que una mayor ingesta
+de granos enteros se asocia a 7% menos riesgo de mortalidad total por cada 30 g/día, y hasta 33%
+menos riesgo de diabetes con alta certeza moderada de evidencia, además de consumo óptimo de
+fibra en torno a 25–29 g/día para beneficios máximos 58 59 . Por ello, la meta diaria de fibra
+para la población general se estableció en 14 g por cada 1000 kcal consumidas, lo que equivale a
+~28 g de fibra para una dieta de 2000 kcal (mínimo recomendado) 60 . Esta cantidad suele
+alcanzarse al incluir ~3 porciones de vegetales, 2 de frutas y la mayoría de los granos como
+integrales en un día típico. Actualmente, el consumo real de fibra en EE.UU. es en promedio solo
+10–15 g/día, por lo que cerrar este “brecha de fibra” mediante granos integrales, frutas,
+verduras y legumbres es una prioridad de salud pública 61 62 .
+
+• Grasas y aceites saludables: Aunque no constituyen un “grupo de alimentos” en el mismo
+sentido, las Guías identifican a las grasas dietéticas como un componente esencial del patrón,
+enfatizando su calidad. Se alienta el consumo de grasas insaturadas con ácidos grasos
+esenciales (como el aceite de oliva, aceite de canola, nueces, semillas, pescados grasos,
+aguacate, aceitunas) en moderación, y la presencia de pequeñas cantidades de grasas
+naturalmente presentes en alimentos enteros (por ejemplo, la grasa del queso, yogurt entero,
+cortes magros de carne, etc.) 63 64 . Por otro lado, se mantiene la recomendación tradicional de
+limitar las grasas saturadas a menos del 10% de las calorías totales diarias 65 . En palabras
+textuales: “En general, el consumo de grasa saturada no debe exceder el 10% de las calorías diarias.
+Reducir significativamente los alimentos altamente procesados ayudará a cumplir esta meta” 65 .
+Esto significa que en una dieta de ~2000 kcal, el tope de grasa saturada serían ~22 g al día. Las
+Guías reconocen que persisten interrogantes científicos sobre qué tipos de grasa son más
+beneficiosos a largo plazo (por ejemplo, si todas las grasas saturadas tienen el mismo efecto o si
+ciertas fuentes son neutras) 65 66 , pero dado el conjunto de evidencia disponible, se aconseja
+reemplazar parte de las grasas saturadas por grasas poliinsaturadas (especialmente fuentes de
+omega-3 y omega-6 no refinadas) para mejorar el perfil cardiometabólico 67 68 .
+◦ Nota: El Scientific Report revisó ensayos clínicos históricos sobre grasa saturada y riesgo
+cardiovascular, encontrando que la sustitución de saturadas por aceites ricos en
+linoleico (omega-6) no produjo los beneficios esperados en eventos de cardiopatía
+coronaria en varias pruebas controladas 68 . Aun así, dado que dichos ensayos tenían
+limitaciones y que estudios observacionales a largo plazo siguen asociando una menor
+ingesta de saturadas con mejor salud cardiovascular, las Guías decidieron mantener la
+recomendación de <10% de calorías de saturadas, enfatizando el contexto alimentario:
+es preferible consumir grasas insaturadas de alimentos mínimamente procesados en vez
+de grasas saturadas de alimentos ultraprocesados 68 65 . Por ejemplo, se sugiere
+priorizar aceites vegetales prensados naturalmente (como oliva o canola) para
+cocinar, en lugar de manteca vegetal hidrogenada o aceite refrito 64 69 . No obstante,
+también se menciona que otras opciones como mantequilla o sebo (grasas animales)
+pueden usarse con moderación, especialmente si son parte de un patrón bajo en
+procesados 64 . La clave es la moderación en la cantidad total de grasa añadida: según
+
+5
+
+los patrones, se estiman alrededor de 4½ cucharaditas de aceite o grasa culinaria al
+día en la dieta de 2000 kcal 70 (ejemplo: 2 cucharaditas de aceite de oliva para aderezar
+vegetales, 1 cucharadita para saltear alimentos, etc.).
+◦ Asimismo, se eliminó la recomendación de limitar el colesterol dietario a un valor
+numérico específico, continuando con la postura adoptada desde 2015 de que “el
+colesterol en la dieta ya no se considera un nutriente preocupante por consumo
+excesivo” (las evidencias muestran que el colesterol en alimentos tiene un efecto menor
+en los niveles sanguíneos comparado con las grasas saturadas) 16 . Por tanto, no se fija
+un tope de mg de colesterol al día en las Guías 2025–2030, aunque implícitamente una
+dieta basada en poca comida frita, carnes magras y huevos en moderación tendrá un
+colesterol apropiado.
+En conjunto, estos grupos de alimentos conforman el patrón dietético saludable recomendado. Las
+Guías hacen un llamado a “poner la comida real de nuevo en el centro de la dieta estadounidense – comida
+real que nutre el cuerpo, restaura la salud, provee energía y fomenta la actividad física” 71 . Siguiendo este
+patrón, se espera no solo cubrir las necesidades nutricionales en cada etapa de la vida, sino también
+revertir la tendencia de crecientes enfermedades crónicas. De hecho, la evidencia presentada vincula
+directamente este tipo de alimentación con menores riesgos de obesidad, diabetes tipo 2,
+enfermedades cardiovasculares, ciertos cánceres y mortalidad prematura 72 59 .
+Ejemplos cuantitativos – porciones diarias por grupo y nivel calórico: La Tabla 1 resume las
+recomendaciones diarias por grupo de alimentos en distintos niveles de ingesta calórica, basadas en el
+documento Daily Servings by Calorie Level (realfood.gov 2025–2030) 73 74 . Estas cantidades se derivaron
+de modelos alimentarios para asegurar adecuación nutricional. Cabe reiterar que se asume la selección
+de alimentos densos en nutrientes dentro de cada grupo (p. ej., cereales integrales en lugar de
+refinados, lácteos sin azúcar añadida, carnes magras en lugar de procesadas) 21 . Además, son metas
+flexibles: individuos con requerimientos calóricos intermedios pueden ajustar proporcionalmente.
+• 1000 kcal (ej. niño pequeño): ~1¼ porciones de vegetales, 1 porción de fruta, 2 porciones de
+lácteos, ~1–1½ porciones de proteína, 1–2 porciones de granos integrales, ~2½ cucharaditas de
+grasas añadidas saludables 74 70 .
+• 2000 kcal (adulto promedio): ~3 porciones de vegetales, 2 porciones de fruta, 3 porciones de
+lácteos, ~2½–3½ porciones de proteína, 2–4 porciones de granos integrales, ~4½ cucharaditas de
+grasas saludables 75 70 .
+• 3200 kcal (alta actividad física): ~4¾ porciones de vegetales, 2½ porciones de fruta, 3 porciones
+de lácteos, 4–5 porciones de proteína, ~6½ porciones de granos integrales, 8 cucharaditas de
+grasas saludables 75 70 .
+(Nota: una “porción” se refiere a las cantidades estándar definidas: ver más arriba cada grupo; una
+cucharadita de grasa equivale ~5 ml de aceite o ~4.5 g de mantequilla.) Estas recomendaciones ilustran
+cómo a mayor requerimiento calórico, aumentan las porciones de cada grupo, manteniendo las
+proporciones generales de la dieta. Por ejemplo, la meta de verduras crece de ~1¼ taza en 1000 kcal a
+~3 tazas en 2000 kcal y ~4¾ tazas en 3200 kcal por día, evidenciando la necesidad de más alimentos
+nutritivos a medida que aumentan las calorías 75 . De igual modo, las frutas suben de ~1 a ~2½ tazas, y
+los granos integrales de ~1–2 a ~6½ porciones en esos extremos calóricos 76 77 . Los lácteos se
+mantienen alrededor de 2–3 porciones en todos los niveles (alcanzando 3 porciones desde ~1600 kcal
+en adelante) 78 . Las proteínas incrementan de ~1 porción en 1000 kcal a ~4–5 porciones en 3200 kcal
+44
+79 , asegurando suficiente ingesta proteica para masa muscular y crecimiento. Finalmente, las
+grasas añadidas suben de ~2.5 cucharaditas a ~8, reflejando mayores necesidades energéticas pero
+siempre dentro de márgenes moderados 70 . Estos alineamientos demuestran el principio de las Guías
+
+6
+
+de “come la cantidad adecuada para ti” – es decir, ajustar el volumen de alimentos al gasto energético
+individual, sin sacrificar la variedad ni la densidad nutricional 80 81 . Para ayuda individualizada, se
+sugiere utilizar la calculadora de necesidades energéticas y nutrimentales basada en los Dietary
+Reference Intakes (DRI) del USDA 82 .
+Patrones vegetarianos y veganos: Las Guías reconocen que dietas vegetarianas o veganas bien
+planificadas pueden apoyar la salud en todas las etapas de la vida, pero presentan desafíos particulares
+en términos de aporte de ciertos nutrientes 25 26 . El Scientific Report dedica un análisis detallado a
+estos patrones (Capítulo 8 y Apéndice 4.12). En general, se encontró que los patrones lacto-ovovegetarianos modelados logran cubrir la mayoría de los objetivos nutricionales, mientras que los
+patrones veganos estrictos suelen quedar cortos en varios micronutrientes: vitaminas A, D, E, B6, B12;
+minerales como calcio, hierro, zinc, y yodo; además de colina y ácidos grasos omega-3 de cadena larga (EPA/
+DHA) 25 83 . Esto se debe a la ausencia de alimentos de origen animal que son fuentes concentradas
+de algunos nutrientes difíciles de obtener de plantas. Por ejemplo, las reservas de hierro tienden a ser
+más bajas en vegetarianos/veganos, y las mujeres en edad fértil deben poner especial atención al
+consumo de fuentes de hierro no hemínico junto con vitamina C, limitar inhibidores (té, café con las
+comidas) y monitorear sus niveles de ferritina si siguen estas dietas 84 85 . El zinc también suele ser
+menor en dietas veganas; técnicas como remojar y germinar legumbres y granos pueden mejorar su
+biodisponibilidad 86 . El yodo puede faltar si no se consume sal yodada o algas (aunque en este caso se
+advierte que las algas tienen contenido variable y podrían aportar exceso de yodo) 87 . La colina suele
+ser subóptima en la población general y más aún en veganos que no comen huevos (fuente principal)
+88 . Y respecto a los omega-3 (EPA/DHA), es difícil alcanzar niveles adecuados solo con precursores
+vegetales (ALA); se sugiere considerar un suplemento de microalgas con DHA/EPA para veganos 89
+90 . En la práctica, las Guías recomiendan que los vegetarianos incluyan con regularidad huevos y
+lácteos (si los consumen), y que los veganos recurran a alimentos fortificados y suplementos
+focalizados para nutrientes críticos (especialmente vitamina B12, que es esencial para prevenir daño
+neurológico irreversible) 91 24 . Asimismo, se aconseja limitar los productos ultraprocesados
+“veganos” (imitaciones de carne, snacks, postres veganos con alto contenido de azúcares, harinas
+refinadas o sal), ya que pueden ser igualmente poco saludables que sus contrapartes procesadas
+convencionales 92 . En su lugar, se promueve una dieta veg(etari)ana basada en alimentos vegetales
+enteros: legumbres, tofu/tempeh, nueces, semillas, granos integrales, frutas y verduras en abundancia
+26
+93 .
+En resumen, el patrón dietético recomendado por las Guías 2025–2030 es rico en alimentos de origen
+vegetal, con cantidades adecuadas de proteínas de calidad (incluso de origen animal magro),
+lácteos nutritivos, granos enteros y grasas saludables, y muy bajo en azúcar añadido, harinas/
+refinados, sodio excesivo y productos procesados. Esta composición tiene como propósito abordar
+simultáneamente las deficiencias de nutrientes (como fibra, potasio, vitamina D, calcio, hierro, etc.,
+identificados como nutrientes de preocupación) y el exceso de calorías “vacías” que ha contribuido a la
+epidemia de obesidad y enfermedades crónicas 94 17 . A continuación, detallamos la evidencia
+específica para las metas de macronutrientes y otros componentes de la dieta, así como adaptaciones
+recomendadas para situaciones médicas particulares.
+
+Macronutrientes y Componentes Dietéticos Clave (“Macros”)
+Proteínas (cantidad y calidad)
+Las Guías 2025–2030 destacan el papel de la proteína en la salud muscular y metabólica, ajustando al
+alza la recomendación mínima tradicional. Si bien la Ingesta Diaria Recomendada (RDA) clásica es ~0.8 g
+de proteína por kg de peso corporal (suficiente para prevenir deficiencia en adultos sedentarios), la
+nueva evidencia sugiere beneficios con ingestas mayores dentro del rango aceptable. En concreto, el
+
+7
+
+Scientific Report aconseja un objetivo de 1.2 a 1.6 gramos de proteína por kilogramo de peso
+corporal al día (ajustando según necesidades calóricas individuales) 95 . Esto equivale, por ejemplo, a
+~84–112 g de proteína al día para una persona de 70 kg, o aproximadamente un 20–25% de las calorías
+totales en una dieta estándar – ubicándose en el extremo superior del rango aceptable de distribución
+de macronutrientes para proteína (AMDR: 10–35% de la energía) 96 . La recomendación se basa en
+evidencia de que ingestas proteicas en el rango ~1.2–1.6 g/kg favorecen el mantenimiento de la
+masa magra, la fuerza muscular y un metabolismo saludable, especialmente en adultos de mediana
+edad y mayores 97 . Estudios clínicos han demostrado que dietas más altas en proteína, comparadas
+con la típica (~0.8 g/kg), ayudan a preservar la masa muscular durante la pérdida de peso o el
+envejecimiento, y pueden mejorar la composición corporal (reduciendo masa grasa) cuando se
+combinan con ejercicio de resistencia 98 . De hecho, en individuos físicamente activos (por ejemplo,
+quienes hacen entrenamiento de fuerza), se sugiere apuntar al límite superior de ~1.6 g/kg para
+maximizar la síntesis muscular y las ganancias de fuerza 97 .
+No solo importa la cantidad sino también la calidad de la proteína. Las Guías enfatizan que tanto
+proteínas de origen animal (carnes magras, aves, pescados, huevos, lácteos) como de origen vegetal
+(legumbres, soya, frutos secos, semillas) pueden ser parte de un patrón saludable, siempre que se
+consuman en formas mínimamente procesadas 49 . Las fuentes animales tienden a ser proteínas
+“completas” con todos los aminoácidos esenciales, mientras que las vegetales aportan fibra y
+fitonutrientes beneficiosos; una combinación de ambas puede ofrecer ventajas. Se aconseja limitar las
+proteínas obtenidas de productos altamente procesados (ej. embutidos, salchichas, “nuggets”
+industriales, carnes rebozadas) por su contenido de sodio, grasas saturadas y aditivos 47 , en favor de
+preparaciones sencillas (carnes a la plancha, legumbres guisadas, etc.). Asimismo, para vegetarianos
+estrictos, se recomienda consumir una variedad de fuentes vegetales complementarias (legumbres +
+cereales + semillas) a fin de obtener todos los aminoácidos esenciales a lo largo del día 92 24 .
+La evidencia subyacente a estas recomendaciones proteicas proviene de ensayos controlados y
+metaanálisis recientes. Por ejemplo, una revisión citada en el Scientific Report definió “dietas más altas
+en proteína” justamente como las que aportan ~1.2–1.6 g/kg, en contraste con dietas control de ~0.8–
+1.0 g/kg, encontrando mejoras en parámetros de composición corporal y factores de riesgo
+cardiometabólico con la dieta más proteica 99 . Igualmente, en población con obesidad, incrementar la
+proporción de proteína en la dieta ha mostrado favorecer la pérdida de grasa con menor pérdida de
+masa muscular, especialmente cuando se combina con ejercicio 98 100 . Es importante notar que la
+recomendación de 1.2–1.6 g/kg cae dentro del AMDR del IOM (10–35% de calorías) 96 , por lo que es
+considerada segura y adecuada para la mayoría. Solo grupos con función renal muy comprometida
+deben seguir las indicaciones médicas sobre proteína. Para la población general, esta ingesta es
+beneficiosa y no se asocia a eventos adversos en personas sanas 101 .
+Distribución y momento de la proteína: Las Guías también sugieren distribuir la ingesta proteica en
+las comidas del día. Frases como “prioriza alimentos proteicos en cada comida” 42 apuntan a que en el
+desayuno, almuerzo y cena se incluyan fuentes de proteína de calidad, en lugar de concentrar toda la
+proteína en una sola comida. Esta distribución uniforme maximiza la síntesis proteica muscular en cada
+ingesta, particularmente relevante para adultos mayores donde la “anabolic resistance” (resistencia
+anabólica) puede requerir un estímulo proteico mayor por comida para mantener músculo. Un ejemplo
+práctico sería: yogur griego con nueces en el desayuno (15–20 g proteína), pollo o tofu en el almuerzo
+(~30 g), pescado o legumbres en la cena (~30 g), alcanzando así ~75–80 g diarios repartidos.
+En síntesis, la evidencia respalda aumentar moderadamente la proteína diaria a ~15–25% de las
+calorías (1.2–1.6 g/kg), distribuyéndola en las tres comidas, con énfasis en fuentes magras y poco
+procesadas. Esto contribuye a preservar la masa muscular, promover la saciedad (ayudando en control
+de peso) y sostener la salud ósea y funcional a lo largo de la vida 97 98 .
+
+8
+
+Grasas dietéticas (grasas saludables vs. saturadas/trans)
+Importancia de las grasas: Las grasas son un macronutriente esencial, fuente de ácidos grasos
+indispensables (omega-3 y omega-6), vehículo de vitaminas liposolubles (A, D, E, K) y componente
+estructural de células. Las Guías 2025–2030 actualizan las recomendaciones de grasas enfocándose en
+la calidad y el equilibrio de tipos de grasa, más que en una cantidad fija de gramos. En general, se
+admite un amplio rango de ingesta de grasa total (AMDR típico 20–35% de las calorías), siempre que
+predominentemente sean grasas insaturadas de buena calidad 96 102 . Por ejemplo, aceites vegetales
+vírgenes (oliva, canola, ajonjolí, etc.), pescados ricos en omega-3 (salmón, sardina), nueces y semillas, y
+también las grasas naturalmente presentes en alimentos integrales como el aguacate, aceitunas,
+lácteos enteros fermentados, coco en moderación, etc., son fuentes aceptables dentro de un patrón
+equilibrado 63 64 . Estas aportan ácidos grasos monoinsaturados y poliinsaturados asociados a
+efectos beneficiosos como mejora del perfil lipídico (aumento del HDL, reducción de triglicéridos),
+modulación inflamatoria y salud cardiovascular en general. Un ejemplo citado es priorizar el aceite de
+oliva al cocinar o aderezar, por su contenido de ácido oleico (monoinsaturado) y compuestos
+antioxidantes; otras opciones saludables mencionadas incluyen pequeñas cantidades de mantequilla o
+sebo de res para sabor, siempre que en el contexto global la saturada se mantenga baja 64
+
+69 .
+
+Límite a grasas saturadas: La recomendación cuantitativa específica se refiere a las grasas saturadas,
+cuyo consumo se aconseja mantener por debajo del 10% de las calorías diarias (como se indicó en la
+sección anterior) 65 . Las grasas saturadas provienen principalmente de productos animales (carnes
+grasas, manteca, mantequilla, crema, queso) y de ciertos aceites tropicales (coco, palma). Un consumo
+elevado de saturadas se ha relacionado históricamente con aumento de colesterol LDL en sangre, un
+factor de riesgo de cardiopatía. Aunque el Scientific Report reconoció que la relación entre reducir
+saturadas y menor enfermedad cardíaca no ha sido tan directa en ensayos clínicos (probablemente
+debido a con qué se reemplaza la grasa saturada), sigue apoyando la recomendación prudente de limitar
+saturadas en la dieta 68 103 . Especialmente, reemplazar calorías de saturadas por poliinsaturadas (p. ej.
+usar aceite vegetal en vez de mantequilla) suele asociarse a reducciones modestas del riesgo de
+eventos cardiovasculares en metaanálisis. Por otro lado, reemplazar saturadas por carbohidratos
+refinados no mejora e incluso puede empeorar algunos perfiles metabólicos; de allí la insistencia en la
+calidad del reemplazo (mejor con grasas insaturadas o carbohidratos complejos) 68 16 .
+En la práctica, 10% de calorías en una dieta de 2000 kcal son ~22 g de grasa saturada – el
+equivalente a lo contenido en, por ejemplo, 2 cucharadas de mantequilla + 1 porción de queso cheddar
++ 1 porción de postre con manteca. Las Guías instan a los consumidores a leer etiquetas y elegir
+alimentos con menor contenido de grasa saturada, y optando por métodos de preparación que no
+agreguen muchas grasas saturadas (como empanizados fritos). También se menciona como meta
+eliminar las grasas trans artificiales de la dieta, algo que prácticamente se logró con la prohibición de
+aceites parcialmente hidrogenados en EE.UU. (2018) 104 . Las grasas trans industriales eran aún más
+perjudiciales que las saturadas, aumentando LDL y disminuyendo HDL, por lo que su eliminación ha
+sido un avance importante. Ahora el foco recae en reducir saturadas y evitar oxidarlas – por ejemplo,
+evitando recalentar repetidamente aceite vegetal poliinsaturado, ya que la oxidación produce
+compuestos tóxicos (el Informe Científico discute esto en Apéndices 1 y 4.6) 105 106 .
+Grasas esenciales (omega-3/omega-6): Las Guías no dan cifras concretas en el texto principal, pero el
+IOM mantiene recomendadas intakes (Adequate Intakes) para los ácidos grasos esenciales: linoleico
+(omega-6) ~14–17 g/día en varones y 11–12 g/día en mujeres; alfa-linolénico (omega-3) ~1.6 g/día en
+varones, 1.1 g en mujeres 107 108 . Esto equivale a incluir fuentes como aceites de soya/maíz (omega-6)
+o linaza/nueces (omega-3 ALA), o consumir regularmente pescados grasos (fuente de EPA/DHA,
+omega-3 de cadena larga). Las Guías enfatizan consumir pescado al menos 2 veces por semana para
+aportar EPA/DHA, particularmente para beneficios cardiovasculares y neurocognitivos. Para
+
+9
+
+vegetarianos/veganos se sugiere considerar suplementos de microalgas DHA/EPA, como mencionado
+antes 89 90 .
+En resumen, la recomendación en grasa es: ingerir suficientes grasas insaturadas de buena
+calidad (20–35% calorías), limitando grasas saturadas a <10% y evitando en lo posible las trans.
+Esto se logra consumiendo aceites vegetales y alimentos enteros ricos en grasas saludables, reduciendo
+carnes grasosas y lácteos muy enteros en exceso, y eliminando productos con aceites hidrogenados.
+Siguiendo estas pautas, se obtienen los ácidos grasos esenciales y se protege la salud cardiovascular
+65 109 .
+
+Carbohidratos y fibra dietética
+Calidad de carbohidratos – integrales vs refinados: Las Guías 2025–2030 marcan un cambio de
+enfoque respecto a los carbohidratos: más que cantidad específica (no se fija un % calórico obligatorio
+de carbohidratos, reconociendo que puede variar dentro del rango 45–65% según preferencias) 96 , se
+enfatiza fuertemente la calidad de los hidratos de carbono consumidos. Esto implica privilegiar los
+carbohidratos complejos provenientes de alimentos enteros – verduras, frutas, legumbres y granos
+integrales – que aportan fibra, vitaminas y compuestos bioactivos, y reducir drásticamente los
+carbohidratos refinados de alta carga glucémica (azúcares añadidos, harinas refinadas, bebidas
+azucaradas, dulces, postres, snacks ultra-procesados hechos mayormente de almidones refinados) 52
+53 . El Scientific Report resume: “Priorizar granos integrales ricos en fibra. Reducir significativamente el
+consumo de carbohidratos refinados altamente procesados, como pan blanco, cereales de desayuno
+empaquetados, tortillas de harina refinada, galletas, etc.” 110 111 . Esta recomendación se basa en
+evidencia robusta de que las dietas altas en granos refinados y azúcares añadidos están asociadas
+con mayor riesgo de obesidad, diabetes tipo 2, enfermedades cardiovasculares y hígado graso,
+mientras que sustituirlos por opciones integrales y fibra dietética se asocia con menor riesgo de estas
+condiciones 112 58 .
+Por ejemplo, un meta-análisis referido en el informe encontró que consumir los niveles más altos vs
+más bajos de alimentos ultraprocesados (ricos en harinas y azúcares) se vincula con ~48% mayor
+riesgo de diabetes tipo 2, ~13% mayor riesgo de cáncer y ~10% más de mortalidad 113 114 . Además,
+cada aumento del 10% en la proporción de calorías provenientes de ultraprocesados se asoció a 14%
+más riesgo de diabetes, 10% más de mortalidad, 7% más de obesidad, etc. 115 . En contraste, ingerir
+granos enteros en altas cantidades (≥3 porciones diarias) se asocia a riesgo ~33% menor de diabetes
+y 15–20% menor de enfermedad cardiaca y mortalidad en estudios prospectivos 116 57 . Asimismo, una
+mayor ingesta de fibra (por ejemplo 25–30 g/día) se correlaciona con riesgo más bajo de
+enfermedades crónicas 117 . Sobre esta base, las Guías establecen la meta mencionada de 14 g de fibra
+por cada 1000 kcal – es decir, ~28 g en 2000 kcal, y ~34–36 g para dietas de 2500 kcal o más 60 . Para
+contextualizar, 28 g de fibra equivalen a comer por ejemplo: 1 taza de frijoles (15 g fibra) + 1 manzana
+con piel (4 g) + 2 rebanadas pan integral (4 g) + 1 taza brócoli (5 g). Alcanzar estos niveles requiere
+deliberadamente aumentar el consumo de legumbres, verduras, frutas frescas y granos integrales
+en la dieta diaria, dado que el estadounidense promedio actualmente consume solo ~15 g fibra/día 61
+62 .
+Azúcares añadidos: Un componente crítico dentro de los carbohidratos refinados son los azúcares
+añadidos. Las Guías adoptan una postura más estricta que ediciones previas: idealmente, se sugiere no
+consumir nada de azúcares añadidos de forma regular, especialmente en niños pequeños 118 . Para la
+población general, se mantiene como guía práctica el límite tradicional de <10% de las calorías
+provenientes de azúcares añadidos (similar a saturadas) – lo cual en ~2000 kcal serían <50 g de azúcar
+añadida por día. Sin embargo, el lenguaje de 2025–2030 va más allá, afirmando: “no se recomienda
+ninguna cantidad de azúcares añadidos o edulcorantes no nutritivos como parte de una dieta
+
+10
+
+saludable” 119 . En otras palabras, lo óptimo sería 0% de calorías de azúcar añadido, aunque
+reconocen la dificultad práctica de eliminarlo por completo en dietas occidentales. Por ello, proveen
+guías cuantitativas para ayudar a limitarlo: por ejemplo, “una comida no debería contener más de 10 g de
+azúcares añadidos” 119 . También aconsejan seguir los nuevos criterios de la FDA para el sello “Healthy”:
+por ejemplo, que una porción de cereal tipo crackers no exceda 5 g de azúcar añadido, o un yogurt
+individual no tenga >2.5 g de azúcar añadido 120 . Estos valores sirven como guía práctica para snacks o
+alimentos específicos dentro del total diario. Se da especial énfasis a evitar las bebidas azucaradas
+(refrescos, “jugos” con azúcar, bebidas energéticas endulzadas), dado que aportan azúcar líquida de
+absorción rápida sin inducir saciedad, siendo un factor importante en exceso calórico y adiposidad 121
+122 . En su lugar, se recomienda elegir agua (natural o carbonatada) u otras bebidas sin endulzar para la
+hidratación cotidiana 123 124 .
+Con fines educativos, las Guías incluyen estrategias para identificar azúcares añadidos en las etiquetas:
+buscar en la lista de ingredientes palabras como “azúcar”, “jarabe” o sufijos -osa (dextrosa, sacarosa,
+fructosa, etc.), ya que los azúcares añadidos se esconden bajo muchos nombres 125 126 . También
+aclaran que los azúcares naturalmente presentes en frutas enteras o en leche no cuentan como “añadidos”, y
+no se consideran problemáticos 127 128 . La recomendación para bebés y niños pequeños es
+particularmente estricta: evitar totalmente los azúcares añadidos antes de los 2 años de edad 118
+129 , dado que en esa etapa no aportan beneficio nutricional y pueden desplazar alimentos más
+nutritivos, además de formar precozmente preferencia por sabores dulces.
+En base a amplia evidencia, reducir azúcares añadidos claramente beneficia la salud: estudios muestran
+que una ingesta elevada de bebidas azucaradas y dulces se asocia con mayor riesgo de obesidad,
+síndrome metabólico, diabetes tipo 2, enfermedad cardiovascular e incluso ciertos cánceres 112 59 .
+Incluso hay evidencia de que edulcorantes artificiales podrían no ser inocuos (algunos estudios los
+asocian con alteración de microbiota intestinal o riesgos cardiometabólicos), por lo cual las Guías
+sugieren limitar también el consumo habitual de edulcorantes no calóricos en bebidas y alimentos 130
+121 . En resumen, se recomienda minimizar tanto el azúcar añadido como los edulcorantes
+artificiales, enfocándose en el dulzor natural de las frutas y permitiendo que el paladar se ajuste a una
+dieta menos empalagosa.
+Resumiendo carbohidratos: Se debe obtener la mayor parte de los carbohidratos de fuentes de alta
+calidad: vegetales, frutas, legumbres y granos integrales (que aportan fibra, vitaminas, minerales).
+Simultáneamente, se debe limitar severamente los carbohidratos de baja calidad: azúcar de mesa,
+jarabes, dulces, repostería, refrescos, panes blancos, arroz blanco en exceso, etc. Las Guías enumeran
+claramente: “evitar alimentos altamente procesados listos para consumir que sean dulces o salados (galletas,
+caramelos, papas fritas) con azúcares y sodio añadidos; en su lugar, elegir comidas caseras y alimentos
+densos en nutrientes” 131 132 . Este cambio de patrón glucídico es posiblemente uno de los aspectos más
+importantes de la guía, ya que ataca directamente los productos responsables de una gran proporción
+de calorías vacías en la dieta estadounidense (se calcula ~2/3 de las calorías de jóvenes y ~60% de
+adultos provienen actualmente de alimentos ultraprocesados 133 134 ). Reducir ese porcentaje e
+incrementar los alimentos de matriz integral rica en fibra y sin azúcares añadidos debe traducirse en
+mejor control de peso, mejor salud metabólica y reducción de riesgo de enfermedades crónicas a largo
+plazo 72 59 .
+
+Sodio y sal
+El sodio (principal componente de la sal de mesa) es un mineral esencial pero que, consumido en
+exceso, se relaciona fuertemente con hipertensión arterial y mayor riesgo cardiovascular. Las Guías
+2025–2030 reafirman el límite general de <2300 mg de sodio al día para adultos y adolescentes desde
+14 años 135 , que coincide con la recomendación vigente de organizaciones como la FDA y es
+
+11
+
+equivalente a ~1 cucharadita de sal. Para niños menores, se establecen límites inferiores acorde a la
+edad: 1–3 años: <1200 mg/día; 4–8 años: <1500 mg/día; 9–13 años: <1800 mg/día aproximadamente 136 .
+Estas cantidades reflejan niveles que ayudarían a prevenir el desarrollo de presión alta a lo largo de la
+vida. La American Heart Association (AHA) incluso sugiere un objetivo más estricto de no más de
+1500 mg/día para la mayoría de los adultos, señalando que esa reducción podría mejorar aún más la
+presión arterial y la salud cardiovascular 109 . En la práctica, la AHA comenta que reducir siquiera
+1000 mg respecto al consumo habitual diario tiene un impacto positivo medible en la presión
+sanguínea 137 138 .
+Actualmente, el consumo promedio de sodio en EE.UU. es muy elevado (~3300 mg/día) 139 ,
+principalmente debido a la gran presencia de sal en alimentos procesados y de restaurante (se estima
+que >70% del sodio dietético proviene de estos, no del salero en casa 140 ). Por ello, las Guías enfatizan
+medidas como: leer las etiquetas buscando bajo contenido de sodio, cocinar más en casa usando
+menos sal, optar por versiones “sin sal añadida” o “bajas en sodio” de productos enlatados (ej. verduras,
+frijoles), condimentar con hierbas y especias en vez de sal, y limitar embutidos, sopas enlatadas, salsas
+industriales, snacks salados, comidas rápidas, etc., que suelen ser muy altos en sodio 131 132 . Se
+recomienda evitar los alimentos ultraprocesados ricos en sodio – la guía los menciona explícitamente:
+“evite alimentos empaquetados, preparados o listos para comer que sean salados… en su lugar elija opciones
+caseras y alimentos naturalmente bajos en sodio” 131 132 . Por ejemplo, una porción de pizza congelada o
+una sopa instantánea pueden contener 800–1000 mg de sodio, casi la mitad del límite diario; su
+consumo frecuente dificulta no exceder 2300 mg.
+Para concienciar al público, las Guías también definen los términos de etiqueta relacionados al sodio:
+“bajo en sodio” = ≤140 mg por porción, “muy bajo sodio” = ≤35 mg, “libre de sodio” = <5 mg, etc., invitando
+a los consumidores a elegir productos que lleven estas indicaciones o comparar marcas para elegir la
+opción con menos sodio 141 142 . También recuerdan que algunas fuentes de sodio no son obvias – por
+ejemplo, pan y cereales aportan sodio “silencioso”, y aditivos como glutamato monosódico, nitrito de
+sodio, bicarbonato sódico en alimentos procesados, suman al total 125 143 . Mantenerse dentro de los
+límites de sodio puede requerir aprender a cocinar con sabores alternativos (limón, ajo, especias) para
+compensar la reducción de sal. La guía sugiere que personas muy activas o que pierden mucho sodio por
+sudor (deportistas, trabajadores expuestos a calor intenso) pueden requerir algo más de 2300 mg/día para
+reponer electrolitos 135 144 , pero esto es la minoría; para la mayoría, menos sodio es mejor. No hay
+evidencia de perjuicio por bajar a 1500 mg en la población general – en realidad la “necesidad
+fisiológica mínima” de sodio es <500 mg/día, cantidad que prácticamente todo el mundo excede con
+creces 145 . Por tanto, las Guías alientan a todos a moverse en dirección a 2300 mg o menos, y los
+organismos cardíacos recomiendan aspirar a ~1500 mg para máximo beneficio en presión arterial 109 .
+En resumen, la evidencia indica que reducir la ingesta de sodio reduce la presión arterial de manera
+proporcional: estudios muestran que dietas controladas con ~1500–2300 mg vs. dietas altas en sodio
+(~4500 mg) bajan la presión sistólica en ~3–7 mmHg en hipertensos 146 . Esto se traduce en menor
+riesgo de eventos cerebrovasculares y cardíacos. Las Guías combinan esta recomendación con la del
+patrón alimentario general (p.ej., el enfoque DASH, que es rico en frutas-verduras y lácteos bajos en
+grasa a la par de bajo sodio, demostró reducciones de >5 mmHg en PAS) 147 . Por ello, limitar el sodio
+a 2300 mg (idealmente ~1500 mg) es una piedra angular de la dieta saludable, especialmente para
+quienes buscan prevenir o controlar hipertensión.
+
+Hidratación y consumo de agua
+Aunque no es un macronutriente energético, el agua es vital en la nutrición y las Guías 2025–2030 la
+mencionan en sus mensajes clave: “La hidratación es un factor clave para la salud en general. Elige agua
+(natural o gasificada) y bebidas sin endulzar” 123 . Se alienta a que la bebida principal sea el agua, en
+
+12
+
+reemplazo de refrescos azucarados, jugos con azúcar, bebidas deportivas o alcohólicas. La meta es
+saciar la sed sin agregar calorías vacías ni estimulantes innecesarios. No se establece una cantidad
+uniforme para todos, ya que los requerimientos hídricos dependen de la edad, sexo, clima y actividad
+física. Sin embargo, las referencias de los Dietary Reference Intakes sugieren un consumo total diario de
+líquidos (bebidas + agua de alimentos) de alrededor de 3.7 litros para hombres adultos y 2.7 litros para
+mujeres adultas, lo que suele equivaler a ~3.0 L y 2.2 L respectivamente solo de bebidas, el resto
+proviene de alimentos 107 148 . En la práctica, esto son ~8–12 vasos de líquido al día. Las Guías
+recomiendan atender a las señales de sed y aumentar la ingesta de agua en climas cálidos o durante
+actividad física intensa, para evitar deshidratación. Para poblaciones específicas, hay consejos: por
+ejemplo, adultos mayores deben recordarse beber agua con regularidad aunque no sientan mucha sed,
+y madres lactantes tienen requerimientos más altos de líquidos.
+Una hidratación adecuada contribuye a la función cardiovascular, digestiva (previniendo estreñimiento),
+al mantenimiento de la temperatura corporal y a la salud renal. Además, elegir agua sobre bebidas
+calóricas ayuda al control de peso (se evitan calorías líquidas que no producen saciedad) 123 124 . Por
+ello, en combinación con el consejo sobre azúcares, se hace hincapié en que el agua sea la bebida por
+defecto. Otras opciones aceptables mencionadas incluyen café o té sin azúcar (en moderación,
+teniendo en cuenta la cafeína), agua con gas natural, infusiones de hierbas, e incluso bebidas
+saborizadas con frutas naturales sin azúcar. En contraste, se sugiere limitar el consumo de bebidas
+alcohólicas – las Guías simplemente mencionan “consume menos alcohol para una mejor salud
+general” 149 , adhiriendo a la recomendación estándar (si se bebe, hacerlo con moderación: hasta 1
+trago/día para mujeres, 2 para hombres, y no para menores de edad ni embarazadas). Sin embargo,
+dado que el alcohol aporta calorías y puede exacerbar problemas de salud, en un plan nutricional
+saludable se considera discrecional y no esencial.
+En suma, mantenerse bien hidratado con agua y bebidas sin endulzar es parte integral de la dieta
+recomendada, complementando los consejos alimentarios. Esto asegura un óptimo funcionamiento
+corporal y evita confundir sed con hambre, lo que a veces lleva a ingestas innecesarias.
+
+Consideraciones para Condiciones Médicas y Poblaciones
+Especiales
+Las Guías Alimentarias 2025–2030 están pensadas principalmente para la población general
+aparentemente sana, como herramienta de prevención. Sin embargo, ofrecen lineamientos que pueden
+adaptarse o tener implicaciones específicas en ciertas condiciones de salud. El JSON nutricional
+incorpora algunas de estas consideraciones para dietas terapéuticas o poblaciones particulares. A
+continuación se presenta la evidencia relevante y las recomendaciones aplicables a condiciones
+médicas comunes, así como algunas etapas de la vida con requerimientos especiales. Cabe señalar que,
+en todos los casos, se recomienda la individualización y el seguimiento por un profesional de salud,
+pero las Guías proporcionan un marco sólido para dichas adaptaciones.
+
+Obesidad y control de peso corporal
+Dado que más del 70% de adultos en EE.UU. tienen sobrepeso u obesidad 3 , el manejo del peso es
+una preocupación transversal. Las Guías no prescriben dietas de adelgazamiento específicas, pero sus
+recomendaciones – al priorizar alimentos densos en nutrientes y eliminar calorías vacías – crean un
+
+13
+
+entorno alimentario propicio para un peso saludable. Algunos puntos destacables respaldados por
+evidencia:
+• Densidad energética y saciedad: Al enfatizar verduras, frutas, legumbres, proteínas magras y
+granos integrales, el patrón alimentario tiene una densidad calórica moderada-baja pero alta
+saciedad por su contenido de fibra y proteína. Esto ayuda a que las personas se sientan llenas
+con menos calorías, facilitando un déficit calórico si se requiere pérdida de peso. Estudios
+muestran que dietas ricas en alimentos de baja densidad calórica (sopas, ensaladas, vegetales)
+favorecen la reducción de peso porque espontáneamente se ingieren menos calorías 112 150 .
+• Mayor proporción de proteína: Como se comentó, ingerir ~1.2–1.6 g/kg de proteína ayuda a
+preservar masa muscular durante la pérdida de peso 98 . Ensayos clínicos en mujeres con
+obesidad han encontrado que dietas más altas en proteína dan lugar a mayor pérdida de grasa y
+menores descensos de tejido magro comparado con dietas altas en carbohidratos 99 . Además,
+la proteína es el macronutriente más saciante por caloría, por lo que aumentar su proporción
+puede reducir la ingesta espontánea. El Scientific Report cita investigaciones donde
+participantes en dietas hiperproteicas (25-30% calorías) reportan menos hambre y logran mejor
+adherencia que con dietas estándar 99 151 . Por tanto, en manejo de peso, priorizar proteínas
+magras en cada comida (p. ej., claras de huevo o yogurt en desayuno, legumbres o carnes
+magras en comidas) es una estrategia aconsejada.
+• Distribución de carbohidratos (dieta baja en carbohidratos): Existe evidencia creciente de
+que enfoques bajos en carbohidratos (<130 g/día) pueden ser efectivos para perder peso, al
+menos a corto y mediano plazo, en individuos con resistencia a la insulina u obesidad 59 152 . El
+Scientific Report realizó una revisión detallada (Apéndice 4.5) y concluyó que dietas low-carb
+logran mejor control glucémico y reducción de peso en personas con obesidad o diabetes, sin efectos
+adversos serios ni deficiencias de nutrientes aparentes 59 . De hecho, se incluye la
+recomendación: “Individuos con ciertas enfermedades crónicas pueden experimentar mejoras de
+salud siguiendo una dieta más baja en carbohidratos. Trabaja con tu profesional de salud para
+identificar y adoptar una dieta apropiada a tu condición” 152 . Esto reconoce que para algunos
+pacientes – en particular con síndrome metabólico o prediabetes – reducir carbohidratos
+refinados significativamente puede ser benéfico para estimular la cetosis leve, la quema de
+grasa y la mejoría de marcadores metabólicos. En contexto de peso, dietas bajas en
+carbohidratos a menudo llevan aparejada una ingesta proteica más alta y cetonas circulantes, lo
+que suprime el apetito y favorece la pérdida de peso espontánea. No obstante, las Guías no
+promueven una cifra específica de carbohidratos para todos, sino que permite la flexibilidad de
+que una persona elija un plan bajo en carbos (por ejemplo 25–30% de calorías) siempre que ese
+plan respete los principios de densidad nutricional (es decir, incluso una dieta low-carb debe
+incluir vegetales sin almidón en abundancia, grasas saludables, fuentes adecuadas de proteína,
+etc., y no convertirse en excusa para comer carne procesada y queso libremente) 110 153 .
+• Alimentos ultraprocesados y peso: La evidencia sugiere que dietas con alta carga de alimentos
+ultraprocesados favorecen un exceso de consumo calórico inadvertido, debido a que suelen ser
+muy palatables, bajas en fibra/proteína y fáciles de ingerir en exceso. Un ensayo clínico citado
+(Hall, 2019) demostró que participantes con dieta ultraprocesada comían ~500 kcal/día más y
+ganaban peso, versus cuando se les daba dieta sin procesados, a pesar de igual macronutrientes
+proporcionados 113 114 . Por ello, la simple acción de eliminar los productos ultraprocesados
+(refrescos, dulces, comida rápida, snacks, pan blanco, etc.) y sustituirlos por comidas caseras
+ricas en alimentos integrales tiende a provocar pérdida de peso, al reducir la densidad calórica y
+mejorar señales de saciedad. Las Guías claramente instan a “evitar alimentos y bebidas
+
+14
+
+altamente procesados” como medida general 131
+sobrepeso/obesidad.
+
+132 , lo cual es especialmente relevante en
+
+• Actividad física y balance energético: Aunque las Guías Alimentarias se enfocan en la dieta,
+apoyan otros pilares del manejo de peso. Se menciona que la comida real “fomenta el
+movimiento y ejercicio” al proveer energía de calidad 154 . Se alinea con la recomendación de
+guías de actividad física (≥150 minutos semanales de ejercicio moderado). Mantener un patrón
+alimentario saludable combinado con actividad física aumenta la probabilidad de lograr balance
+energético negativo (para bajar peso) o positivo controlado (para niños en crecimiento). También
+se advierte que la crisis de obesidad no solo es culpa de la dieta sino de la vida sedentaria, y que
+ambos deben abordarse 4 5 .
+En resumen, para control de peso las Guías brindan un marco: dieta densa en nutrientes y saciante,
+alta en proteína y fibra, baja en azúcares y refinados, con calorías adecuadas al individuo y
+complementada con ejercicio. Esta estrategia debe ajustarse a cada persona (algunos pueden preferir
+moderar carbohidratos, otros controlar porciones más tradicionalmente), idealmente bajo guía
+profesional, pero los principios subyacentes son los detallados arriba.
+
+Diabetes mellitus tipo 2 y control glucémico
+La prevención y manejo de la diabetes tipo 2 es una prioridad de salud pública dada su creciente
+prevalencia (14% de adultos y 43% prediabéticos en EE.UU. 155 156 ). Las Guías 2025–2030, aunque
+centradas en población general, incorporan recomendaciones que benefician particularmente a
+individuos con resistencia a la insulina o diabetes. Varias de ellas ya se han descrito: reducir azúcares
+añadidos, elegir carbohidratos de bajo índice glucémico (integrales), aumentar fibra, controlar
+porciones, perder peso si es necesario, etc. A continuación, enfatizamos algunos aspectos específicos
+con evidencia:
+• Dieta baja en carbohidratos para mejor control glucémico: Como se mencionó, el Scientific
+Report concluyó que existe evidencia de certeza moderada de que las dietas relativamente bajas
+en carbohidratos (<26% de calorías o <130 g/día) mejoran la hemoglobina glucosilada (HbA1c) y la
+glucemia en personas con diabetes tipo 2, y pueden reducir o eliminar la necesidad de ciertos
+medicamentos, todo ello sin efectos adversos importantes registrados 59 152 . Este
+reconocimiento es notable, ya que ediciones anteriores de las Guías eran más reacias a avalar
+dietas low-carb. Ahora, sin prescribirlas universalmente, se admite que pueden ser una
+herramienta válida bajo supervisión médica. Por ello, en la sección de recomendaciones aparece la
+indicación de que quienes tienen ciertas condiciones crónicas (especialmente diabetes)
+consideren con su médico adoptar una dieta más baja en carbohidratos para mejorar sus
+resultados clínicos 152 . En la práctica, esto implicaría reducir significativamente pan, arroz,
+pasta, papas, postres y bebidas azucaradas, enfocándose en vegetales no feculentos, proteínas y
+grasas saludables. Estudios citados muestran que dietas cetogénicas o muy bajas en
+carbohidratos lograron reducciones de medicamentos y mejor control en diabéticos, al menos a
+1-2 años vista, comparadas con dietas altas en carbohidratos tradicionales 157 158 .
+• Énfasis en eliminar azúcares añadidos: Para cualquier persona con diabetes (o prediabetes),
+evitar picos glucémicos es fundamental. Las Guías proveen un entorno ideal al prácticamente
+proscribir los azúcares añadidos como vimos. En alguien con diabetes, esto ayuda a estabilizar la
+glucosa. La recomendación de bebidas: cero refrescos, optar por agua, también es crucial para
+no añadir carga glicémica líquida 121 . Incluso jugos de fruta 100% se deben limitar a pequeñas
+porciones diluidas, ya que aunque no tengan azúcar “añadida”, aportan mucha fructosa libre que
+eleva la glucemia rápidamente 38 .
+
+15
+
+• Fibra dietética y control glucémico: Una alta ingesta de fibra (particularmente soluble,
+presente en legumbres, avena, frutas) retarda la absorción de carbohidratos y mejora la
+sensibilidad a la insulina. El patrón recomendado, con ~28–30 g fibra/día, contribuye a menores
+niveles de HbA1c en diabéticos. Evidencias epidemiológicas indican que quienes consumen más
+fibra tienen menor riesgo de desarrollar diabetes 58 57 . Por lo tanto, la meta de fibra de 14 g/
+1000 kcal es doblemente importante en prediabetes/diabetes.
+• Índice glucémico y elección de alimentos: Aunque las Guías no mencionan “índice glucémico”
+explícitamente, al instar a alimentos integrales y mínimamente procesados están de facto
+aconsejando alimentos de índice glucémico más bajo (p. ej., pan integral vs pan blanco, fruta
+entera vs jugo, etc.). Esto ayuda a evitar hiperglucemias posprandiales. También se sugiere
+combinar en las comidas carbohidratos con proteína, grasa saludable y fibra (lo cual ocurre
+naturalmente en el patrón, e.j. un plato puede tener vegetales + pollo + quinoa + aceite de oliva),
+lo que modera el impacto glucémico de los hidratos de carbono.
+• Pérdida de peso modesta mejora diabetes: Las Guías enfatizan en su Introducción que
+muchas enfermedades metabólicas no son destino genético sino resultado de dieta y estilo de vida,
+implicando que cambios en estos pueden revertir o mejorar la situación 4 5 . En diabetes tipo
+2, está bien documentado que perder aunque sea un 5-7% del peso corporal puede normalizar
+la glucemia en fase inicial. El patrón alimentario propuesto facilita esa pérdida al ser menos
+calórico y más saciante que la dieta típica americana. Así, se alinea con las recomendaciones de
+la Asociación Americana de Diabetes (ADA) de lograr un déficit calórico para quienes tengan
+sobrepeso.
+En general, las Guías 2025–2030 ofrecen un marco óptimo para la prevención y control de la
+diabetes: eliminar azúcares añadidos, elegir carbohidratos de absorción lenta y ricos en fibra,
+considerar reducción moderada de carbohidratos totales, enfocarse en proteínas y grasas de calidad, y
+lograr un peso saludable. Todo ello respaldado por evidencia de mejoras en control glucémico y
+factores de riesgo. Por supuesto, se recalca que personas con diabetes deben trabajar con su equipo de
+salud para personalizar el plan (ajustar medicación según cambios dietéticos, etc.) 152 , pero el mensaje
+es esperanzador: con “comida de verdad” y menos ultraprocesados, “muchas de estas enfermedades no
+son destino genético” y pueden prevenirse o manejarse mejor 4 .
+
+Salud cardiovascular (hipertensión, dislipidemia)
+El patrón alimentario delineado en las Guías es inherentemente cardioprotector. Muchos elementos ya
+cubiertos (reducir sodio, limitar grasas saturadas/trans, alto consumo de frutas-verduras, granos
+enteros y omega-3, moderar alcohol) son pilares de las recomendaciones para prevenir infarto,
+accidente cerebrovascular y otras patologías cardiovasculares. A continuación resumimos cómo las
+evidencias y recomendaciones se traducen en mejoras de los principales factores de riesgo
+cardiovascular:
+• Hipertensión arterial: La dieta saludable propuesta es básicamente similar a la dieta DASH
+(Enfoques Dietéticos para Detener la Hipertensión) en varios aspectos: alta en frutas, verduras,
+lácteos; moderada en proteínas magras; baja en azúcares y carne roja; y sobre todo baja en
+sodio. El ensayo original DASH mostró que tal patrón reducía significativamente la presión
+sanguínea en pacientes hipertensos – aprox. -6 mmHg sistólica y -3 mmHg diastólica comparado
+con dieta típica, y aún más cuando se combinaba con restricción a 1500 mg de sodio 147 . Las
+Guías incorporan el límite de 2300 mg sodio (y mencionan menores para sensibles) 135 136 , lo
+cual, junto con el aumento de potasio dietético derivado de tantas frutas y verduras, ayuda a
+bajar la presión (la relación sodio/potasio es determinante, y en esta dieta se mejora porque el
+
+16
+
+potasio aumenta mientras sodio disminuye). Por ejemplo, 3 porciones de lácteos y abundantes
+verduras/frutas aportan fácilmente >4000 mg de potasio, nutriente que la mayoría de
+estadounidenses consume muy poco y que la dieta procesada no provee 159 . Un mayor potasio
+alimentario se asocia con menor tensión arterial al promover natriuresis. Así, para hipertensión
+se recomienda este patrón estilo DASH combinado con la restricción de sal mencionada; las
+evidencias son contundentes en su eficacia 147 160 . De hecho, la guía federal sugiere que con
+modificaciones alimentarias (y pérdida de peso si aplica) se pueden evitar o reducir
+medicamentos antihipertensivos en muchos casos iniciales.
+• Dislipidemia (colesterol LDL elevado, triglicéridos altos): Las Guías aconsejan <10% calorías
+de saturadas, lo cual se alinea con recomendaciones del Colegio Americano de Cardiología y
+AHA para bajar LDL. Estudios muestran que reduciendo saturadas de ~14% a <7% de calorías se
+puede bajar LDL en ~8-10%. Aunque el meta-análisis de ensayos RCT mencionado en Scientific
+Report cuestionó un poco la magnitud de beneficio clínico en eventos 68 , no hay duda de que
+en la mayoría de personas disminuir saturadas reduce LDL-colesterol. También, eliminar grasas
+trans industriales (ya hecho) tiene un impacto notable en mejorar perfil lipídico (sube HDL, baja
+LDL). Además, la dieta rica en fibra soluble (de avena, legumbres, frutas) contribuye a disminuir
+LDL al reducir su absorción – 5-10 g/día de fibra soluble pueden bajar LDL ~5%. El patrón
+sugerido fácilmente provee 7-10 g de soluble (dentro de los ~28 g totales). Los frutos secos
+(nueces, almendras) y pescados grasos aportados también ayudan a un perfil favorable: estudios
+como PREDIMED demostraron que dietas mediterráneas altas en aceite de oliva o nueces
+reducen eventos cardiovasculares. Sumando todo, se espera que seguir esta guía disminuya el
+colesterol LDL significativamente y aumente ligeramente el HDL (por la actividad física y pérdida
+de peso, principalmente). Para triglicéridos, la reducción de azúcares añadidos es crucial –
+ingestas elevadas de azúcares/fructosa elevan triglicéridos; al cortarlos, los triglicéridos suelen
+descender. A su vez, subir omega-3 (pescado graso) ayuda a bajar triglicéridos.
+• Peso y síndrome metabólico: Ya cubierto, pero recalcando: la pérdida de peso derivada de este
+patrón alimentario (si se reduce ingesta calórica) mejorará todos los componentes del síndrome
+metabólico: reducirá circunferencia abdominal, subirá el HDL, bajará triglicéridos y tensiones.
+Incluso una modesta pérdida del 5-7% peso en obesos reduce riesgo de eventos CV.
+• Inflamación y salud arterial: El Scientific Report señala que la dieta estadounidense actual,
+dominada por ultraprocesados, conlleva exposición a aditivos químicos y posiblemente
+compuestos pro-inflamatorios (como aldehídos de aceites refinados recalentados) 105 106 . Al
+revertir a comida real, se espera menor inflamación sistémica. Se cita evidencia de que dietas
+altas en frituras y carnes procesadas elevan marcadores inflamatorios (p. ej. PCR, interleucinas),
+mientras que dietas mediterráneas los reducen 161 162 . Un ejemplo extremo: Apéndice 4.10
+mostró que consumo regular de carne frita se asoció a mayor endotoxemia (LPS elevado) y perfil
+inflamatorio alterado 161 163 . Así, la guía promueve métodos de cocción más saludables
+(hornear, asar, saltear ligeramente) en vez de freír profundo, para evitar esos compuestos
+nocivos 48 164 .
+En conclusión, la salud cardiovascular se beneficia en múltiples frentes: la dieta recomendada baja la
+presión arterial, mejora el perfil de lípidos, reduce la glucosa, promueve peso saludable y disminuye la
+inflamación, todos factores clave para prevenir aterosclerosis. Las recomendaciones complementarias
+como actividad física regular, moderación del alcohol (idealmente ≤1-2 tragos/día) y no fumar (aunque
+obvio, se suele mencionar en contexto de salud cardiaca) completan el abordaje, pero escapan al
+alcance directo de las Guías dietéticas. Aun así, el documento de 2025–2030 integra la nutrición en la
+visión amplia de recuperar la salud pública: considera que cambiar la dieta poblacional puede disminuir
+los enormes costos médicos (18% del PIB en salud, mucho dedicado a tratar complicaciones
+
+17
+
+cardiovasculares y diabéticas) 165 166 . Se proyecta que adoptando estas pautas, habría menos
+obesidad y por ende menos jóvenes excluidos del servicio militar por problemas de salud (un punto
+anecdótico mencionado) 167 168 . En definitiva, la alimentación propuesta es cardioprotectora y su
+implementación generalizada podría atenuar significativamente la “marea de enfermedades crónicas”
+que no se ha podido frenar con guías anteriores 169 170 .
+
+Otras consideraciones especiales: embarazo, lactancia, infancia, vejez
+Si bien las Guías se extienden por primera vez a todos los grupos de edad desde la lactancia hasta
+adultos mayores (antes las de 2020 incluyeron bebés 0-24 meses por primera vez), aquí resumimos
+brevemente algunos puntos clave de etapas de la vida, pues el JSON podría requerir adaptaciones en
+estos casos.
+• Embarazo y lactancia: Las Guías 2025–2030 incluyen por primera vez recomendaciones
+específicas para embarazadas y madres lactantes (Capítulo “Life Stages”, Apéndice 4.11) 171 . En
+general, se insiste en seguir el patrón saludable con énfasis extra en ciertos nutrientes: ácido fólico
+(400 µg/d de suplemento preconcepcional), hierro (27 mg/d durante embarazo, mediante
+alimentos y suplemento si necesario), yodo (220 µg/d embarazo, 290 lactancia, usando sal
+yodada), colina (450 mg/d embarazo, 550 lactancia, consumiendo huevos u otras fuentes) 172
+173 . Se destaca que la dieta vegetariana/vegana en embarazo requiere planificación cuidadosa
+y suplementos para B12, D, hierro, colina, etc., dado que la deficiencia de algunos puede tener
+consecuencias severas en el desarrollo fetal 174 175 . También se aconseja consumir 8-12 onzas
+de pescados/semana eligiendo variedades bajas en mercurio para aportar DHA al feto (ej.
+salmón, sardinas) 89 90 . Y, obviamente, evitar alcohol completamente durante el embarazo. Las
+Guías refuerzan no añadir azúcar ni sal en la alimentación complementaria del bebé (para no
+acostumbrar el paladar y proteger la salud futura) 118 129 . En lactancia, se recomiendan calorías
+adicionales (~330-400 kcal/día) y énfasis en hidratación, proteínas y continuar con
+multivitamínico posnatal.
+• Infancia (0-2 años, 2-18 años): Para lactantes, la recomendación es leche materna exclusiva
+~6 meses y luego continuar amamantando hasta al menos 12 meses o más si madre e hijo lo
+desean 176 177 , complementando con alimentos sólidos apropiados a partir de ~6 meses. Se
+menciona introducir una variedad de alimentos potencialmente alergénicos (cacahuate, huevo,
+pescado, trigo) entre 4-6 meses según riesgo, para disminuir alergias 178 179 . Evitar miel antes
+del año, evitar azúcar añadida y sal en las papillas. Tras el destete, usar leche entera
+pasteurizada a partir de 12 meses (y no leches vegetales sin fortificar) 180 181 . De 2 años en
+adelante, las porciones de la dieta saludable se adaptan según calorías menores (como ya vimos,
+1000-1400 kcal en niños pequeños). Se hace hincapié en no ofrecer bebidas azucaradas a los
+niños y limitar los jugos a <120 ml al día si acaso 118 128 . Para niños mayores y adolescentes, las
+Guías reiteran la importancia de nutrientes a veces deficitarios como calcio, vitamina D (sobre
+todo en adolescentes, por baja ingesta de lácteos), fibra (niños suelen ser selectivos con
+verduras), hierro (en adolescentes chicas). Se alienta a involucrar a los niños en la cocina y elección
+de alimentos saludables, crear rutinas familiares de comidas caseras y dar buen ejemplo 128 182 .
+También advierten limitar firmemente bebidas energéticas y estimulantes en jóvenes, y
+obviamente nada de alcohol en menores. El patrón general (alta calidad, baja comida chatarra)
+es sumamente importante en infancia, ya que los hábitos formados temprano persisten y la
+prevención de obesidad infantil es crucial para prevenir diabetes y problemas en la adultez
+temprana (actualmente ~1 de cada 3 adolescentes tiene prediabetes o diabetes) 3 155 .
+• Adultos mayores (>65 años): Las Guías reconocen necesidades especiales en la tercera edad.
+“Algunos adultos mayores requieren menos calorías pero igual o mayor cantidad de nutrientes clave
+
+18
+
+como proteína, vitamina B12, vitamina D y calcio” 183 . Esto se debe a cambios fisiológicos:
+disminución de masa muscular (sarcopenia), absorción más pobre de B12 por gastritis atrófica,
+síntesis cutánea reducida de vitamina D, etc. Por tanto, los adultos mayores deben concentrar
+su dieta en alimentos de alta densidad nutricional (por ej., lácteos, carnes magras, pescados,
+legumbres, huevos, frutas y verduras variadas) para obtener suficientes proteínas, vitaminas y
+minerales dentro de un menor cupo calórico disponible 183 184 . La recomendación de ~1.2 g/kg
+proteína es especialmente relevante en este grupo para mitigar la sarcopenia – varios estudios
+indican que necesidades de proteína aumentan con la edad. También se sugiere que los
+mayores consideren suplementos de vitamina B12 o alimentos fortificados, ya que hasta 10-30%
+pueden tener malabsorción de B12 de fuentes naturales 183 . La vitamina D también suele
+requerir suplemento (800-1000 UI/día) si la exposición solar es limitada. Las Guías mencionan
+que pese a requerir menos energía, los adultos mayores podrían necesitar porciones más
+pequeñas pero más frecuentes de alimentos ricos en nutrientes, para alcanzar sus metas 185 186 .
+Por ejemplo, en vez de 2 comidas abundantes, quizás 3-4 comidas pequeñas al día con proteínas
+y vegetales en cada una. Asimismo, la hidratación es vital – la sensación de sed disminuye con la
+edad, por lo que se alienta a beber agua regularmente.
+En todos estos casos especiales, la base sigue siendo el patrón saludable de las Guías, ajustado en
+cantidad y con especial atención a ciertos nutrientes críticos. El Scientific Report subraya la importancia
+de dar orientación explícita para vegetarianos, veganos y etapas vulnerables (embarazo, lactancia,
+infancia temprana, vejez) 187 188 , y esa ha sido una mejora en las Guías 2025–2030 respecto a
+ediciones previas.
+
+Conclusiones
+En la elaboración del JSON nutricional basado en las Guías Alimentarias de Estados Unidos 2025–2030,
+se han incorporado evidencias científicas sólidas de una variedad de fuentes: el Informe Científico del
+Comité asesor, sus Apéndices detallados, materiales complementarios de realfood.gov y la literatura
+nutricional reciente. Cada aspecto – desde la definición de porciones diarias por grupo, hasta los límites
+de macronutrientes y las adaptaciones para condiciones específicas – está respaldado por datos y
+estudios mencionados en este documento.
+La fidelidad científica ha sido la prioridad: por ello se han incluido numerosas citas textuales de las
+fuentes oficiales (Scientific Report, DGA 2025–2030, etc.) con sus referencias (documento, página,
+sección), garantizando transparencia y auditabilidad. Asimismo, se han presentado tablas y figuras
+clave (por ejemplo, la tabla de porciones diarias por nivel calórico, la gráfica de obesidad/diabetes en el
+tiempo) directamente extraídas o reconstruidas de los documentos base, para ilustrar visualmente la
+evidencia subyacente. Estas imágenes y tablas refuerzan conceptos como la distribución de alimentos
+en la dieta saludable y la urgencia de revertir las tendencias de enfermedades crónicas.
+Adicionalmente, se han añadido notas metodológicas que clarifican cómo se obtuvieron ciertas
+recomendaciones (p. ej., la justificación de 1.2–1.6 g/kg de proteína con base en ensayos clínicos 99 , o
+los criterios de inclusión de estudios por parte del Comité 189 ). Esto provee contexto sobre la calidad de
+la evidencia (por ejemplo, diferenciando hallazgos de metaanálisis de cohortes vs. ensayos
+aleatorizados) y sobre el grado de certeza de las recomendaciones (p. ej., evidencia “moderada” para
+beneficios de dietas bajas en carbohidratos en diabetes 59 ). También se han mencionado lagunas de
+conocimiento identificadas por los expertos (como la necesidad de más investigación sobre efectos a
+largo plazo de ciertos patrones vegetarianos en distintos individuos 187 190 ), lo cual explica por qué
+algunas recomendaciones se mantienen conservadoras.
+
+19
+
+El JSON nutricional resultante, organizado por secciones (Dietas, Macros, Calorías, Condiciones médicas,
+etc.), refleja por tanto un resumen estructurado de las Guías 2025–2030, traduciendo la evidencia en
+parámetros cuantitativos y cualitativos para implementación en sistemas de nutrición clínica. Por
+ejemplo, para la sección de “macros”, el JSON puede contener: "proteina_min_gkg": 1.2,
+"proteina_max_gkg":
+
+1.6
+
+(basado en 95 ),
+
+"saturadas_max_pct":
+
+(basado en 65 ),
+
+10
+
+"fibra_min_g": 28 para 2000 kcal (basado en 60 ), "sodio_max_mg": 2300 (basado en 135 ),
+etc., todos valores sustentados en las referencias incluidas. Para “dietas”, el JSON puede enumerar
+alimentos recomendados y a limitar, extrayendo directamente las listas de las Guías (como las
+definiciones de cada grupo alimenticio 191 192 ). Y en “condiciones médicas”, podrían incorporarse
+banderas como "opcion_low_carb_recomendada": true en diabetes (respaldado por 152 ),
+"meta_peso_perdida_%": 5-10 en obesidad (coincidiendo con recomendaciones clínicas comunes)
+o "embarazo_suplementos": ["folato","hierro","B12","D"] (según evidencias citadas).
+En última instancia, este documento – y el PDF generado a partir de él – proporcionan el soporte
+científico completo para cada fragmento del JSON, organizado de forma clara para su revisión por
+expertos en salud o desarrolladores de IA en nutrición. La calidad visual (con esquemas y tablas) y la
+claridad explicativa pretenden facilitar la comprensión de cómo las recomendaciones se derivan de la
+ciencia, permitiendo confiar en que el JSON nutricional no es un conjunto arbitrario de números sino
+una representación fiel de las mejores prácticas nutricionales basadas en evidencia al año 2025. Siguiendo
+estas prácticas, cualquier sistema de asesoría nutricional o plan de alimentación no solo estará alineado
+con las políticas federales más recientes, sino que, más importante, estará optimizado para promover la
+salud, prevenir enfermedades dietocrónicas y mejorar la calidad de vida de las personas en diversas
+circunstancias.
+Fuentes: Este documento recopilatorio se basó en las Guías Alimentarias para los Estadounidenses 2025–
+2030 (USDA-HHS DGA 2025–2030) 8 10 , el Informe Científico de la Fundación Científica para las Guías
+2025–2030 (Scientific Report) 155 7 y sus Apéndices técnicos 103 187 , el folleto Daily Servings by Calorie
+Level 74 70 , así como literatura científica complementaria de 2023–2024 para ciertas aclaraciones (por
+ej., ingestión de fibra 60 , rangos de macronutrientes IOM 96 , recomendaciones AHA sobre sodio 109 ).
+Cada cita incluida remite al documento y líneas correspondientes donde se sustenta la afirmación,
+ofreciendo transparencia total. De este modo, el profesional que audite el JSON podrá verificar cada
+dato – desde un simple “3 porciones de lácteos al día” 50 hasta una afirmación compleja sobre riesgo
+relativo de diabetes por alimentos ultraprocesados 115 – directamente en la fuente original,
+asegurando la validez y confiabilidad de la información plasmada en la herramienta nutricional
+derivada.
+
+1
+
+2
+
+3
+
+4
+
+5
+
+119
+
+120
+
+121
+
+122
+
+123
+
+8
+
+9
+
+180
+
+181
+
+182
+
+DGA.pdf
+
+124
+
+10
+125
+
+11
+
+12
+
+34
+
+35
+
+37
+
+38
+
+39
+
+42
+
+50
+
+126
+
+127
+
+128
+
+129
+
+130
+
+131
+
+132
+
+135
+
+136
+
+52
+
+53
+
+143
+
+54
+
+144
+
+63
+149
+
+64
+
+65
+
+66
+
+69
+
+71
+
+80
+
+95
+
+154
+
+167
+
+168
+
+176
+
+177
+
+178
+
+179
+
+118
+
+47
+
+48
+
+49
+
+56
+
+57
+
+58
+
+115
+
+116
+
+117
+
+file://file_00000000ea0871f5bdea9c3992100c09
+6
+
+7
+
+13
+
+14
+
+15
+
+16
+
+17
+
+18
+
+19
+
+20
+
+23
+
+24
+
+25
+
+26
+
+27
+
+28
+
+29
+
+30
+
+31
+
+32
+
+33
+
+45
+
+46
+
+59
+
+67
+
+72
+
+83
+
+84
+
+85
+
+86
+
+87
+
+88
+
+89
+
+90
+
+91
+
+92
+
+93
+
+94
+
+97
+
+98
+
+99
+
+100
+
+101
+
+110
+
+111
+
+112
+
+133
+
+134
+
+150
+
+151
+
+152
+
+156
+
+157
+
+158
+
+164
+
+165
+
+166
+
+169
+
+170
+
+183
+
+75
+
+76
+
+77
+
+78
+
+79
+
+153
+
+155
+
+184
+
+189
+
+113
+
+114
+
+Scientific Report_1.8.26.pdf
+
+file://file_00000000c2e4720ebfb2e0a4e5924bfa
+21
+
+22
+
+36
+
+40
+
+41
+
+43
+
+44
+
+51
+
+55
+
+70
+
+73
+
+74
+
+Sizes.pdf
+file://file_000000000548720e841698a9ebb45f88
+
+20
+
+81
+
+82
+
+185
+
+186
+
+191
+
+192
+
+Daily Serving
+
+60 61 62 159 Nutrition facts labels: who is actually reading them and does it help in meeting intake
+recommendations for nutrients of public health concern? - PMC
+
+https://pmc.ncbi.nlm.nih.gov/articles/PMC10560412/
+68
+
+103
+
+104
+
+105
+
+106
+
+161
+
+162
+
+163
+
+171
+
+172
+
+173
+
+174
+
+175
+
+187
+
+188
+
+190
+
+Scientific Report Appendices_1.8.26.pdf
+
+file://file_0000000004e0720e91ff285a4c66b125
+96
+
+102
+
+107
+
+108
+
+148
+
+Exercise and the Institute of Medicine recommendations for nutrition - PubMed
+
+https://pubmed.ncbi.nlm.nih.gov/16004827/
+109
+
+137
+
+138
+
+139
+
+140
+
+141
+
+142
+
+145
+
+How Much Sodium Should I Eat Per Day? | American Heart Association
+
+https://www.heart.org/en/healthy-living/healthy-eating/eat-smart/sodium/how-much-sodium-should-i-eat-per-day
+146
+
+DASH Eating Plan - National Heart, Lung, and Blood Institute (NHLBI)
+
+https://www.nhlbi.nih.gov/education/dash-eating-plan
+147
+
+160
+
+HTN: Executive Summary of Recommendations (2015) - EAL
+
+https://www.andeal.org/topic.cfm?menu=5285&cat=5583
+
+21
+
+

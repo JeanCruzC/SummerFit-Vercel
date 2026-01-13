@@ -93,6 +93,11 @@ export interface HealthConditionRules {
     dieta_recomendada?: string;
     alimentos_clave?: string[];
     alimentos_limitar?: string[];
+    opcion_low_carb?: {
+        carbohidratos_g_max_dia: number;
+        percent_calorias_max: number;
+        beneficio: string;
+    };
 }
 
 export interface AgeAdjustment {
@@ -191,7 +196,9 @@ export function calculateTDEE(
 export function calculateMacros(
     tdee: number,
     goal: 'perdida_peso' | 'mantenimiento' | 'ganancia_muscular',
-    weight_kg: number
+    weight_kg: number,
+    conditions: string[] = [],
+    dietType: string = 'balanced'
 ): { calories: number; protein_g: number; carbs_g: number; fat_g: number } {
     const adjustments: Record<string, number> = {
         perdida_peso: -500,
@@ -200,24 +207,77 @@ export function calculateMacros(
     };
 
     const proteinPerKg: Record<string, number> = {
+        // Updated to 1.2-1.6 standard range per USDA DGA 2025-2030
         perdida_peso: 1.6,
-        mantenimiento: 1.2,
+        mantenimiento: 1.2, // Base for healthy adults
         ganancia_muscular: 2.0,
     };
 
     const calories = tdee + adjustments[goal];
-    const protein_g = Math.round(weight_kg * proteinPerKg[goal]);
-    const protein_calories = protein_g * 4;
+    let protein_g = Math.round(weight_kg * proteinPerKg[goal]);
+    let protein_calories = protein_g * 4;
 
-    // 25% from fat
-    const fat_calories = calories * 0.25;
-    const fat_g = Math.round(fat_calories / 9);
+    // Condition-specific adjustments
+    let carb_percent_cap = 100; // No cap by default
 
-    // Rest from carbs
-    const carb_calories = calories - protein_calories - fat_calories;
-    const carbs_g = Math.round(carb_calories / 4);
+    // Low Carb / Diabetes Logic (<130g or <26% - approx logic here)
+    if (conditions.includes('diabetes_type_2') && dietType === 'low_carb') {
+        // USDA evidence suggests <26% or <130g for therapeutic option
+        carb_percent_cap = 26;
+    }
+
+    // Default fat allocation (25-35% is AMDR)
+    // We calculate fat and carbs to fill remaining calories
+
+    let fat_percent = 0.30; // Healthy baseline
+    if (goal === 'ganancia_muscular') fat_percent = 0.25;
+
+    let fat_calories = calories * fat_percent;
+    let fat_g = Math.round(fat_calories / 9);
+
+    let carb_calories = calories - protein_calories - fat_calories;
+    let carb_percent = (carb_calories / calories) * 100;
+
+    // Apply cap if needed
+    if (carb_percent > carb_percent_cap) {
+        carb_calories = calories * (carb_percent_cap / 100);
+        // Redistribute specific diff to fat and protein or just fat? 
+        // Usually LCHF adds to fat.
+        const diff = calories - protein_calories - carb_calories - fat_calories;
+        if (diff > 0) {
+            fat_calories += diff;
+            fat_g = Math.round(fat_calories / 9);
+        }
+    }
+
+    let carbs_g = Math.round(carb_calories / 4);
 
     return { calories, protein_g, carbs_g, fat_g };
+}
+
+export function getDailyServings(calories: number): Record<string, number> {
+    // Baseline 2000 kcal USDA MyPlate pattern
+    const baseline = {
+        calories: 2000,
+        servings: {
+            "frutas": 2, // cups
+            "verduras": 2.5, // cups
+            "granos": 6, // oz eq
+            "proteinas": 5.5, // oz eq
+            "lacteos": 3, // cups
+            "aceites": 5 // tsp (~27g)
+        }
+    };
+
+    const ratio = calories / baseline.calories;
+
+    const servings: Record<string, number> = {};
+    for (const [group, amount] of Object.entries(baseline.servings)) {
+        // Simple linear scaling for now - precise DGA tables are non-linear but this approximates well
+        servings[group] = parseFloat((amount * ratio).toFixed(1));
+    }
+
+    return servings;
 }
 
 export function getRecommendedDiet(

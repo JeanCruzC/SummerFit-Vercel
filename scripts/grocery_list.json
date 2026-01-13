@@ -1,0 +1,610 @@
+{
+  "proteins": [
+    {
+      "name_en": "chicken",
+      "name_es": "Pollo",
+      "emoji": "🍗",
+      "usda_search_term": "chicken"
+    },
+    {
+      "name_en": "beef",
+      "name_es": "Carne",
+      "emoji": "🥩",
+      "usda_search_term": "beef"
+    },
+    {
+      "name_en": "pork",
+      "name_es": "Chancho",
+      "emoji": "🐷",
+      "usda_search_term": "pork"
+    },
+    {
+      "name_en": "fish",
+      "name_es": "Pescado",
+      "emoji": "🐟",
+      "usda_search_term": "fish"
+    },
+    {
+      "name_en": "tuna",
+      "name_es": "Atún",
+      "emoji": "🐟",
+      "usda_search_term": "tuna"
+    },
+    {
+      "name_en": "salmon",
+      "name_es": "Salmón",
+      "emoji": "🐟",
+      "usda_search_term": "salmon"
+    },
+    {
+      "name_en": "shrimp",
+      "name_es": "Langostinos",
+      "emoji": "🦐",
+      "usda_search_term": "shrimp"
+    },
+    {
+      "name_en": "turkey",
+      "name_es": "Pavo",
+      "emoji": "🦃",
+      "usda_search_term": "turkey"
+    },
+    {
+      "name_en": "egg",
+      "name_es": "Huevo",
+      "emoji": "🥚",
+      "usda_search_term": "egg"
+    },
+    {
+      "name_en": "ham",
+      "name_es": "Jamón",
+      "emoji": "🍖",
+      "usda_search_term": "ham"
+    },
+    {
+      "name_en": "bacon",
+      "name_es": "Tocino",
+      "emoji": "🥓",
+      "usda_search_term": "bacon"
+    },
+    {
+      "name_en": "tofu",
+      "name_es": "Tofu",
+      "emoji": "🧈",
+      "usda_search_term": "tofu"
+    },
+    {
+      "name_en": "beans",
+      "name_es": "Frijoles",
+      "emoji": "🫘",
+      "usda_search_term": "beans"
+    },
+    {
+      "name_en": "lentils",
+      "name_es": "Lentejas",
+      "emoji": "🫘",
+      "usda_search_term": "lentils"
+    },
+    {
+      "name_en": "chickpeas",
+      "name_es": "Garbanzos",
+      "emoji": "🫘",
+      "usda_search_term": "chickpeas"
+    }
+  ],
+  "carbs": [
+    {
+      "name_en": "rice",
+      "name_es": "Arroz",
+      "emoji": "🍚",
+      "usda_search_term": "rice"
+    },
+    {
+      "name_en": "potato",
+      "name_es": "Papa",
+      "emoji": "🥔",
+      "usda_search_term": "potato"
+    },
+    {
+      "name_en": "sweet potato",
+      "name_es": "Camote",
+      "emoji": "🍠",
+      "usda_search_term": "sweet potato"
+    },
+    {
+      "name_en": "pasta",
+      "name_es": "Pasta",
+      "emoji": "🍝",
+      "usda_search_term": "pasta"
+    },
+    {
+      "name_en": "bread",
+      "name_es": "Pan",
+      "emoji": "🍞",
+      "usda_search_term": "bread"
+    },
+    {
+      "name_en": "oats",
+      "name_es": "Avena",
+      "emoji": "🌾",
+      "usda_search_term": "oats"
+    },
+    {
+      "name_en": "quinoa",
+      "name_es": "Quinua",
+      "emoji": "🌾",
+      "usda_search_term": "quinoa"
+    },
+    {
+      "name_en": "corn",
+      "name_es": "Choclo",
+      "emoji": "🌽",
+      "usda_search_term": "corn"
+    },
+    {
+      "name_en": "tortilla",
+      "name_es": "Tortilla",
+      "emoji": "🫓",
+      "usda_search_term": "tortilla"
+    },
+    {
+      "name_en": "cereal",
+      "name_es": "Cereal",
+      "emoji": "🥣",
+      "usda_search_term": "cereal"
+    },
+    {
+      "name_en": "noodles",
+      "name_es": "Fideos",
+      "emoji": "🍜",
+      "usda_search_term": "noodles"
+    }
+  ],
+  "fats": [
+    {
+      "name_en": "avocado",
+      "name_es": "Palta",
+      "emoji": "🥑",
+      "usda_search_term": "avocado"
+    },
+    {
+      "name_en": "peanut",
+      "name_es": "Maní",
+      "emoji": "🥜",
+      "usda_search_term": "peanut"
+    },
+    {
+      "name_en": "peanut butter",
+      "name_es": "Mantequilla de Maní",
+      "emoji": "🥜",
+      "usda_search_term": "peanut butter"
+    },
+    {
+      "name_en": "almond",
+      "name_es": "Almendras",
+      "emoji": "🌰",
+      "usda_search_term": "almond"
+    },
+    {
+      "name_en": "walnut",
+      "name_es": "Nueces",
+      "emoji": "🌰",
+      "usda_search_term": "walnut"
+    },
+    {
+      "name_en": "cashew",
+      "name_es": "Cashews",
+      "emoji": "🌰",
+      "usda_search_term": "cashew"
+    },
+    {
+      "name_en": "olive",
+      "name_es": "Aceitunas",
+      "emoji": "🫒",
+      "usda_search_term": "olive"
+    },
+    {
+      "name_en": "olive oil",
+      "name_es": "Aceite de Oliva",
+      "emoji": "🫒",
+      "usda_search_term": "olive oil"
+    },
+    {
+      "name_en": "coconut",
+      "name_es": "Coco",
+      "emoji": "🥥",
+      "usda_search_term": "coconut"
+    },
+    {
+      "name_en": "chia",
+      "name_es": "Chía",
+      "emoji": "🌱",
+      "usda_search_term": "chia"
+    },
+    {
+      "name_en": "flax",
+      "name_es": "Linaza",
+      "emoji": "🌱",
+      "usda_search_term": "flax"
+    },
+    {
+      "name_en": "sunflower",
+      "name_es": "Girasol",
+      "emoji": "🌻",
+      "usda_search_term": "sunflower"
+    }
+  ],
+  "vegetables": [
+    {
+      "name_en": "lettuce",
+      "name_es": "Lechuga",
+      "emoji": "🥬",
+      "usda_search_term": "lettuce"
+    },
+    {
+      "name_en": "tomato",
+      "name_es": "Tomate",
+      "emoji": "🍅",
+      "usda_search_term": "tomato"
+    },
+    {
+      "name_en": "broccoli",
+      "name_es": "Brócoli",
+      "emoji": "🥦",
+      "usda_search_term": "broccoli"
+    },
+    {
+      "name_en": "carrot",
+      "name_es": "Zanahoria",
+      "emoji": "🥕",
+      "usda_search_term": "carrot"
+    },
+    {
+      "name_en": "spinach",
+      "name_es": "Espinaca",
+      "emoji": "🥬",
+      "usda_search_term": "spinach"
+    },
+    {
+      "name_en": "onion",
+      "name_es": "Cebolla",
+      "emoji": "🧅",
+      "usda_search_term": "onion"
+    },
+    {
+      "name_en": "garlic",
+      "name_es": "Ajo",
+      "emoji": "🧄",
+      "usda_search_term": "garlic"
+    },
+    {
+      "name_en": "cucumber",
+      "name_es": "Pepino",
+      "emoji": "🥒",
+      "usda_search_term": "cucumber"
+    },
+    {
+      "name_en": "pepper",
+      "name_es": "Pimiento",
+      "emoji": "🫑",
+      "usda_search_term": "pepper"
+    },
+    {
+      "name_en": "zucchini",
+      "name_es": "Zapallo Italiano",
+      "emoji": "🥒",
+      "usda_search_term": "zucchini"
+    },
+    {
+      "name_en": "cabbage",
+      "name_es": "Repollo",
+      "emoji": "🥬",
+      "usda_search_term": "cabbage"
+    },
+    {
+      "name_en": "celery",
+      "name_es": "Apio",
+      "emoji": "🥬",
+      "usda_search_term": "celery"
+    },
+    {
+      "name_en": "asparagus",
+      "name_es": "Espárrago",
+      "emoji": "🌿",
+      "usda_search_term": "asparagus"
+    },
+    {
+      "name_en": "mushroom",
+      "name_es": "Champiñones",
+      "emoji": "🍄",
+      "usda_search_term": "mushroom"
+    },
+    {
+      "name_en": "cauliflower",
+      "name_es": "Coliflor",
+      "emoji": "🥦",
+      "usda_search_term": "cauliflower"
+    },
+    {
+      "name_en": "eggplant",
+      "name_es": "Berenjena",
+      "emoji": "🍆",
+      "usda_search_term": "eggplant"
+    },
+    {
+      "name_en": "squash",
+      "name_es": "Zapallo",
+      "emoji": "🎃",
+      "usda_search_term": "squash"
+    },
+    {
+      "name_en": "beet",
+      "name_es": "Betarraga",
+      "emoji": "🥬",
+      "usda_search_term": "beet"
+    },
+    {
+      "name_en": "green beans",
+      "name_es": "Vainitas",
+      "emoji": "🌿",
+      "usda_search_term": "green beans"
+    },
+    {
+      "name_en": "artichoke",
+      "name_es": "Alcachofa",
+      "emoji": "🌿",
+      "usda_search_term": "artichoke"
+    }
+  ],
+  "fruits": [
+    {
+      "name_en": "banana",
+      "name_es": "Plátano",
+      "emoji": "🍌",
+      "usda_search_term": "banana"
+    },
+    {
+      "name_en": "apple",
+      "name_es": "Manzana",
+      "emoji": "🍎",
+      "usda_search_term": "apple"
+    },
+    {
+      "name_en": "orange",
+      "name_es": "Naranja",
+      "emoji": "🍊",
+      "usda_search_term": "orange"
+    },
+    {
+      "name_en": "strawberry",
+      "name_es": "Fresas",
+      "emoji": "🍓",
+      "usda_search_term": "strawberry"
+    },
+    {
+      "name_en": "blueberry",
+      "name_es": "Arándanos",
+      "emoji": "🫐",
+      "usda_search_term": "blueberry"
+    },
+    {
+      "name_en": "pineapple",
+      "name_es": "Piña",
+      "emoji": "🍍",
+      "usda_search_term": "pineapple"
+    },
+    {
+      "name_en": "mango",
+      "name_es": "Mango",
+      "emoji": "🥭",
+      "usda_search_term": "mango"
+    },
+    {
+      "name_en": "papaya",
+      "name_es": "Papaya",
+      "emoji": "🍈",
+      "usda_search_term": "papaya"
+    },
+    {
+      "name_en": "watermelon",
+      "name_es": "Sandía",
+      "emoji": "🍉",
+      "usda_search_term": "watermelon"
+    },
+    {
+      "name_en": "grape",
+      "name_es": "Uvas",
+      "emoji": "🍇",
+      "usda_search_term": "grape"
+    },
+    {
+      "name_en": "peach",
+      "name_es": "Durazno",
+      "emoji": "🍑",
+      "usda_search_term": "peach"
+    },
+    {
+      "name_en": "pear",
+      "name_es": "Pera",
+      "emoji": "🍐",
+      "usda_search_term": "pear"
+    },
+    {
+      "name_en": "kiwi",
+      "name_es": "Kiwi",
+      "emoji": "🥝",
+      "usda_search_term": "kiwi"
+    },
+    {
+      "name_en": "lemon",
+      "name_es": "Limón",
+      "emoji": "🍋",
+      "usda_search_term": "lemon"
+    },
+    {
+      "name_en": "lime",
+      "name_es": "Lima",
+      "emoji": "🍋",
+      "usda_search_term": "lime"
+    },
+    {
+      "name_en": "melon",
+      "name_es": "Melón",
+      "emoji": "🍈",
+      "usda_search_term": "melon"
+    },
+    {
+      "name_en": "tangerine",
+      "name_es": "Mandarina",
+      "emoji": "🍊",
+      "usda_search_term": "tangerine"
+    },
+    {
+      "name_en": "cherry",
+      "name_es": "Cereza",
+      "emoji": "🍒",
+      "usda_search_term": "cherry"
+    },
+    {
+      "name_en": "dates",
+      "name_es": "Dátiles",
+      "emoji": "🌴",
+      "usda_search_term": "dates"
+    }
+  ],
+  "dairy": [
+    {
+      "name_en": "milk",
+      "name_es": "Leche",
+      "emoji": "🥛",
+      "usda_search_term": "milk"
+    },
+    {
+      "name_en": "yogurt",
+      "name_es": "Yogurt",
+      "emoji": "🥛",
+      "usda_search_term": "yogurt"
+    },
+    {
+      "name_en": "cheese",
+      "name_es": "Queso",
+      "emoji": "🧀",
+      "usda_search_term": "cheese"
+    },
+    {
+      "name_en": "cottage cheese",
+      "name_es": "Requesón",
+      "emoji": "🧀",
+      "usda_search_term": "cottage cheese"
+    },
+    {
+      "name_en": "cream",
+      "name_es": "Crema",
+      "emoji": "🥛",
+      "usda_search_term": "cream"
+    },
+    {
+      "name_en": "butter",
+      "name_es": "Mantequilla",
+      "emoji": "🧈",
+      "usda_search_term": "butter"
+    },
+    {
+      "name_en": "soy milk",
+      "name_es": "Leche de Soya",
+      "emoji": "🥛",
+      "usda_search_term": "soy milk"
+    },
+    {
+      "name_en": "almond milk",
+      "name_es": "Leche de Almendras",
+      "emoji": "🥛",
+      "usda_search_term": "almond milk"
+    },
+    {
+      "name_en": "coconut milk",
+      "name_es": "Leche de Coco",
+      "emoji": "🥥",
+      "usda_search_term": "coconut milk"
+    }
+  ],
+  "condiments": [
+    {
+      "name_en": "mustard",
+      "name_es": "Mostaza",
+      "emoji": "🟡",
+      "usda_search_term": "mustard"
+    },
+    {
+      "name_en": "ketchup",
+      "name_es": "Salsa de Tomate",
+      "emoji": "🍅",
+      "usda_search_term": "ketchup"
+    },
+    {
+      "name_en": "soy sauce",
+      "name_es": "Sillao",
+      "emoji": "🫗",
+      "usda_search_term": "soy sauce"
+    },
+    {
+      "name_en": "vinegar",
+      "name_es": "Vinagre",
+      "emoji": "🫗",
+      "usda_search_term": "vinegar"
+    },
+    {
+      "name_en": "honey",
+      "name_es": "Miel",
+      "emoji": "🍯",
+      "usda_search_term": "honey"
+    },
+    {
+      "name_en": "cinnamon",
+      "name_es": "Canela",
+      "emoji": "🌿",
+      "usda_search_term": "cinnamon"
+    },
+    {
+      "name_en": "turmeric",
+      "name_es": "Cúrcuma",
+      "emoji": "🌿",
+      "usda_search_term": "turmeric"
+    },
+    {
+      "name_en": "ginger",
+      "name_es": "Jengibre",
+      "emoji": "🫚",
+      "usda_search_term": "ginger"
+    },
+    {
+      "name_en": "pepper",
+      "name_es": "Pimienta",
+      "emoji": "🌶️",
+      "usda_search_term": "pepper"
+    },
+    {
+      "name_en": "paprika",
+      "name_es": "Pimentón",
+      "emoji": "🌶️",
+      "usda_search_term": "paprika"
+    },
+    {
+      "name_en": "oregano",
+      "name_es": "Orégano",
+      "emoji": "🌿",
+      "usda_search_term": "oregano"
+    },
+    {
+      "name_en": "basil",
+      "name_es": "Albahaca",
+      "emoji": "🌿",
+      "usda_search_term": "basil"
+    },
+    {
+      "name_en": "cumin",
+      "name_es": "Comino",
+      "emoji": "🌿",
+      "usda_search_term": "cumin"
+    }
+  ]
+}

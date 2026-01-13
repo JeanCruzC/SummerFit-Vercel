@@ -224,6 +224,7 @@
                 "min": 45,
                 "max": 65
             },
+            "fibra_g_por_1000_kcal": 14,
             "fibra_g_por_dia": 28,
             "azucares_max_percent": 10,
             "tipos_recomendados": [
@@ -520,7 +521,12 @@
                 "Mediterránea",
                 "DASH",
                 "Baja en carbohidratos"
-            ]
+            ],
+            "opcion_low_carb": {
+                "carbohidratos_g_max_dia": 130,
+                "percent_calorias_max": 26,
+                "beneficio": "Mejor control glucémico y reducción de medicación"
+            }
         },
         "hipertension": {
             "objetivos": {

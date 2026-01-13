@@ -2,12 +2,29 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, X } from "lucide-react";
+import { Search, Plus, X, ChefHat, Flame } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, Button, Input, Alert } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { searchFoods, getFoodCategories, addMealEntry, getProfile, getRandomFoods } from "@/lib/supabase/database";
 import { FoodItem, UserProfile } from "@/types";
+
+// Cooking state filter options
+const COOKING_STATES = [
+    { value: "", label: "All States", icon: "🍽️" },
+    { value: "raw", label: "Raw", icon: "🥩" },
+    { value: "cooked", label: "Cooked", icon: "🍳" },
+    { value: "frozen", label: "Frozen", icon: "🧊" },
+    { value: "canned", label: "Canned", icon: "🥫" },
+    { value: "dried", label: "Dried", icon: "🌾" },
+    { value: "roasted", label: "Roasted", icon: "🔥" },
+];
+
+// Top food bases for quick filter
+const TOP_FOOD_BASES = [
+    "Beef", "Chicken", "Pork", "Fish", "Turkey", "Lamb",
+    "Beans", "Rice", "Potatoes", "Cheese", "Milk", "Eggs",
+];
 
 export default function FoodsPage() {
     const router = useRouter();
@@ -17,6 +34,8 @@ export default function FoodsPage() {
     const [foods, setFoods] = useState<FoodItem[]>([]);
     const [categories, setCategories] = useState<string[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("");
+    const [selectedCookingState, setSelectedCookingState] = useState<string>("");
+    const [selectedFoodBase, setSelectedFoodBase] = useState<string>("");
     const [loading, setLoading] = useState(false);
     const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
     const [grams, setGrams] = useState(100);
@@ -49,7 +68,7 @@ export default function FoodsPage() {
     const handleSearch = async () => {
         if (!query.trim()) return;
         setLoading(true);
-        const results = await searchFoods(query, 50);
+        const results = await searchFoods(query, 100);
         results.sort((a, b) => a.name.length - b.name.length);
         setFoods(results);
         setLoading(false);
@@ -91,10 +110,21 @@ export default function FoodsPage() {
         };
     };
 
-    // Filter foods by selected category
-    const filteredFoods = selectedCategory
-        ? foods.filter(f => f.category === selectedCategory)
-        : foods;
+    // Filter foods by all criteria
+    const filteredFoods = foods.filter(f => {
+        if (selectedCategory && f.category !== selectedCategory) return false;
+        if (selectedCookingState && f.cooking_state !== selectedCookingState) return false;
+        if (selectedFoodBase && f.food_base?.toLowerCase() !== selectedFoodBase.toLowerCase()) return false;
+        return true;
+    });
+
+    const clearFilters = () => {
+        setSelectedCategory("");
+        setSelectedCookingState("");
+        setSelectedFoodBase("");
+    };
+
+    const hasActiveFilters = selectedCategory || selectedCookingState || selectedFoodBase;
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -124,30 +154,102 @@ export default function FoodsPage() {
                     </Button>
                 </div>
 
-                {/* Category filter - Dynamic from DB */}
-                <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                        onClick={() => setSelectedCategory("")}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${!selectedCategory ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"}`}
-                    >
-                        All Categories
-                    </button>
-                    {categories.slice(0, 12).map(cat => (
+                {/* Cooking State Filter */}
+                <div className="mt-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <ChefHat className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Cooking State</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {COOKING_STATES.map(state => (
+                            <button
+                                key={state.value}
+                                onClick={() => setSelectedCookingState(state.value)}
+                                className={`px-3 py-1.5 rounded-full text-sm font-medium transition flex items-center gap-1.5 ${selectedCookingState === state.value
+                                        ? "bg-orange-500 text-white"
+                                        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"
+                                    }`}
+                            >
+                                <span>{state.icon}</span>
+                                {state.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Food Base Filter */}
+                <div className="mt-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Flame className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Food Type</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
                         <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedCategory === cat ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"}`}
+                            onClick={() => setSelectedFoodBase("")}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${!selectedFoodBase ? "bg-green-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"
+                                }`}
                         >
-                            {cat}
+                            All Types
                         </button>
-                    ))}
+                        {TOP_FOOD_BASES.map(base => (
+                            <button
+                                key={base}
+                                onClick={() => setSelectedFoodBase(base)}
+                                className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedFoodBase === base
+                                        ? "bg-green-500 text-white"
+                                        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"
+                                    }`}
+                            >
+                                {base}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Category filter - Dynamic from DB */}
+                <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</span>
+                        {hasActiveFilters && (
+                            <button onClick={clearFilters} className="text-xs text-purple-600 hover:underline">
+                                Clear all filters
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            onClick={() => setSelectedCategory("")}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${!selectedCategory ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"}`}
+                        >
+                            All Categories
+                        </button>
+                        {categories.slice(0, 10).map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setSelectedCategory(cat)}
+                                className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedCategory === cat ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"}`}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </Card>
 
             {/* Results */}
             {filteredFoods.length > 0 && (
                 <Card>
-                    <h3 className="text-lg font-semibold mb-4">{filteredFoods.length} results</h3>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold">{filteredFoods.length} results</h3>
+                        {hasActiveFilters && (
+                            <span className="text-sm text-gray-500">
+                                Filtered by:
+                                {selectedCookingState && ` ${selectedCookingState}`}
+                                {selectedFoodBase && ` • ${selectedFoodBase}`}
+                                {selectedCategory && ` • ${selectedCategory}`}
+                            </span>
+                        )}
+                    </div>
                     <div className="space-y-2 max-h-[400px] overflow-y-auto">
                         {filteredFoods.map(food => {
                             const n = calcNutrients(food, 100);
@@ -158,11 +260,15 @@ export default function FoodsPage() {
                                     className={`p-3 rounded-xl border cursor-pointer transition ${selectedFood?.id === food.id ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20" : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
                                 >
                                     <div className="flex justify-between items-start">
-                                        <div>
-                                            <div className="font-medium text-gray-900 dark:text-white">{food.name}</div>
-                                            <div className="text-xs text-gray-500">{food.category || ""}</div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-medium text-gray-900 dark:text-white truncate">{food.name}</div>
+                                            <div className="flex gap-2 text-xs text-gray-500 mt-0.5">
+                                                {food.food_base && <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded">{food.food_base}</span>}
+                                                {food.cooking_state && <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded">{food.cooking_state}</span>}
+                                                <span>{food.category || ""}</span>
+                                            </div>
                                         </div>
-                                        <div className="text-right text-sm">
+                                        <div className="text-right text-sm ml-2">
                                             <div className="font-semibold text-purple-600">{n.kcal} kcal</div>
                                             <div className="text-xs text-gray-500">per 100g</div>
                                         </div>
@@ -179,6 +285,18 @@ export default function FoodsPage() {
                 </Card>
             )}
 
+            {/* No results */}
+            {filteredFoods.length === 0 && foods.length > 0 && (
+                <Card>
+                    <div className="text-center py-8 text-gray-500">
+                        <p>No foods match your filters.</p>
+                        <button onClick={clearFilters} className="text-purple-600 hover:underline mt-2">
+                            Clear filters
+                        </button>
+                    </div>
+                </Card>
+            )}
+
             {/* Selected Food Modal */}
             {selectedFood && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
@@ -191,7 +309,11 @@ export default function FoodsPage() {
                         </button>
 
                         <h3 className="text-xl font-semibold pr-8">{selectedFood.name}</h3>
-                        <p className="text-sm text-gray-500 mt-1">{selectedFood.category || ""}</p>
+                        <div className="flex gap-2 mt-1">
+                            {selectedFood.food_base && <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded-full">{selectedFood.food_base}</span>}
+                            {selectedFood.cooking_state && <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-1 rounded-full">{selectedFood.cooking_state}</span>}
+                            {selectedFood.category && <span className="text-xs text-gray-500">{selectedFood.category}</span>}
+                        </div>
 
                         <div className="mt-4">
                             <Input
@@ -249,22 +371,10 @@ export default function FoodsPage() {
                                     <div className="border-t pt-3 dark:border-gray-700">
                                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Nutrition Details</h4>
                                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Fiber</span>
-                                                <span className="font-medium">{n.fiber}g</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Sugar</span>
-                                                <span className="font-medium">{n.sugar}g</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Saturated Fat</span>
-                                                <span className="font-medium">{n.saturatedFat}g</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Cholesterol</span>
-                                                <span className="font-medium">{n.cholesterol}mg</span>
-                                            </div>
+                                            <div className="flex justify-between"><span className="text-gray-500">Fiber</span><span className="font-medium">{n.fiber}g</span></div>
+                                            <div className="flex justify-between"><span className="text-gray-500">Sugar</span><span className="font-medium">{n.sugar}g</span></div>
+                                            <div className="flex justify-between"><span className="text-gray-500">Sat. Fat</span><span className="font-medium">{n.saturatedFat}g</span></div>
+                                            <div className="flex justify-between"><span className="text-gray-500">Cholesterol</span><span className="font-medium">{n.cholesterol}mg</span></div>
                                         </div>
                                     </div>
 
@@ -272,22 +382,10 @@ export default function FoodsPage() {
                                     <div className="border-t pt-3 dark:border-gray-700">
                                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Minerals</h4>
                                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Sodium</span>
-                                                <span className="font-medium">{n.sodium}mg</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Potassium</span>
-                                                <span className="font-medium">{n.potassium}mg</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Calcium</span>
-                                                <span className="font-medium">{n.calcium}mg</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Iron</span>
-                                                <span className="font-medium">{n.iron}mg</span>
-                                            </div>
+                                            <div className="flex justify-between"><span className="text-gray-500">Sodium</span><span className="font-medium">{n.sodium}mg</span></div>
+                                            <div className="flex justify-between"><span className="text-gray-500">Potassium</span><span className="font-medium">{n.potassium}mg</span></div>
+                                            <div className="flex justify-between"><span className="text-gray-500">Calcium</span><span className="font-medium">{n.calcium}mg</span></div>
+                                            <div className="flex justify-between"><span className="text-gray-500">Iron</span><span className="font-medium">{n.iron}mg</span></div>
                                         </div>
                                     </div>
 
@@ -295,18 +393,9 @@ export default function FoodsPage() {
                                     <div className="border-t pt-3 dark:border-gray-700">
                                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Vitamins</h4>
                                         <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-sm">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Vit. A</span>
-                                                <span className="font-medium">{n.vitaminA} IU</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Vit. C</span>
-                                                <span className="font-medium">{n.vitaminC}mg</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Vit. D</span>
-                                                <span className="font-medium">{n.vitaminD} IU</span>
-                                            </div>
+                                            <div className="flex justify-between"><span className="text-gray-500">Vit. A</span><span className="font-medium">{n.vitaminA} IU</span></div>
+                                            <div className="flex justify-between"><span className="text-gray-500">Vit. C</span><span className="font-medium">{n.vitaminC}mg</span></div>
+                                            <div className="flex justify-between"><span className="text-gray-500">Vit. D</span><span className="font-medium">{n.vitaminD} IU</span></div>
                                         </div>
                                     </div>
                                 </div>

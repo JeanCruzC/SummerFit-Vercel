@@ -166,8 +166,8 @@ export default function FoodsPage() {
                                 key={state.value}
                                 onClick={() => setSelectedCookingState(state.value)}
                                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition flex items-center gap-1.5 ${selectedCookingState === state.value
-                                        ? "bg-orange-500 text-white"
-                                        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"
+                                    ? "bg-orange-500 text-white"
+                                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"
                                     }`}
                             >
                                 <span>{state.icon}</span>
@@ -196,8 +196,8 @@ export default function FoodsPage() {
                                 key={base}
                                 onClick={() => setSelectedFoodBase(base)}
                                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedFoodBase === base
-                                        ? "bg-green-500 text-white"
-                                        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"
+                                    ? "bg-green-500 text-white"
+                                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"
                                     }`}
                             >
                                 {base}
@@ -261,11 +261,10 @@ export default function FoodsPage() {
                                 >
                                     <div className="flex justify-between items-start">
                                         <div className="flex-1 min-w-0">
-                                            <div className="font-medium text-gray-900 dark:text-white truncate">{food.name}</div>
-                                            <div className="flex gap-2 text-xs text-gray-500 mt-0.5">
-                                                {food.food_base && <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded">{food.food_base}</span>}
+                                            <div className="font-medium text-gray-900 dark:text-white truncate">{food.display_name || food.name}</div>
+                                            <div className="flex flex-wrap gap-1.5 text-xs mt-1">
                                                 {food.cooking_state && <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded">{food.cooking_state}</span>}
-                                                <span>{food.category || ""}</span>
+                                                {food.category && <span className="text-gray-500">{food.category}</span>}
                                             </div>
                                         </div>
                                         <div className="text-right text-sm ml-2">
@@ -308,11 +307,13 @@ export default function FoodsPage() {
                             <X className="h-5 w-5" />
                         </button>
 
-                        <h3 className="text-xl font-semibold pr-8">{selectedFood.name}</h3>
-                        <div className="flex gap-2 mt-1">
-                            {selectedFood.food_base && <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded-full">{selectedFood.food_base}</span>}
+                        <h3 className="text-xl font-semibold pr-8">{selectedFood.display_name || selectedFood.name}</h3>
+                        {selectedFood.display_name && selectedFood.display_name !== selectedFood.name && (
+                            <p className="text-xs text-gray-400 mt-0.5 pr-8">{selectedFood.name}</p>
+                        )}
+                        <div className="flex flex-wrap gap-2 mt-2">
                             {selectedFood.cooking_state && <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-1 rounded-full">{selectedFood.cooking_state}</span>}
-                            {selectedFood.category && <span className="text-xs text-gray-500">{selectedFood.category}</span>}
+                            {selectedFood.category && <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-1 rounded-full">{selectedFood.category}</span>}
                         </div>
 
                         <div className="mt-4">

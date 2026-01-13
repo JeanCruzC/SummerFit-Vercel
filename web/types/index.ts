@@ -89,6 +89,7 @@ export interface FoodItem {
     // Extracted fields
     cooking_state?: string;
     food_base?: string;
+    display_name?: string;
 }
 
 // Meal entry

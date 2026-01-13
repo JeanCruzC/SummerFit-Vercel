@@ -31,10 +31,12 @@ export async function upsertProfile(profile: Partial<UserProfile> & { user_id: s
 
 export async function searchFoods(query: string, limit = 50): Promise<FoodItem[]> {
     const supabase = createClient();
+    // Prioritize USDA data (data_source starts with 'usda')
     const { data, error } = await supabase
         .from('foods')
         .select('*')
         .ilike('name', `%${query}%`)
+        .order('data_source', { ascending: false, nullsFirst: false }) // USDA first
         .limit(limit);
 
     if (error) return [];
@@ -55,10 +57,12 @@ export async function getFoodsByCategory(category: string, limit = 50): Promise<
 
 export async function getFoodCategories(): Promise<string[]> {
     const supabase = createClient();
+    // Get categories only from USDA data
     const { data, error } = await supabase
         .from('foods')
         .select('category')
-        .not('category', 'is', null);
+        .not('category', 'is', null)
+        .like('data_source', 'usda%');
 
     if (error || !data) return [];
     const categories = [...new Set(data.map(d => d.category))].filter(Boolean);
@@ -67,8 +71,11 @@ export async function getFoodCategories(): Promise<string[]> {
 
 export async function getRandomFoods(limit = 20): Promise<FoodItem[]> {
     const supabase = createClient();
-    // Get total count first
-    const { count } = await supabase.from('foods').select('*', { count: 'exact', head: true });
+    // Get only USDA foods for initial display
+    const { count } = await supabase
+        .from('foods')
+        .select('*', { count: 'exact', head: true })
+        .like('data_source', 'usda%');
 
     if (!count) return [];
 
@@ -78,6 +85,7 @@ export async function getRandomFoods(limit = 20): Promise<FoodItem[]> {
     const { data, error } = await supabase
         .from('foods')
         .select('*')
+        .like('data_source', 'usda%')
         .range(offset, offset + limit - 1);
 
     if (error) return [];

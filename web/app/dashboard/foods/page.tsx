@@ -9,16 +9,34 @@ import { createClient } from "@/lib/supabase/client";
 import { searchFoods, getFoodCategories, addMealEntry, getProfile, getRandomFoods } from "@/lib/supabase/database";
 import { FoodItem, UserProfile } from "@/types";
 
-// Cooking state filter options
+// Cooking state filter options with colors
 const COOKING_STATES = [
-    { value: "", label: "All States", icon: "🍽️" },
-    { value: "raw", label: "Raw", icon: "🥩" },
-    { value: "cooked", label: "Cooked", icon: "🍳" },
-    { value: "frozen", label: "Frozen", icon: "🧊" },
-    { value: "canned", label: "Canned", icon: "🥫" },
-    { value: "dried", label: "Dried", icon: "🌾" },
-    { value: "roasted", label: "Roasted", icon: "🔥" },
+    { value: "", label: "All States", icon: "🍽️", color: "gray" },
+    { value: "raw", label: "Raw", icon: "🥩", color: "red" },
+    { value: "cooked", label: "Cooked", icon: "🍳", color: "green" },
+    { value: "frozen", label: "Frozen", icon: "🧊", color: "blue" },
+    { value: "canned", label: "Canned", icon: "🥫", color: "amber" },
+    { value: "dried", label: "Dried", icon: "🌾", color: "yellow" },
+    { value: "roasted", label: "Roasted", icon: "🔥", color: "orange" },
 ];
+
+// Color classes for cooking state badges
+const getCookingStateColor = (state: string | undefined): string => {
+    const colors: Record<string, string> = {
+        raw: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
+        cooked: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
+        frozen: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
+        canned: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
+        dried: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400",
+        roasted: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400",
+        boiled: "bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400",
+        fried: "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400",
+        grilled: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400",
+        baked: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
+        steamed: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400",
+    };
+    return colors[state || ""] || "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400";
+};
 
 // Top food bases for quick filter
 const TOP_FOOD_BASES = [
@@ -263,7 +281,7 @@ export default function FoodsPage() {
                                         <div className="flex-1 min-w-0">
                                             <div className="font-medium text-gray-900 dark:text-white truncate">{food.display_name || food.name}</div>
                                             <div className="flex flex-wrap gap-1.5 text-xs mt-1">
-                                                {food.cooking_state && <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded">{food.cooking_state}</span>}
+                                                {food.cooking_state && <span className={`${getCookingStateColor(food.cooking_state)} px-1.5 py-0.5 rounded font-medium`}>{food.cooking_state}</span>}
                                                 {food.category && <span className="text-gray-500">{food.category}</span>}
                                             </div>
                                         </div>
@@ -312,7 +330,7 @@ export default function FoodsPage() {
                             <p className="text-xs text-gray-400 mt-0.5 pr-8">{selectedFood.name}</p>
                         )}
                         <div className="flex flex-wrap gap-2 mt-2">
-                            {selectedFood.cooking_state && <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-1 rounded-full">{selectedFood.cooking_state}</span>}
+                            {selectedFood.cooking_state && <span className={`text-xs ${getCookingStateColor(selectedFood.cooking_state)} px-2 py-1 rounded-full font-medium`}>{selectedFood.cooking_state}</span>}
                             {selectedFood.category && <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-1 rounded-full">{selectedFood.category}</span>}
                         </div>
 

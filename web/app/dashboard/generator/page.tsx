@@ -8,6 +8,25 @@ import { useRouter } from "next/navigation";
 import { ProfileAnalyzer, type ProfileAnalysis } from "@/lib/intelligence/profile_analyzer";
 import { Brain, Target, Sparkles, Settings, CheckCircle, Activity, Clock, Gauge, Timer, Repeat, Info } from "lucide-react";
 
+// Dumbbell icon SVG for exercises without images
+const DumbbellIcon = ({ className }: { className?: string }) => (
+    <svg
+        className={className}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <path d="M6.5 6.5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h0a2 2 0 0 1-2-2V6.5z" />
+        <path d="M13.5 6.5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h0a2 2 0 0 1-2-2V6.5z" />
+        <path d="M4 8v8" />
+        <path d="M20 8v8" />
+        <path d="M10.5 12h3" />
+    </svg>
+);
+
 /**
  * Select the best media for the user's gender
  * Priority: 1. Matching gender, 2. Fallback to any available
@@ -542,6 +561,11 @@ export default function GeneratorPage() {
                                                                         playsInline
                                                                         onMouseOver={e => e.currentTarget.play()}
                                                                         onMouseOut={e => e.currentTarget.pause()}
+                                                                        onError={e => {
+                                                                            const target = e.currentTarget;
+                                                                            target.style.display = 'none';
+                                                                            target.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
+                                                                        }}
                                                                     />
                                                                 ) : (
                                                                     // eslint-disable-next-line @next/next/no-img-element
@@ -549,11 +573,17 @@ export default function GeneratorPage() {
                                                                         src={media.url}
                                                                         className="w-full h-full object-cover"
                                                                         alt={exItem.exercise.title}
+                                                                        onError={e => {
+                                                                            const target = e.currentTarget;
+                                                                            target.style.display = 'none';
+                                                                            target.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
+                                                                        }}
                                                                     />
                                                                 )
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No img</div>
-                                                            )}
+                                                            ) : null}
+                                                            <div className={`fallback-icon w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-100 to-violet-200 dark:from-purple-900/40 dark:to-violet-900/40 ${media?.url ? 'hidden absolute inset-0' : ''}`}>
+                                                                <DumbbellIcon className="w-8 h-8 text-purple-500 dark:text-purple-400" />
+                                                            </div>
                                                             <div className="absolute bottom-0 right-0 bg-black/60 text-white text-[10px] px-1 font-bold">
                                                                 {i + 1}
                                                             </div>

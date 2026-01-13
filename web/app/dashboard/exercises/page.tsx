@@ -371,8 +371,8 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
             onMouseLeave={() => setIsHovered(false)}
         >
             {/* Media Area */}
-            <div className="relative aspect-[4/3] bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                {displayUrl ? (
+            <div className="relative aspect-[4/3] bg-gradient-to-br from-purple-100 to-violet-200 dark:from-purple-900/40 dark:to-violet-900/40 overflow-hidden">
+                {displayUrl && (
                     isVideo ? (
                         <video
                             src={displayUrl}
@@ -388,19 +388,36 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
                             }}
                             className="w-full h-full object-cover"
                             poster={image?.url} // Use image as poster if available
+                            onError={e => {
+                                const target = e.currentTarget;
+                                target.style.display = 'none';
+                                target.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
+                            }}
                         />
                     ) : (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={displayUrl} alt={exercise.title} className="w-full h-full object-cover" />
+                        <img
+                            src={displayUrl}
+                            alt={exercise.title}
+                            className="w-full h-full object-cover"
+                            onError={e => {
+                                const target = e.currentTarget;
+                                target.style.display = 'none';
+                                target.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
+                            }}
+                        />
                     )
-                ) : (
-                    <div className="flex items-center justify-center h-full text-zinc-300">
-                        {/* Dumbbell Icon SVG */}
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M6.5 6.5h11" /><path d="M6.5 17.5h11" /><path d="M6.5 6.5l0 11" /><path d="M17.5 6.5l0 11" /><path d="M5 12h14" />
-                        </svg>
-                    </div>
                 )}
+                <div className={`fallback-icon flex items-center justify-center h-full w-full text-purple-400 ${displayUrl ? 'hidden absolute inset-0' : ''}`}>
+                    {/* Dumbbell Icon SVG */}
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M6.5 6.5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h0a2 2 0 0 1-2-2V6.5z" />
+                        <path d="M13.5 6.5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h0a2 2 0 0 1-2-2V6.5z" />
+                        <path d="M4 8v8" />
+                        <path d="M20 8v8" />
+                        <path d="M10.5 12h3" />
+                    </svg>
+                </div>
 
                 {/* Badges */}
                 <div className="absolute top-3 left-3 flex flex-wrap gap-2">

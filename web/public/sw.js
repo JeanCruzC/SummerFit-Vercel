@@ -40,9 +40,14 @@ self.addEventListener('fetch', (event) => {
     // Skip non-GET requests
     if (event.request.method !== 'GET') return;
 
-    // Skip API calls and Supabase requests
+    // Skip chrome-extension and other non-http(s) schemes
+    if (!event.request.url.startsWith('http')) return;
+
+    // Skip API calls, Supabase, and Firebase requests
     const url = new URL(event.request.url);
-    if (url.pathname.startsWith('/api') || url.hostname.includes('supabase')) {
+    if (url.pathname.startsWith('/api') ||
+        url.hostname.includes('supabase') ||
+        url.hostname.includes('firebase')) {
         return;
     }
 

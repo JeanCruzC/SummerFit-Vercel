@@ -40,6 +40,25 @@ export default function MealGeneratorPage() {
     const [mode, setMode] = useState<'daily' | 'weekly'>('daily');
     const [activeDay, setActiveDay] = useState(0);
 
+    // Profile state for accurate projection
+    const [goalSpeed, setGoalSpeed] = useState<'conservador' | 'moderado' | 'acelerado'>('moderado');
+
+    // Live Projection Calculation (Matches Nutrition Page Logic)
+    const projection = React.useMemo(() => {
+        if (!profile || !tdee || !bmr) return null;
+
+        return calculateProjectionWithExercise(
+            profile.weight_kg,
+            profile.target_weight_kg,
+            tdee,
+            bmr,
+            profile.goal as any,
+            goalSpeed,
+            weeklyExerciseCalories,
+            profile.gender
+        );
+    }, [profile, tdee, bmr, goalSpeed, weeklyExerciseCalories]);
+
     useEffect(() => {
         const loadProfile = async () => {
             try {
@@ -67,8 +86,9 @@ export default function MealGeneratorPage() {
 
                         // 2. Calculate BASE Metrics (same as Dashboard)
                         // This returns the correct target_calories based on the profile goal/speed
-                        const mode = userProfile.goal_speed || 'moderado';
-                        const metrics = calculateHealthMetrics(userProfile, mode);
+                        const profileMode = userProfile.goal_speed || 'moderado';
+                        setGoalSpeed(profileMode);
+                        const metrics = calculateHealthMetrics(userProfile, profileMode);
 
                         setTdee(metrics.tdee); // Base TDEE
                         setBmr(metrics.bmr);
@@ -235,10 +255,10 @@ export default function MealGeneratorPage() {
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                                        Meta: {calculateProjectionWithExercise(profile.weight_kg, profile.target_weight_kg, tdee, bmr, profile.goal as any, profile.goal_speed as any || 'moderado', weeklyExerciseCalories, profile.gender as 'M' | 'F').target_date}
+                                        Meta: {projection?.target_date || 'Calculando...'}
                                     </h3>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        Llegarás en aprox. {calculateProjectionWithExercise(profile.weight_kg, profile.target_weight_kg, tdee, bmr, profile.goal as any, profile.goal_speed as any || 'moderado', weeklyExerciseCalories, profile.gender as 'M' | 'F').weeks} semanas
+                                        Llegarás en aprox. {projection?.weeks || 0} semanas
                                     </p>
                                 </div>
                             </div>

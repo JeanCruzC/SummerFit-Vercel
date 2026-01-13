@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Target, Utensils, ChefHat } from "lucide-react";
 import { Card, Button, Input } from "@/components/ui";
-import { calculateBMR, calculateTDEE, calculateMacros, calculateTargetCalories, calculateProjection } from "@/lib/calculations";
+import { calculateHealthMetrics, calculateProjectionWithExercise, calculateMacros } from "@/lib/calculations";
 import {
     generateDayMealPlan,
     generateWeeklyMealPlan,
@@ -31,6 +31,8 @@ export default function MealGeneratorPage() {
     const [numMeals, setNumMeals] = useState<3 | 4 | 5>(4);
     const [dietType, setDietType] = useState<string>('balanced');
     const [tdee, setTdee] = useState(2000);
+    const [bmr, setBmr] = useState(1500);
+    const [weeklyExerciseCalories, setWeeklyExerciseCalories] = useState(0);
 
     // Generated plan
     const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
@@ -49,31 +51,33 @@ export default function MealGeneratorPage() {
 
                     // Calculate recommended calories based on profile
                     if (userProfile?.weight_kg && userProfile?.height_cm && userProfile?.age) {
-                        // Fix 1: Pass 'M' | 'F' directly to calculateBMR
-                        const bmr = calculateBMR(userProfile.weight_kg, userProfile.height_cm, userProfile.age, userProfile.gender);
-                        const activityMap: Record<string, string> = {
-                            'Sedentario': 'sedentario',
-                            'Ligero': 'ligero',
-                            'Moderado': 'moderado',
-                            'Activo': 'activo',
-                            'Muy activo': 'muy_activo'
-                        };
-                        const calculatedTdee = calculateTDEE(bmr, activityMap[userProfile.activity_level] as any || 'moderado');
-                        setTdee(calculatedTdee);
+                        // 1. Fetch Exercise Data
+                        let exerciseCals = 0;
+                        const { data: activePlan } = await supabase
+                            .from('workout_plans')
+                            .select('weekly_calories_burned')
+                            .eq('user_id', session.user.id)
+                            .eq('is_active', true)
+                            .single();
 
-                        // Fix 2: Use calculateTargetCalories + calculateMacros
-                        const goalMap: Record<string, string> = {
-                            'Definir': 'Definir',
-                            'Mantener': 'Mantener',
-                            'Volumen': 'Volumen'
-                        };
-                        const goal = goalMap[userProfile.goal] as 'Definir' | 'Mantener' | 'Volumen' || 'Mantener';
+                        if (activePlan?.weekly_calories_burned) {
+                            exerciseCals = activePlan.weekly_calories_burned;
+                            setWeeklyExerciseCalories(exerciseCals);
+                        }
+
+                        // 2. Calculate BASE Metrics (same as Dashboard)
+                        // This returns the correct target_calories based on the profile goal/speed
                         const mode = userProfile.goal_speed || 'moderado';
+                        const metrics = calculateHealthMetrics(userProfile, mode);
 
-                        const targetCals = calculateTargetCalories(calculatedTdee, goal, mode as any, userProfile.gender);
-                        const macros = calculateMacros(targetCals, userProfile.diet_type || 'Estándar');
+                        setTdee(metrics.tdee); // Base TDEE
+                        setBmr(metrics.bmr);
 
-                        setTargetCalories(macros.calories);
+                        // 3. Set Target Calories directly from the robust calculation
+                        setTargetCalories(metrics.target_calories);
+
+                        // 4. Calculate Macros for the UI inputs based on the target
+                        const macros = calculateMacros(metrics.target_calories, userProfile.diet_type || 'Estándar');
                         setTargetProtein(macros.protein_g);
 
                         // Set Diet Type from Profile (Source of Truth)
@@ -231,10 +235,10 @@ export default function MealGeneratorPage() {
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                                        Meta: {calculateProjection(profile.weight_kg, profile.target_weight_kg, tdee, profile.goal as any, profile.goal_speed as any || 'moderado').target_date}
+                                        Meta: {calculateProjectionWithExercise(profile.weight_kg, profile.target_weight_kg, tdee, bmr, profile.goal as any, profile.goal_speed as any || 'moderado', weeklyExerciseCalories, profile.gender as 'M' | 'F').target_date}
                                     </h3>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        Llegarás en aprox. {calculateProjection(profile.weight_kg, profile.target_weight_kg, tdee, profile.goal as any, profile.goal_speed as any || 'moderado').weeks} semanas
+                                        Llegarás en aprox. {calculateProjectionWithExercise(profile.weight_kg, profile.target_weight_kg, tdee, bmr, profile.goal as any, profile.goal_speed as any || 'moderado', weeklyExerciseCalories, profile.gender as 'M' | 'F').weeks} semanas
                                     </p>
                                 </div>
                             </div>

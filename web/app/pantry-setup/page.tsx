@@ -189,7 +189,7 @@ export default function PantrySetupPage() {
                 </motion.div>
 
                 {error && (
-                    <Alert type="error" className="mb-4">{error}</Alert>
+                    <Alert type="danger">{error}</Alert>
                 )}
 
                 {/* Category Header */}
@@ -261,8 +261,8 @@ export default function PantrySetupPage() {
                                 key={cat.id}
                                 onClick={() => setCurrentStep(idx)}
                                 className={`px-3 py-1 rounded-full text-xs ${count > 0
-                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                        : 'bg-gray-100 text-gray-500 dark:bg-gray-800'
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                    : 'bg-gray-100 text-gray-500 dark:bg-gray-800'
                                     }`}
                             >
                                 {cat.nameEs}: {count}

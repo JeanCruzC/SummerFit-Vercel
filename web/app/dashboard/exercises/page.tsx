@@ -478,12 +478,25 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
                     )}
                 </div>
 
-                <button
-                    onClick={() => setShowDetails(!showDetails)}
-                    className="w-full py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-purple-300 dark:hover:border-purple-700 bg-white dark:bg-gray-800 text-zinc-700 dark:text-zinc-300 font-semibold text-sm transition-all flex items-center justify-center gap-2"
-                >
-                    {showDetails ? "Ocultar Detalles" : "Ver Instrucciones"}
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setShowDetails(!showDetails)}
+                        className="flex-1 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-purple-300 dark:hover:border-purple-700 bg-white dark:bg-gray-800 text-zinc-700 dark:text-zinc-300 font-semibold text-sm transition-all flex items-center justify-center gap-2"
+                    >
+                        {showDetails ? "Ocultar" : "Instrucciones"}
+                    </button>
+                    <a
+                        href={`https://www.youtube.com/results?search_query=${encodeURIComponent(exercise.title_en || exercise.title)} exercise how to`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2.5 px-4 rounded-xl border border-red-200 dark:border-red-900/50 hover:border-red-400 dark:hover:border-red-700 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-semibold text-sm transition-all flex items-center justify-center gap-1.5"
+                    >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                        </svg>
+                        YouTube
+                    </a>
+                </div>
             </div>
 
             {/* Expanded Details Overlay/Panel */}

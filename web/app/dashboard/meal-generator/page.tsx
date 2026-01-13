@@ -58,6 +58,22 @@ export default function MealGeneratorPage() {
 
                         setTargetCalories(macros.calories);
                         setTargetProtein(macros.protein_g);
+
+                        // Set Diet Type from Profile (Source of Truth)
+                        if (userProfile.diet_type) {
+                            const dietMap: Record<string, string> = {
+                                'Estándar': 'balanced',
+                                'Keto': 'keto',
+                                'Low-Carb': 'low_carb',
+                                'Vegana': 'vegan',
+                                'Vegetariana': 'vegetarian',
+                                'Paleo': 'paleo',
+                                'Mediterránea': 'mediterranean',
+                                'Alta Proteína': 'high_protein'
+                            };
+                            const mappedType = dietMap[userProfile.diet_type] || 'balanced';
+                            setDietType(mappedType);
+                        }
                     }
                 }
             } catch (error) {

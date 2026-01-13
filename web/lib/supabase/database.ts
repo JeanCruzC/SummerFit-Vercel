@@ -31,12 +31,12 @@ export async function upsertProfile(profile: Partial<UserProfile> & { user_id: s
 
 export async function searchFoods(query: string, limit = 50): Promise<FoodItem[]> {
     const supabase = createClient();
-    // Prioritize USDA data (data_source starts with 'usda')
+    // Only return USDA data (filter out old Spanish foods)
     const { data, error } = await supabase
         .from('foods')
         .select('*')
+        .like('data_source', 'usda%')
         .ilike('name', `%${query}%`)
-        .order('data_source', { ascending: false, nullsFirst: false }) // USDA first
         .limit(limit);
 
     if (error) return [];

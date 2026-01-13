@@ -260,6 +260,14 @@ export default function MealGeneratorPage() {
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
                                         Llegarás en aprox. {projection?.weeks || 0} semanas
                                     </p>
+                                    <div className="mt-1 flex gap-2 text-[10px] text-gray-400">
+                                        <span className="capitalize px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">
+                                            Modo: {goalSpeed}
+                                        </span>
+                                        <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">
+                                            Ejercicio: +{Math.round(weeklyExerciseCalories)} kcal/sem
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </Card>

@@ -31,13 +31,25 @@ export async function upsertProfile(profile: Partial<UserProfile> & { user_id: s
 
 export async function searchFoods(query: string, limit = 50): Promise<FoodItem[]> {
     const supabase = createClient();
-    // Only return USDA data (filter out old Spanish foods)
-    const { data, error } = await supabase
+
+    // Split query into words for better matching
+    // "white rice" should match "Rice, white, long-grain"
+    const words = query.trim().toLowerCase().split(/\s+/).filter(w => w.length > 1);
+
+    if (words.length === 0) return [];
+
+    // Build query - each word must be present in name
+    let queryBuilder = supabase
         .from('foods')
         .select('*')
-        .like('data_source', 'usda%')
-        .ilike('name', `%${query}%`)
-        .limit(limit);
+        .like('data_source', 'usda%');
+
+    // Add ILIKE filter for each word
+    for (const word of words) {
+        queryBuilder = queryBuilder.ilike('name', `%${word}%`);
+    }
+
+    const { data, error } = await queryBuilder.limit(limit);
 
     if (error) return [];
     return data as FoodItem[];

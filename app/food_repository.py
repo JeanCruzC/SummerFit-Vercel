@@ -39,21 +39,38 @@ def fetch_foods_from_api() -> Sequence[FoodRow]:
 
 
 def normalize_food_rows(raw_rows: Sequence[FoodRow]) -> List[FoodRow]:
-    """Normalize raw API rows into the canonical Supabase schema."""
+    """Normalize raw API rows into the canonical Supabase schema.
+    
+    Supports both legacy CSV format and USDA FoodData Central format.
+    """
     normalized = []
     for row in raw_rows:
-        normalized.append(
-            {
-                "name": row.get("name") or row.get("food_name"),
-                "category": row.get("category") or row.get("Food Group"),
-                "kcal_per_100g": row.get("kcal") or row.get("calories") or row.get("Calories"),
-                "protein_g_per_100g": row.get("protein") or row.get("Protein (g)"),
-                "carbs_g_per_100g": row.get("carbs") or row.get("carbohydrates") or row.get("Carbohydrate (g)"),
-                "fat_g_per_100g": row.get("fat") or row.get("fats") or row.get("Fat (g)"),
-                "source_id": row.get("id") or row.get("ID"),
-            }
-        )
+        food = {
+            "name": row.get("name") or row.get("food_name") or row.get("description"),
+            "category": row.get("category") or row.get("Food Group"),
+            "kcal_per_100g": row.get("kcal") or row.get("calories") or row.get("Calories") or row.get("kcal_per_100g"),
+            "protein_g_per_100g": row.get("protein") or row.get("Protein (g)") or row.get("protein_g_per_100g"),
+            "carbs_g_per_100g": row.get("carbs") or row.get("carbohydrates") or row.get("Carbohydrate (g)") or row.get("carbs_g_per_100g"),
+            "fat_g_per_100g": row.get("fat") or row.get("fats") or row.get("Fat (g)") or row.get("fat_g_per_100g"),
+            "source_id": row.get("id") or row.get("ID") or row.get("source_id"),
+        }
+        
+        # USDA extended fields (optional)
+        usda_fields = [
+            "fdc_id", "fiber_g_per_100g", "sugar_g_per_100g", "sodium_mg_per_100g",
+            "cholesterol_mg_per_100g", "saturated_fat_g_per_100g", "potassium_mg_per_100g",
+            "calcium_mg_per_100g", "iron_mg_per_100g", "vitamin_a_iu_per_100g",
+            "vitamin_c_mg_per_100g", "vitamin_d_iu_per_100g", "data_source",
+            "serving_size_g", "serving_description", "brand_name", "ingredients"
+        ]
+        
+        for field in usda_fields:
+            if field in row and row[field] is not None:
+                food[field] = row[field]
+        
+        normalized.append(food)
     return normalized
+
 
 
 def upsert_foods(rows: Sequence[FoodRow]) -> None:

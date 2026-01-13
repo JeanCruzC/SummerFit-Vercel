@@ -62,12 +62,30 @@ export interface HealthMetrics {
 export interface FoodItem {
     id: number;
     source_id?: string;
+    fdc_id?: number;
     name: string;
     category?: string;
     kcal_per_100g: number;
     protein_g_per_100g: number;
     carbs_g_per_100g: number;
     fat_g_per_100g: number;
+    // USDA extended fields
+    fiber_g_per_100g?: number;
+    sugar_g_per_100g?: number;
+    sodium_mg_per_100g?: number;
+    cholesterol_mg_per_100g?: number;
+    saturated_fat_g_per_100g?: number;
+    potassium_mg_per_100g?: number;
+    calcium_mg_per_100g?: number;
+    iron_mg_per_100g?: number;
+    vitamin_a_iu_per_100g?: number;
+    vitamin_c_mg_per_100g?: number;
+    vitamin_d_iu_per_100g?: number;
+    data_source?: string;
+    serving_size_g?: number;
+    serving_description?: string;
+    brand_name?: string;
+    ingredients?: string;
 }
 
 // Meal entry

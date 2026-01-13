@@ -315,11 +315,11 @@ export default function FoodsPage() {
 
             {/* Selected Food Modal */}
             {selectedFood && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-                    <Card className="max-w-md w-full relative">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
+                    <Card className="max-w-lg w-full relative my-8 max-h-[90vh] overflow-y-auto">
                         <button
                             onClick={() => setSelectedFood(null)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
                         >
                             <X className="h-5 w-5" />
                         </button>
@@ -337,26 +337,111 @@ export default function FoodsPage() {
                             />
                         </div>
 
-                        {/* Calculated nutrients */}
+                        {/* Main Macros */}
                         {(() => {
-                            const n = calcNutrients(selectedFood, grams);
+                            const m = grams / 100;
+                            const n = {
+                                kcal: Math.round((selectedFood.kcal_per_100g || 0) * m),
+                                protein: Math.round((selectedFood.protein_g_per_100g || 0) * m * 10) / 10,
+                                carbs: Math.round((selectedFood.carbs_g_per_100g || 0) * m * 10) / 10,
+                                fat: Math.round((selectedFood.fat_g_per_100g || 0) * m * 10) / 10,
+                                fiber: Math.round((selectedFood.fiber_g_per_100g || 0) * m * 10) / 10,
+                                sugar: Math.round((selectedFood.sugar_g_per_100g || 0) * m * 10) / 10,
+                                saturatedFat: Math.round((selectedFood.saturated_fat_g_per_100g || 0) * m * 10) / 10,
+                                sodium: Math.round((selectedFood.sodium_mg_per_100g || 0) * m),
+                                cholesterol: Math.round((selectedFood.cholesterol_mg_per_100g || 0) * m),
+                                potassium: Math.round((selectedFood.potassium_mg_per_100g || 0) * m),
+                                calcium: Math.round((selectedFood.calcium_mg_per_100g || 0) * m),
+                                iron: Math.round((selectedFood.iron_mg_per_100g || 0) * m * 10) / 10,
+                                vitaminA: Math.round((selectedFood.vitamin_a_iu_per_100g || 0) * m),
+                                vitaminC: Math.round((selectedFood.vitamin_c_mg_per_100g || 0) * m * 10) / 10,
+                                vitaminD: Math.round((selectedFood.vitamin_d_iu_per_100g || 0) * m),
+                            };
                             return (
-                                <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-                                    <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/20">
-                                        <div className="text-xl font-bold text-purple-600">{n.kcal}</div>
-                                        <div className="text-xs text-gray-500">kcal</div>
+                                <div className="mt-4 space-y-4">
+                                    {/* Main macros */}
+                                    <div className="grid grid-cols-4 gap-2 text-center">
+                                        <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                                            <div className="text-xl font-bold text-purple-600">{n.kcal}</div>
+                                            <div className="text-xs text-gray-500">kcal</div>
+                                        </div>
+                                        <div className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20">
+                                            <div className="text-xl font-bold text-red-600">{n.protein}g</div>
+                                            <div className="text-xs text-gray-500">Proteína</div>
+                                        </div>
+                                        <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20">
+                                            <div className="text-xl font-bold text-amber-600">{n.carbs}g</div>
+                                            <div className="text-xs text-gray-500">Carbos</div>
+                                        </div>
+                                        <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
+                                            <div className="text-xl font-bold text-green-600">{n.fat}g</div>
+                                            <div className="text-xs text-gray-500">Grasas</div>
+                                        </div>
                                     </div>
-                                    <div className="p-2 rounded-lg bg-gray-50 dark:bg-gray-800">
-                                        <div className="text-xl font-bold">{n.protein}</div>
-                                        <div className="text-xs text-gray-500">Proteína</div>
+
+                                    {/* Detailed nutrition */}
+                                    <div className="border-t pt-3 dark:border-gray-700">
+                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Detalles Nutricionales</h4>
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Fibra</span>
+                                                <span className="font-medium">{n.fiber}g</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Azúcar</span>
+                                                <span className="font-medium">{n.sugar}g</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Grasa Saturada</span>
+                                                <span className="font-medium">{n.saturatedFat}g</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Colesterol</span>
+                                                <span className="font-medium">{n.cholesterol}mg</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="p-2 rounded-lg bg-gray-50 dark:bg-gray-800">
-                                        <div className="text-xl font-bold">{n.carbs}</div>
-                                        <div className="text-xs text-gray-500">Carbos</div>
+
+                                    {/* Minerals */}
+                                    <div className="border-t pt-3 dark:border-gray-700">
+                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Minerales</h4>
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Sodio</span>
+                                                <span className="font-medium">{n.sodium}mg</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Potasio</span>
+                                                <span className="font-medium">{n.potassium}mg</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Calcio</span>
+                                                <span className="font-medium">{n.calcium}mg</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Hierro</span>
+                                                <span className="font-medium">{n.iron}mg</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="p-2 rounded-lg bg-gray-50 dark:bg-gray-800">
-                                        <div className="text-xl font-bold">{n.fat}</div>
-                                        <div className="text-xs text-gray-500">Grasas</div>
+
+                                    {/* Vitamins */}
+                                    <div className="border-t pt-3 dark:border-gray-700">
+                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Vitaminas</h4>
+                                        <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Vit. A</span>
+                                                <span className="font-medium">{n.vitaminA} IU</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Vit. C</span>
+                                                <span className="font-medium">{n.vitaminC}mg</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Vit. D</span>
+                                                <span className="font-medium">{n.vitaminD} IU</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             );

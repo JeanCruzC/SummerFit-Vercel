@@ -1,0 +1,689 @@
+{
+    "dietas": {
+        "cetogénica": {
+            "id": "keto",
+            "nombre": "Dieta Cetogénica",
+            "descripción": "Dieta muy baja en carbohidratos (<50 g/día, ~5-10% de calorías), alta en grasas (~70-75% kcal) y moderada en proteínas (~20% kcal), que induce cetosis nutricional.",
+            "macro_distribution": {
+                "protein_percent": 20,
+                "carbs_percent": 5,
+                "fat_percent": 75
+            },
+            "daily_carb_limit_g": 50,
+            "riesgos": [
+                "Deficiencias de vitaminas (tiamina, folato, A, E, B6)",
+                "Deficiencias de minerales (calcio, magnesio, hierro, potasio)",
+                "Puede elevar LDL en algunos individuos",
+                "Estreñimiento por falta de fibra"
+            ],
+            "no_recomendada_para": [
+                "Embarazadas",
+                "Diabéticos tipo 1 sin supervisión",
+                "Personas con trastornos hepáticos"
+            ],
+            "alimentos_permitidos": [
+                "Carnes",
+                "Pescados grasos",
+                "Huevos",
+                "Quesos",
+                "Aceites",
+                "Mantequilla",
+                "Nueces y semillas",
+                "Aguacate",
+                "Vegetales bajos en almidón"
+            ],
+            "alimentos_prohibidos": [
+                "Cereales",
+                "Legumbres",
+                "Frutas dulces",
+                "Tubérculos",
+                "Azúcares"
+            ]
+        },
+        "DASH": {
+            "id": "dash",
+            "nombre": "Dieta DASH",
+            "descripción": "Patrón dietético enfocado en reducir la hipertensión. Alta ingesta de frutas, verduras, granos integrales, legumbres, frutos secos, lácteos bajos en grasa y carnes magras.",
+            "macro_distribution": {
+                "protein_percent": 18,
+                "carbs_percent": 55,
+                "fat_percent": 27
+            },
+            "sodium_limit_mg": 1500,
+            "beneficios": [
+                "Reduce presión arterial 8-14 mmHg",
+                "Reduce LDL-colesterol",
+                "Menor riesgo de insuficiencia cardíaca y ACV"
+            ],
+            "porciones_diarias_2000kcal": {
+                "frutas": "4-5",
+                "verduras": "4-5",
+                "granos": "6-8 (preferir integrales)",
+                "lacteos_bajos_grasa": "2-3",
+                "carnes_magras_oz": "6 oz o menos",
+                "frutos_secos_legumbres_semana": "4-5 por semana"
+            }
+        },
+        "mediterránea": {
+            "id": "mediterranean",
+            "nombre": "Dieta Mediterránea",
+            "descripción": "Patrón tradicional rico en vegetales, frutas, legumbres, cereales integrales y aceite de oliva. Consumo frecuente de pescado, moderado de lácteos y bajo de carnes rojas.",
+            "macro_distribution": {
+                "protein_percent": 15,
+                "carbs_percent": 45,
+                "fat_percent": 40
+            },
+            "beneficios": [
+                "Reduce eventos cardiovasculares 38-48%",
+                "Reduce mortalidad cardiovascular 46%",
+                "Menor incidencia de diabetes tipo 2",
+                "Protección frente a deterioro cognitivo"
+            ],
+            "alimentos_clave": [
+                "Aceite de oliva extra virgen",
+                "Pescado azul",
+                "Legumbres",
+                "Frutos secos",
+                "Frutas frescas",
+                "Verduras",
+                "Yogurt natural",
+                "Vino tinto moderado"
+            ]
+        },
+        "vegetariana": {
+            "id": "vegetarian",
+            "nombre": "Dieta Vegetariana",
+            "descripción": "Patrón alimentario basado en plantas que excluye carnes y pescados. Incluye lácteos y huevos (lacto-ovo vegetariana).",
+            "macro_distribution": {
+                "protein_percent": 15,
+                "carbs_percent": 55,
+                "fat_percent": 30
+            },
+            "beneficios": [
+                "Menor IMC",
+                "Menor riesgo de cardiopatía isquémica",
+                "Menor riesgo de hipertensión y diabetes tipo 2"
+            ],
+            "nutrientes_vigilar": [
+                "Vitamina B12",
+                "Hierro",
+                "Zinc",
+                "Omega-3 (EPA/DHA)",
+                "Calcio",
+                "Vitamina D",
+                "Yodo"
+            ]
+        },
+        "vegana": {
+            "id": "vegan",
+            "nombre": "Dieta Vegana",
+            "descripción": "Excluye todos los alimentos de origen animal. Se basa exclusivamente en vegetales, frutas, legumbres, cereales, frutos secos y semillas.",
+            "macro_distribution": {
+                "protein_percent": 15,
+                "carbs_percent": 60,
+                "fat_percent": 25
+            },
+            "suplementos_necesarios": [
+                "Vitamina B12 (obligatorio)",
+                "Vitamina D",
+                "Omega-3 de algas (DHA)",
+                "Posiblemente hierro y zinc"
+            ],
+            "beneficios": [
+                "Menor riesgo de hipertensión",
+                "Niveles más bajos de LDL",
+                "Menor incidencia de diabetes tipo 2"
+            ]
+        }
+    },
+    "calorias": {
+        "formulas_bmr": {
+            "mifflin_st_jeor": {
+                "hombres": "10 × peso[kg] + 6.25 × altura[cm] - 5 × edad + 5",
+                "mujeres": "10 × peso[kg] + 6.25 × altura[cm] - 5 × edad - 161"
+            },
+            "harris_benedict": {
+                "hombres": "66.5 + 13.75 × peso[kg] + 5.0 × altura[cm] - 6.8 × edad",
+                "mujeres": "655 + 9.56 × peso[kg] + 1.85 × altura[cm] - 4.68 × edad"
+            }
+        },
+        "factores_actividad": {
+            "sedentario": {
+                "factor": 1.2,
+                "descripcion": "Poco o ningún ejercicio"
+            },
+            "ligero": {
+                "factor": 1.375,
+                "descripcion": "Ejercicio ligero 1-3 días/semana"
+            },
+            "moderado": {
+                "factor": 1.55,
+                "descripcion": "Ejercicio moderado 3-5 días/semana"
+            },
+            "activo": {
+                "factor": 1.725,
+                "descripcion": "Ejercicio intenso 6-7 días/semana"
+            },
+            "muy_activo": {
+                "factor": 1.9,
+                "descripcion": "Ejercicio muy intenso diario o trabajo físico"
+            }
+        },
+        "ajustes_objetivo": {
+            "perder_peso": -500,
+            "perder_peso_rapido": -750,
+            "mantener": 0,
+            "ganar_musculo": 300,
+            "volumen": 500
+        }
+    },
+    "macronutrientes": {
+        "proteinas": {
+            "rda_g_por_kg": 0.8,
+            "amdr_percent": {
+                "min": 10,
+                "max": 35
+            },
+            "recomendaciones_por_objetivo": {
+                "perdida_peso": {
+                    "g_por_kg": 1.6,
+                    "percent": 30
+                },
+                "mantenimiento": {
+                    "g_por_kg": 1.2,
+                    "percent": 20
+                },
+                "ganancia_muscular": {
+                    "g_por_kg": 2.0,
+                    "percent": 25
+                },
+                "atleta_fuerza": {
+                    "g_por_kg": 2.2,
+                    "percent": 30
+                }
+            },
+            "fuentes_animales": [
+                "Carnes magras",
+                "Pollo",
+                "Pavo",
+                "Pescados",
+                "Huevos",
+                "Lácteos"
+            ],
+            "fuentes_vegetales": [
+                "Legumbres",
+                "Tofu",
+                "Tempeh",
+                "Seitán",
+                "Frutos secos",
+                "Semillas"
+            ]
+        },
+        "carbohidratos": {
+            "amdr_percent": {
+                "min": 45,
+                "max": 65
+            },
+            "fibra_g_por_dia": 28,
+            "azucares_max_percent": 10,
+            "tipos_recomendados": [
+                "Verduras",
+                "Frutas enteras",
+                "Legumbres",
+                "Cereales integrales"
+            ],
+            "tipos_limitar": [
+                "Azúcares añadidos",
+                "Bebidas azucaradas",
+                "Harinas refinadas"
+            ]
+        },
+        "grasas": {
+            "amdr_percent": {
+                "min": 20,
+                "max": 35
+            },
+            "saturadas_max_percent": 10,
+            "trans_max_g": 0,
+            "tipos_saludables": {
+                "monoinsaturadas": [
+                    "Aceite de oliva",
+                    "Aguacate",
+                    "Almendras",
+                    "Nueces de macadamia"
+                ],
+                "poliinsaturadas": [
+                    "Pescados grasos",
+                    "Nueces",
+                    "Semillas de lino",
+                    "Chía"
+                ],
+                "omega3_fuentes": [
+                    "Salmón",
+                    "Sardinas",
+                    "Atún",
+                    "Nueces",
+                    "Linaza",
+                    "Chía"
+                ]
+            },
+            "tipos_limitar": [
+                "Mantequilla",
+                "Manteca",
+                "Aceite de coco",
+                "Carnes grasas",
+                "Embutidos"
+            ]
+        }
+    },
+    "micronutrientes": {
+        "vitaminas": {
+            "vitamina_a": {
+                "rda_mcg": {
+                    "hombres": 900,
+                    "mujeres": 700,
+                    "embarazo": 770,
+                    "lactancia": 1300
+                },
+                "ul_mcg": 3000,
+                "deficiencia": [
+                    "Ceguera nocturna",
+                    "Xeroftalmía",
+                    "Sistema inmune debilitado"
+                ],
+                "fuentes": [
+                    "Hígado",
+                    "Zanahorias",
+                    "Camote",
+                    "Espinaca",
+                    "Kale"
+                ]
+            },
+            "vitamina_d": {
+                "rda_ui": {
+                    "adultos_hasta_70": 600,
+                    "mayores_70": 800
+                },
+                "ul_ui": 4000,
+                "deficiencia": [
+                    "Raquitismo",
+                    "Osteomalacia",
+                    "Osteoporosis"
+                ],
+                "fuentes": [
+                    "Pescados grasos",
+                    "Huevos",
+                    "Hongos UV",
+                    "Lácteos fortificados",
+                    "Sol"
+                ]
+            },
+            "vitamina_c": {
+                "rda_mg": {
+                    "hombres": 90,
+                    "mujeres": 75,
+                    "fumadores_extra": 35
+                },
+                "ul_mg": 2000,
+                "deficiencia": [
+                    "Escorbuto",
+                    "Fatiga",
+                    "Sangrado de encías"
+                ],
+                "fuentes": [
+                    "Cítricos",
+                    "Pimiento rojo",
+                    "Kiwi",
+                    "Fresas",
+                    "Brócoli"
+                ]
+            },
+            "vitamina_b12": {
+                "rda_mcg": {
+                    "adultos": 2.4,
+                    "embarazo": 2.6,
+                    "lactancia": 2.8
+                },
+                "deficiencia": [
+                    "Anemia megaloblástica",
+                    "Daño neurológico",
+                    "Fatiga"
+                ],
+                "fuentes": [
+                    "Carnes",
+                    "Pescados",
+                    "Huevos",
+                    "Lácteos",
+                    "Alimentos fortificados"
+                ],
+                "nota_veganos": "Suplementación obligatoria para veganos"
+            },
+            "acido_folico": {
+                "rda_mcg_dfe": {
+                    "adultos": 400,
+                    "embarazo": 600,
+                    "lactancia": 500
+                },
+                "ul_mcg": 1000,
+                "deficiencia": [
+                    "Anemia megaloblástica",
+                    "Defectos del tubo neural en fetos"
+                ],
+                "fuentes": [
+                    "Espinaca",
+                    "Lentejas",
+                    "Espárragos",
+                    "Aguacate",
+                    "Harinas fortificadas"
+                ]
+            }
+        },
+        "minerales": {
+            "calcio": {
+                "rda_mg": {
+                    "adultos_19_50": 1000,
+                    "mujeres_51_plus": 1200,
+                    "hombres_71_plus": 1200
+                },
+                "ul_mg": 2500,
+                "deficiencia": [
+                    "Osteoporosis",
+                    "Fracturas"
+                ],
+                "fuentes": [
+                    "Lácteos",
+                    "Tofu con calcio",
+                    "Sardinas",
+                    "Kale",
+                    "Almendras"
+                ]
+            },
+            "hierro": {
+                "rda_mg": {
+                    "hombres": 8,
+                    "mujeres_19_50": 18,
+                    "mujeres_51_plus": 8,
+                    "embarazo": 27
+                },
+                "ul_mg": 45,
+                "deficiencia": [
+                    "Anemia ferropénica",
+                    "Fatiga",
+                    "Debilidad"
+                ],
+                "fuentes_hemo": [
+                    "Carnes rojas",
+                    "Hígado",
+                    "Mariscos"
+                ],
+                "fuentes_no_hemo": [
+                    "Legumbres",
+                    "Espinaca",
+                    "Semillas de calabaza"
+                ],
+                "mejora_absorcion": "Consumir con vitamina C"
+            },
+            "magnesio": {
+                "rda_mg": {
+                    "hombres_19_30": 400,
+                    "hombres_31_plus": 420,
+                    "mujeres_19_30": 310,
+                    "mujeres_31_plus": 320
+                },
+                "deficiencia": [
+                    "Calambres",
+                    "Fatiga",
+                    "Arritmias"
+                ],
+                "fuentes": [
+                    "Almendras",
+                    "Espinaca",
+                    "Aguacate",
+                    "Chocolate oscuro",
+                    "Legumbres"
+                ]
+            },
+            "potasio": {
+                "ai_mg": {
+                    "hombres": 3400,
+                    "mujeres": 2600
+                },
+                "deficiencia": [
+                    "Hipertensión",
+                    "Calambres",
+                    "Fatiga"
+                ],
+                "fuentes": [
+                    "Plátano",
+                    "Papa",
+                    "Espinaca",
+                    "Aguacate",
+                    "Legumbres"
+                ]
+            },
+            "sodio": {
+                "limite_mg": 2300,
+                "limite_hipertensos_mg": 1500,
+                "exceso": [
+                    "Hipertensión",
+                    "Riesgo cardiovascular"
+                ],
+                "reducir": [
+                    "Procesados",
+                    "Embutidos",
+                    "Sopas enlatadas",
+                    "Snacks salados"
+                ]
+            },
+            "zinc": {
+                "rda_mg": {
+                    "hombres": 11,
+                    "mujeres": 8
+                },
+                "ul_mg": 40,
+                "deficiencia": [
+                    "Retraso crecimiento",
+                    "Inmunidad reducida",
+                    "Pérdida de cabello"
+                ],
+                "fuentes": [
+                    "Ostras",
+                    "Carne de res",
+                    "Cangrejo",
+                    "Legumbres",
+                    "Semillas de calabaza"
+                ]
+            }
+        }
+    },
+    "condiciones_salud": {
+        "diabetes_tipo_2": {
+            "objetivos": {
+                "perdida_peso_percent": "5-10%",
+                "carbohidratos_g_por_comida": "45-60",
+                "fibra_g_por_dia": 30,
+                "indice_glucemico_preferir": "bajo"
+            },
+            "alimentos_evitar": [
+                "Azúcar refinada",
+                "Bebidas azucaradas",
+                "Pan blanco",
+                "Arroz blanco"
+            ],
+            "alimentos_recomendar": [
+                "Vegetales sin almidón",
+                "Legumbres",
+                "Granos integrales",
+                "Proteínas magras"
+            ],
+            "dietas_recomendadas": [
+                "Mediterránea",
+                "DASH",
+                "Baja en carbohidratos"
+            ]
+        },
+        "hipertension": {
+            "objetivos": {
+                "sodio_max_mg": 1500,
+                "potasio_min_mg": 4700
+            },
+            "dieta_recomendada": "DASH",
+            "alimentos_evitar": [
+                "Procesados salados",
+                "Embutidos",
+                "Sopas enlatadas",
+                "Snacks salados"
+            ],
+            "alimentos_recomendar": [
+                "Frutas",
+                "Verduras",
+                "Lácteos bajos en grasa",
+                "Pescado",
+                "Nueces"
+            ]
+        },
+        "riesgo_cardiovascular": {
+            "objetivos": {
+                "saturadas_max_percent": 7,
+                "colesterol_max_mg": 200,
+                "fibra_min_g": 25,
+                "omega3_porciones_semana": 2
+            },
+            "dietas_recomendadas": [
+                "Mediterránea",
+                "DASH"
+            ],
+            "alimentos_clave": [
+                "Pescado azul",
+                "Aceite de oliva",
+                "Nueces",
+                "Avena",
+                "Legumbres"
+            ],
+            "alimentos_limitar": [
+                "Carnes rojas",
+                "Embutidos",
+                "Lácteos enteros",
+                "Frituras"
+            ]
+        }
+    },
+    "ajustes_edad": {
+        "ninos_2_5": {
+            "grasa_min_percent": 30,
+            "nota": "No restringir grasas, necesarias para desarrollo cerebral",
+            "leche": "Entera o 2%"
+        },
+        "adolescentes": {
+            "calcio_mg": 1300,
+            "hierro_mg_chicas": 15,
+            "hierro_mg_chicos": 11,
+            "nota": "Período crítico para masa ósea"
+        },
+        "adultos_mayores_65_plus": {
+            "proteina_g_por_kg": 1.2,
+            "vitamina_d_ui": 800,
+            "calcio_mg": 1200,
+            "vitamina_b12": "Suplementar o fortificados",
+            "nota": "Mayor riesgo de sarcopenia y malabsorción"
+        },
+        "embarazo": {
+            "calorias_extra_2do_trimestre": 340,
+            "calorias_extra_3er_trimestre": 450,
+            "acido_folico_mcg": 600,
+            "hierro_mg": 27,
+            "dha_mg": 200,
+            "alimentos_evitar": [
+                "Pescados altos en mercurio",
+                "Quesos no pasteurizados",
+                "Carnes crudas",
+                "Alcohol"
+            ]
+        }
+    },
+    "piramide_alimentaria": {
+        "niveles": [
+            {
+                "nivel": 1,
+                "nombre": "Verduras y Frutas",
+                "descripcion": "Base de la alimentación, ~50% del plato",
+                "porciones_2000kcal": {
+                    "verduras_tazas": 3,
+                    "frutas_tazas": 2
+                }
+            },
+            {
+                "nivel": 2,
+                "nombre": "Cereales (preferir integrales)",
+                "descripcion": "Al menos mitad integrales",
+                "porciones_2000kcal": {
+                    "oz_equivalentes": 6,
+                    "minimo_integrales": 3
+                }
+            },
+            {
+                "nivel": 3,
+                "nombre": "Proteínas",
+                "descripcion": "Carnes magras, pescado, huevos, legumbres, nueces",
+                "porciones_2000kcal": {
+                    "oz_equivalentes": 5.5
+                }
+            },
+            {
+                "nivel": 4,
+                "nombre": "Lácteos",
+                "descripcion": "Preferir bajos en grasa",
+                "porciones_2000kcal": {
+                    "tazas": 3
+                }
+            },
+            {
+                "nivel": 5,
+                "nombre": "Aceites y Grasas",
+                "descripcion": "Preferir aceites vegetales",
+                "porciones_2000kcal": {
+                    "cucharaditas": 5
+                }
+            }
+        ]
+    },
+    "control_peso": {
+        "perdida_peso": {
+            "deficit_recomendado_kcal": 500,
+            "tasa_segura_kg_semana": 0.5,
+            "tasa_maxima_kg_semana": 1.0,
+            "proteina_g_por_kg": 1.6,
+            "calorias_minimas": {
+                "mujeres": 1200,
+                "hombres": 1500
+            }
+        },
+        "ganancia_muscular": {
+            "superavit_percent": 10,
+            "superavit_kcal": 300,
+            "proteina_g_por_kg": 2.0,
+            "proteina_max_g_por_kg": 2.2,
+            "carbohidratos_g_por_kg": "4-7",
+            "proteina_post_entreno_g": 30
+        }
+    },
+    "timing_comidas": {
+        "ayuno_intermitente_16_8": {
+            "ventana_ayuno_horas": 16,
+            "ventana_comida_horas": 8,
+            "beneficios": [
+                "Similar a restricción calórica para pérdida de peso",
+                "Puede mejorar sensibilidad a insulina"
+            ],
+            "no_recomendado": [
+                "Embarazadas",
+                "Diabéticos en insulina sin supervisión",
+                "Historia de trastornos alimentarios"
+            ]
+        },
+        "frecuencia_comidas": {
+            "estandar": "3 comidas + 1-2 snacks",
+            "nota": "No hay evidencia de que 6 comidas pequeñas acelere metabolismo vs 3 comidas"
+        }
+    }
+}

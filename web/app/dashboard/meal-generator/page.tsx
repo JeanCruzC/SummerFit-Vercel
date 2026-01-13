@@ -12,6 +12,7 @@ import {
     WeeklyMealPlan,
     SIMPLE_FOODS
 } from "@/lib/mealGenerator";
+import { getActiveWorkoutPlan } from "@/lib/supabase/exercises";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile, saveMealPlan } from "@/lib/supabase/database";
 import { getUserLocalDate, formatDateDisplay } from "@/lib/date";
@@ -70,17 +71,12 @@ export default function MealGeneratorPage() {
 
                     // Calculate recommended calories based on profile
                     if (userProfile?.weight_kg && userProfile?.height_cm && userProfile?.age) {
-                        // 1. Fetch Exercise Data
+                        // 1. Fetch Exercise Data (using correct helper and property)
                         let exerciseCals = 0;
-                        const { data: activePlan } = await supabase
-                            .from('workout_plans')
-                            .select('weekly_calories_burned')
-                            .eq('user_id', session.user.id)
-                            .eq('is_active', true)
-                            .single();
+                        const activePlan = await getActiveWorkoutPlan(session.user.id);
 
-                        if (activePlan?.weekly_calories_burned) {
-                            exerciseCals = activePlan.weekly_calories_burned;
+                        if (activePlan?.estimated_calories_weekly) {
+                            exerciseCals = activePlan.estimated_calories_weekly;
                             setWeeklyExerciseCalories(exerciseCals);
                         }
 

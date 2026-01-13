@@ -86,6 +86,9 @@ export interface FoodItem {
     serving_description?: string;
     brand_name?: string;
     ingredients?: string;
+    // Extracted fields
+    cooking_state?: string;
+    food_base?: string;
 }
 
 // Meal entry

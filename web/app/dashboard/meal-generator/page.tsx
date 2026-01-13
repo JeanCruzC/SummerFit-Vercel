@@ -4,15 +4,17 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Target, Utensils, ChefHat } from "lucide-react";
 import { Card, Button, Input } from "@/components/ui";
-import { calculateBMR, calculateTDEE, calculateMacros } from "@/lib/nutrition";
+import { calculateBMR, calculateTDEE, calculateMacros, calculateTargetCalories, calculateProjection } from "@/lib/calculations";
 import {
     generateDayMealPlan,
+    generateWeeklyMealPlan,
     MealPlan,
+    WeeklyMealPlan,
     SIMPLE_FOODS
 } from "@/lib/mealGenerator";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile, saveMealPlan } from "@/lib/supabase/database";
-import { getUserLocalDate } from "@/lib/date";
+import { getUserLocalDate, formatDateDisplay } from "@/lib/date";
 import { useRouter } from "next/navigation";
 import { UserProfile } from "@/types";
 
@@ -28,9 +30,13 @@ export default function MealGeneratorPage() {
     const [targetProtein, setTargetProtein] = useState(120);
     const [numMeals, setNumMeals] = useState<3 | 4 | 5>(4);
     const [dietType, setDietType] = useState<string>('balanced');
+    const [tdee, setTdee] = useState(2000);
 
     // Generated plan
     const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+    const [weeklyPlan, setWeeklyPlan] = useState<WeeklyMealPlan | null>(null);
+    const [mode, setMode] = useState<'daily' | 'weekly'>('daily');
+    const [activeDay, setActiveDay] = useState(0);
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -43,8 +49,8 @@ export default function MealGeneratorPage() {
 
                     // Calculate recommended calories based on profile
                     if (userProfile?.weight_kg && userProfile?.height_cm && userProfile?.age) {
-                        const sex = userProfile.gender === 'M' ? 'male' : 'female';
-                        const bmr = calculateBMR(userProfile.weight_kg, userProfile.height_cm, userProfile.age, sex);
+                        // Fix 1: Pass 'M' | 'F' directly to calculateBMR
+                        const bmr = calculateBMR(userProfile.weight_kg, userProfile.height_cm, userProfile.age, userProfile.gender);
                         const activityMap: Record<string, string> = {
                             'Sedentario': 'sedentario',
                             'Ligero': 'ligero',
@@ -52,13 +58,20 @@ export default function MealGeneratorPage() {
                             'Activo': 'activo',
                             'Muy activo': 'muy_activo'
                         };
-                        const tdee = calculateTDEE(bmr, activityMap[userProfile.activity_level] as any || 'moderado');
+                        const calculatedTdee = calculateTDEE(bmr, activityMap[userProfile.activity_level] as any || 'moderado');
+                        setTdee(calculatedTdee);
+
+                        // Fix 2: Use calculateTargetCalories + calculateMacros
                         const goalMap: Record<string, string> = {
-                            'Definir': 'perdida_peso',
-                            'Mantener': 'mantenimiento',
-                            'Volumen': 'ganancia_muscular'
+                            'Definir': 'Definir',
+                            'Mantener': 'Mantener',
+                            'Volumen': 'Volumen'
                         };
-                        const macros = calculateMacros(tdee, goalMap[userProfile.goal] as any || 'mantenimiento', userProfile.weight_kg);
+                        const goal = goalMap[userProfile.goal] as 'Definir' | 'Mantener' | 'Volumen' || 'Mantener';
+                        const mode = userProfile.goal_speed || 'moderado';
+
+                        const targetCals = calculateTargetCalories(calculatedTdee, goal, mode as any, userProfile.gender);
+                        const macros = calculateMacros(targetCals, userProfile.diet_type || 'Estándar');
 
                         setTargetCalories(macros.calories);
                         setTargetProtein(macros.protein_g);
@@ -95,8 +108,17 @@ export default function MealGeneratorPage() {
         setGenerating(true);
         setTimeout(() => {
             const conditions = dietType === 'diabetes_friendly' ? ['diabetes_type_2'] : [];
-            const plan = generateDayMealPlan(targetCalories, targetProtein, numMeals, undefined, dietType, conditions);
-            setMealPlan(plan);
+
+            if (mode === 'daily') {
+                const plan = generateDayMealPlan(targetCalories, targetProtein, numMeals, undefined, dietType, conditions);
+                setMealPlan(plan);
+                setWeeklyPlan(null);
+            } else {
+                const plan = generateWeeklyMealPlan(targetCalories, targetProtein, numMeals, undefined, dietType, conditions);
+                setWeeklyPlan(plan);
+                setMealPlan(null);
+                setActiveDay(0);
+            }
             setGenerating(false);
         }, 500);
     };
@@ -119,34 +141,52 @@ export default function MealGeneratorPage() {
     };
 
     const handleSave = async () => {
-        if (!mealPlan || !profile) return;
+        if ((!mealPlan && !weeklyPlan) || !profile) return;
         setSaving(true);
         try {
-            const entries = [];
-            for (const meal of mealPlan.meals) {
-                // Determine meal_type string expected by DB
-                const dbMealType = meal.type_es;
+            const entries: any[] = [];
 
-                for (const item of meal.items) {
-                    entries.push({
-                        user_id: profile.user_id,
-                        log_date: getUserLocalDate(),
-                        meal_type: dbMealType as any,
-                        food_name: item.food.name_es || item.food.name,
-                        grams: item.portion_g,
-                        calories: item.macros.kcal,
-                        protein_g: item.macros.protein,
-                        carbs_g: item.macros.carbs,
-                        fat_g: item.macros.fat,
-                    });
-                }
+            if (mode === 'daily' && mealPlan) {
+                // Save Single Day (Today)
+                const todayDate = getUserLocalDate();
+                addEntriesForPlan(entries, mealPlan, todayDate);
+            } else if (mode === 'weekly' && weeklyPlan) {
+                // Save Week (Next 7 days starting today)
+                const today = new Date();
+                weeklyPlan.days.forEach((dayPlan, index) => {
+                    const dateInfo = new Date(today);
+                    dateInfo.setDate(today.getDate() + index);
+                    const dateStr = getUserLocalDate(dateInfo);
+                    addEntriesForPlan(entries, dayPlan, dateStr);
+                });
             }
+
             await saveMealPlan(entries);
             router.push('/dashboard/tracking');
         } catch (e) {
             console.error(e);
         } finally {
             setSaving(false);
+        }
+    };
+
+    const addEntriesForPlan = (entries: any[], plan: MealPlan, dateStr: string) => {
+        if (!profile) return;
+        for (const meal of plan.meals) {
+            const dbMealType = meal.type_es;
+            for (const item of meal.items) {
+                entries.push({
+                    user_id: profile.user_id,
+                    log_date: dateStr,
+                    meal_type: dbMealType,
+                    food_name: item.food.name_es || item.food.name,
+                    grams: item.portion_g,
+                    calories: item.macros.kcal,
+                    protein_g: item.macros.protein,
+                    carbs_g: item.macros.carbs,
+                    fat_g: item.macros.fat,
+                });
+            }
         }
     };
 
@@ -182,6 +222,25 @@ export default function MealGeneratorPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
                 >
+                    {/* Goal Stats Card */}
+                    {profile && (
+                        <Card className="p-4 mb-4 bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
+                                    <Target className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                        Meta: {calculateProjection(profile.weight_kg, profile.target_weight_kg, tdee, profile.goal as any, profile.goal_speed as any || 'moderado').target_date}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Llegarás en aprox. {calculateProjection(profile.weight_kg, profile.target_weight_kg, tdee, profile.goal as any, profile.goal_speed as any || 'moderado').weeks} semanas
+                                    </p>
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+
                     <Card className="p-5 mb-6">
                         <h2 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <Target className="h-5 w-5 text-purple-500" />
@@ -207,6 +266,22 @@ export default function MealGeneratorPage() {
                                     className="text-center text-lg font-semibold"
                                 />
                             </div>
+                        </div>
+
+                        {/* Mode Selection */}
+                        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mb-4">
+                            <button
+                                onClick={() => setMode('daily')}
+                                className={`flex-1 py-1.5 text-sm font-medium rounded-md transition ${mode === 'daily' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                            >
+                                Diario (1 Día)
+                            </button>
+                            <button
+                                onClick={() => setMode('weekly')}
+                                className={`flex-1 py-1.5 text-sm font-medium rounded-md transition ${mode === 'weekly' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                            >
+                                Semanal (7 Días)
+                            </button>
                         </div>
 
                         <div className="mb-4">
@@ -260,13 +335,13 @@ export default function MealGeneratorPage() {
                         </Button>
 
                         {/* Save Button */}
-                        {mealPlan && (
+                        {(mealPlan || weeklyPlan) && (
                             <Button
                                 onClick={handleSave}
                                 disabled={saving}
                                 className="w-full mt-3 py-3 text-lg bg-green-600 hover:bg-green-700 text-white"
                             >
-                                {saving ? 'Guardando...' : 'Guardar en Diario de Seguimiento'}
+                                {saving ? 'Guardando...' : (mode === 'weekly' ? 'Guardar Semana' : 'Guardar en Diario')}
                             </Button>
                         )}
                     </Card>
@@ -276,15 +351,33 @@ export default function MealGeneratorPage() {
                 <AnimatePresence mode="wait">
                     {mealPlan && (
                         <motion.div
-                            key={mealPlan.id}
+                            key={mode === 'daily' ? mealPlan!.id : weeklyPlan!.id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
                         >
-                            {/* Daily Totals */}
+                            {/* Weekly Tabs */}
+                            {mode === 'weekly' && weeklyPlan && (
+                                <div className="flex overflow-x-auto gap-2 mb-4 pb-2 no-scrollbar">
+                                    {weeklyPlan.days.map((day, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setActiveDay(idx)}
+                                            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition ${activeDay === idx
+                                                ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                                                : 'bg-white text-gray-500 border border-gray-200'
+                                                }`}
+                                        >
+                                            Día {idx + 1}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Stats Card - Shows either Daily or Weekly avg */}
                             <Card className="p-5 mb-4 bg-gradient-to-r from-orange-500 to-red-500 text-white">
                                 <div className="flex justify-between items-center mb-3">
-                                    <h3 className="font-semibold">Total del Día</h3>
+                                    <h3 className="font-semibold">{mode === 'weekly' ? 'Promedio Diario' : 'Total del Día'}</h3>
                                     <button
                                         onClick={handleGenerate}
                                         className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition"
@@ -292,42 +385,49 @@ export default function MealGeneratorPage() {
                                         <RefreshCw className="h-4 w-4" />
                                     </button>
                                 </div>
-                                <div className="grid grid-cols-4 gap-3 text-center">
-                                    <div>
-                                        <div className="text-2xl font-bold">{mealPlan.totals.kcal}</div>
-                                        <div className="text-xs opacity-80">🔥 kcal</div>
+                                {mode === 'weekly' && weeklyPlan ? (
+                                    <div className="grid grid-cols-4 gap-3 text-center">
+                                        <div>
+                                            <div className="text-2xl font-bold">{weeklyPlan.week_totals.kcal}</div>
+                                            <div className="text-xs opacity-80">🔥 kcal</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold">{weeklyPlan.week_totals.protein}</div>
+                                            <div className="text-xs opacity-80">🥩 Prot</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold">{weeklyPlan.week_totals.carbs}</div>
+                                            <div className="text-xs opacity-80">🍞 Carb</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold">{weeklyPlan.week_totals.fat}</div>
+                                            <div className="text-xs opacity-80">🥑 Gras</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="text-2xl font-bold">{Math.round(mealPlan.totals.protein)}</div>
-                                        <div className="text-xs opacity-80">🥩 Proteína</div>
+                                ) : (
+                                    <div className="grid grid-cols-4 gap-3 text-center">
+                                        <div>
+                                            <div className="text-2xl font-bold">{mealPlan!.totals.kcal}</div>
+                                            <div className="text-xs opacity-80">🔥 kcal</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold">{Math.round(mealPlan!.totals.protein)}</div>
+                                            <div className="text-xs opacity-80">🥩 Prot</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold">{Math.round(mealPlan!.totals.carbs)}</div>
+                                            <div className="text-xs opacity-80">🍞 Carb</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold">{Math.round(mealPlan!.totals.fat)}</div>
+                                            <div className="text-xs opacity-80">🥑 Gras</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="text-2xl font-bold">{Math.round(mealPlan.totals.carbs)}</div>
-                                        <div className="text-xs opacity-80">🍞 Carbos</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-2xl font-bold">{Math.round(mealPlan.totals.fat)}</div>
-                                        <div className="text-xs opacity-80">🥑 Grasa</div>
-                                    </div>
-                                </div>
-
-                                {/* Progress bar */}
-                                <div className="mt-4">
-                                    <div className="flex justify-between text-xs mb-1">
-                                        <span>Objetivo: {targetCalories} kcal</span>
-                                        <span>{Math.round((mealPlan.totals.kcal / targetCalories) * 100)}%</span>
-                                    </div>
-                                    <div className="h-2 bg-white/30 rounded-full overflow-hidden">
-                                        <div
-                                            className={`h-full ${getProgressColor(mealPlan.totals.kcal, targetCalories)} transition-all`}
-                                            style={{ width: `${Math.min((mealPlan.totals.kcal / targetCalories) * 100, 100)}%` }}
-                                        />
-                                    </div>
-                                </div>
+                                )}
                             </Card>
 
-                            {/* Individual Meals */}
-                            {mealPlan.meals.map((meal, idx) => (
+                            {/* Render Daily Meals or Active Day of Week */}
+                            {(mode === 'daily' ? mealPlan!.meals : weeklyPlan!.days[activeDay].meals).map((meal, idx) => (
                                 <motion.div
                                     key={meal.id}
                                     initial={{ opacity: 0, x: -20 }}
@@ -382,9 +482,12 @@ export default function MealGeneratorPage() {
 
                             {/* Shopping List */}
                             <Card className="p-4 bg-gray-50 dark:bg-gray-800/50">
-                                <h4 className="text-sm font-medium text-gray-500 mb-2">🛒 Lista de compras</h4>
+                                <h4 className="text-sm font-medium text-gray-500 mb-2">🛒 Lista de compras ({(mode === 'weekly' ? 'Semana' : 'Día')})</h4>
                                 <div className="flex flex-wrap gap-2">
-                                    {Array.from(new Set(mealPlan.meals.flatMap(m => m.items.map(i => i.food)))).map((food, idx) => (
+                                    {Array.from(new Set(
+                                        (mode === 'daily' ? mealPlan!.meals : weeklyPlan!.days.flatMap(d => d.meals))
+                                            .flatMap(m => m.items.map(i => i.food))
+                                    )).map((food, idx) => (
                                         <span
                                             key={idx}
                                             className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-xs"
@@ -399,7 +502,7 @@ export default function MealGeneratorPage() {
                 </AnimatePresence>
 
                 {/* Empty State */}
-                {!mealPlan && !generating && (
+                {!mealPlan && !weeklyPlan && !generating && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}

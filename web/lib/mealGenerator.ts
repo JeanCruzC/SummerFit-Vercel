@@ -391,3 +391,49 @@ export function formatMealPlan(plan: MealPlan): string {
 
     return output;
 }
+
+export interface WeeklyMealPlan {
+    id: string;
+    days: MealPlan[];
+    week_totals: MacroTotals;
+}
+
+// Generate a full week meal plan (7 distinct days)
+export function generateWeeklyMealPlan(
+    targetCalories: number,
+    targetProtein: number,
+    numMeals: 3 | 4 | 5 = 4,
+    availableFoods?: string[],
+    dietType: string = 'balanced',
+    conditions: string[] = []
+): WeeklyMealPlan {
+    const days: MealPlan[] = [];
+    const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+    for (let i = 0; i < 7; i++) {
+        // Add variation logic here if needed (e.g., rotate proteins)
+        // For now, randomness in generateSimpleMeal provides variety
+        const plan = generateDayMealPlan(targetCalories, targetProtein, numMeals, availableFoods, dietType, conditions);
+
+        // Enhance ID to prevent collisions
+        plan.id = `day_${i}_${Date.now()}_${Math.random()}`;
+        plan.name_es = `Día ${i + 1} - ${dayNames[i]}`;
+
+        days.push(plan);
+    }
+
+    // Calculate weekly average totals
+    const totalMacros = sumMacros(days.map(d => d.totals));
+    const weeklyAvg: MacroTotals = {
+        kcal: Math.round(totalMacros.kcal / 7),
+        protein: Math.round(totalMacros.protein / 7),
+        carbs: Math.round(totalMacros.carbs / 7),
+        fat: Math.round(totalMacros.fat / 7),
+    };
+
+    return {
+        id: `week_${Date.now()}`,
+        days,
+        week_totals: weeklyAvg
+    };
+}

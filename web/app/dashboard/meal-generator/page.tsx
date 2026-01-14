@@ -377,9 +377,9 @@ export default function MealGeneratorPage() {
 
                 {/* Generated Meal Plan */}
                 <AnimatePresence mode="wait">
-                    {mealPlan && (
+                    {(mealPlan || weeklyPlan) && (
                         <motion.div
-                            key={mode === 'daily' ? mealPlan!.id : weeklyPlan!.id}
+                            key={mode === 'daily' ? mealPlan?.id : weeklyPlan?.id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}

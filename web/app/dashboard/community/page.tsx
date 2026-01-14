@@ -310,7 +310,7 @@ export default function CommunityPage() {
                                                 <div className="mt-6 flex gap-2">
                                                     {friendship?.status === 'accepted' ? (
                                                         <Link href={`/dashboard/community/profile/${user.user_id}`} className="w-full">
-                                                            <Button className="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 dark:bg-transparent dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors">
+                                                            <Button variant="outline" className="w-full bg-white hover:bg-gray-50 dark:bg-transparent transition-colors">
                                                                 <User className="h-4 w-4 mr-2" /> Ver Perfil
                                                             </Button>
                                                         </Link>

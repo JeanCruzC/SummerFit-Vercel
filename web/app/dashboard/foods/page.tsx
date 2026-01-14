@@ -6,6 +6,7 @@ import { Search, Plus, X, ChefHat, Flame } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, Button, Input, Alert } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
+import { useLanguage } from "@/lib/i18n/context";
 import { searchFoods, getFoodCategories, addMealEntry, getProfile, getRandomFoods } from "@/lib/supabase/database";
 import { FoodItem, UserProfile } from "@/types";
 
@@ -38,11 +39,50 @@ const getCookingStateColor = (state: string | undefined): string => {
     return colors[state || ""] || "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400";
 };
 
-// Top food bases for quick filter
+// Top food bases for quick filter with translations
 const TOP_FOOD_BASES = [
-    "Beef", "Chicken", "Pork", "Fish", "Turkey", "Lamb",
-    "Beans", "Rice", "Potatoes", "Cheese", "Milk", "Eggs",
+    { en: "Beef", es: "Res" },
+    { en: "Chicken", es: "Pollo" },
+    { en: "Pork", es: "Cerdo" },
+    { en: "Fish", es: "Pescado" },
+    { en: "Turkey", es: "Pavo" },
+    { en: "Lamb", es: "Cordero" },
+    { en: "Beans", es: "Frijoles" },
+    { en: "Rice", es: "Arroz" },
+    { en: "Potatoes", es: "Papas" },
+    { en: "Cheese", es: "Queso" },
+    { en: "Milk", es: "Leche" },
+    { en: "Eggs", es: "Huevos" },
 ];
+
+// Category translations
+const CATEGORY_TRANSLATIONS: Record<string, string> = {
+    'American Indian/Alaska Native Foods': 'Alimentos Indígenas Americanos',
+    'Baked Products': 'Productos de Panadería',
+    'Beef Products': 'Productos de Res',
+    'Cereal Grains and Pasta': 'Cereales y Pastas',
+    'Dairy and Egg Products': 'Lácteos y Huevos',
+    'Finfish and Shellfish Products': 'Pescados y Mariscos',
+    'Fruits and Fruit Juices': 'Frutas y Jugos',
+    'Lamb, Veal, and Game Products': 'Cordero, Ternera y Caza',
+    'Legumes and Legume Products': 'Legumbres',
+    'Nut and Seed Products': 'Frutos Secos y Semillas',
+    'Pork Products': 'Productos de Cerdo',
+    'Poultry Products': 'Aves de Corral',
+    'Restaurant Foods': 'Comida de Restaurante',
+    'Sausages and Luncheon Meats': 'Embutidos y Carnes Frías',
+    'Vegetables and Vegetable Products': 'Verduras y Vegetales',
+    'Sweets': 'Dulces y Postres',
+    'Fast Foods': 'Comida Rápida',
+    'Meals, Entrees, and Side Dishes': 'Platos Preparados',
+    'Fats and Oils': 'Grasas y Aceites',
+    'Beverages': 'Bebidas',
+    'Spices and Herbs': 'Especias y Hierbas',
+    'Snacks': 'Snacks y Botanas',
+    'Soups, Sauces, and Gravies': 'Sopas, Salsas y Aderezos',
+    'Baby Foods': 'Alimentos para Bebés',
+    'Breakfast Cereals': 'Cereales de Desayuno'
+};
 
 const TRANSLATIONS = {
     en: {
@@ -196,8 +236,17 @@ export default function FoodsPage() {
     };
 
     const hasActiveFilters = selectedCategory || selectedCookingState || selectedFoodBase;
-    const lang = profile?.language === 'en' ? 'en' : 'es'; // Default to Spanish if not set or explicitly es
+    const { lang: globalLang } = useLanguage();
+    const lang = globalLang; // Use global language context
     const t = TRANSLATIONS[lang];
+
+    // Helper to get translated category
+    const getCategoryName = (cat: string) => {
+        if (lang === 'es') {
+            return CATEGORY_TRANSLATIONS[cat] || cat;
+        }
+        return cat;
+    };
 
     const getFoodName = (f: FoodItem) => {
         if (lang === 'es' && f.name_es) return f.name_es;
@@ -259,7 +308,7 @@ export default function FoodsPage() {
                 <div className="mt-4">
                     <div className="flex items-center gap-2 mb-2">
                         <Flame className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Food Type</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.foodType}</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <button
@@ -267,18 +316,18 @@ export default function FoodsPage() {
                             className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${!selectedFoodBase ? "bg-green-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"
                                 }`}
                         >
-                            All Types
+                            {t.allTypes}
                         </button>
                         {TOP_FOOD_BASES.map(base => (
                             <button
-                                key={base}
-                                onClick={() => setSelectedFoodBase(base)}
-                                className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedFoodBase === base
+                                key={base.en}
+                                onClick={() => setSelectedFoodBase(base.en)}
+                                className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedFoodBase === base.en
                                     ? "bg-green-500 text-white"
                                     : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"
                                     }`}
                             >
-                                {base}
+                                {lang === 'es' ? base.es : base.en}
                             </button>
                         ))}
                     </div>
@@ -287,10 +336,10 @@ export default function FoodsPage() {
                 {/* Category filter - Dynamic from DB */}
                 <div className="mt-4">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.category}</span>
                         {hasActiveFilters && (
                             <button onClick={clearFilters} className="text-xs text-purple-600 hover:underline">
-                                Clear all filters
+                                {t.clearFilters}
                             </button>
                         )}
                     </div>
@@ -299,7 +348,7 @@ export default function FoodsPage() {
                             onClick={() => setSelectedCategory("")}
                             className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${!selectedCategory ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"}`}
                         >
-                            All Categories
+                            {t.allCategories}
                         </button>
                         {categories.slice(0, 10).map(cat => (
                             <button
@@ -307,7 +356,7 @@ export default function FoodsPage() {
                                 onClick={() => setSelectedCategory(cat)}
                                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedCategory === cat ? "bg-purple-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"}`}
                             >
-                                {cat}
+                                {getCategoryName(cat)}
                             </button>
                         ))}
                     </div>

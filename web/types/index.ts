@@ -300,12 +300,23 @@ export interface Friend extends UserProfile {
 export interface FeedItem {
     id: string;
     user_id: string;
-    type: 'post' | 'workout' | 'weight_goal' | 'streak' | 'milestone' | 'recipe';
+    type: 'post' | 'workout' | 'streak' | 'weight_goal';
     content: string;
     metadata?: any;
-    images?: string[];
-    likes_count: number;
     created_at: string;
-    // Joined
+    user?: UserProfile; // Joined profile
+
+    // Interaction Stats
+    likes_count?: number;
+    comments_count?: number;
+    has_liked?: boolean; // Does current user like this?
+}
+
+export interface FeedComment {
+    id: string;
+    post_id: string;
+    user_id: string;
+    content: string;
+    created_at: string;
     user?: UserProfile;
 }

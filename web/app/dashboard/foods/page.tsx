@@ -11,13 +11,13 @@ import { FoodItem, UserProfile } from "@/types";
 
 // Cooking state filter options with colors
 const COOKING_STATES = [
-    { value: "", label: "All States", icon: "🍽️", color: "gray" },
-    { value: "raw", label: "Raw", icon: "🥩", color: "red" },
-    { value: "cooked", label: "Cooked", icon: "🍳", color: "green" },
-    { value: "frozen", label: "Frozen", icon: "🧊", color: "blue" },
-    { value: "canned", label: "Canned", icon: "🥫", color: "amber" },
-    { value: "dried", label: "Dried", icon: "🌾", color: "yellow" },
-    { value: "roasted", label: "Roasted", icon: "🔥", color: "orange" },
+    { value: "", label: "All States", label_es: "Todos", icon: "🍽️", color: "gray" },
+    { value: "raw", label: "Raw", label_es: "Crudo", icon: "🥩", color: "red" },
+    { value: "cooked", label: "Cooked", label_es: "Cocido", icon: "🍳", color: "green" },
+    { value: "frozen", label: "Frozen", label_es: "Congelado", icon: "🧊", color: "blue" },
+    { value: "canned", label: "Canned", label_es: "Enlatado", icon: "🥫", color: "amber" },
+    { value: "dried", label: "Dried", label_es: "Seco", icon: "🌾", color: "yellow" },
+    { value: "roasted", label: "Roasted", label_es: "Asado", icon: "🔥", color: "orange" },
 ];
 
 // Color classes for cooking state badges
@@ -43,6 +43,59 @@ const TOP_FOOD_BASES = [
     "Beef", "Chicken", "Pork", "Fish", "Turkey", "Lamb",
     "Beans", "Rice", "Potatoes", "Cheese", "Milk", "Eggs",
 ];
+
+const TRANSLATIONS = {
+    en: {
+        title: "Food Search",
+        subtitle: "USDA Database with 8,000+ foods.",
+        searchPlaceholder: "Search food (e.g: chicken, rice, apple...)",
+        searching: "Searching...",
+        search: "Search",
+        cookingState: "Cooking State",
+        foodType: "Food Type",
+        allTypes: "All Types",
+        category: "Category",
+        clearFilters: "Clear all filters",
+        allCategories: "All Categories",
+        results: "results",
+        filteredBy: "Filtered by:",
+        noResults: "No foods match your filters.",
+        clear: "Clear filters",
+        amount: "Amount (grams)",
+        addToDay: "Add to my day",
+        adding: "Adding...",
+        added: "✅ Food added to your log.",
+        nutritionDetails: "Nutrition Details",
+        minerals: "Minerals",
+        vitamins: "Vitamins",
+        meal: "Meal"
+    },
+    es: {
+        title: "Buscador de Alimentos",
+        subtitle: "Base de datos USDA con 8,000+ alimentos.",
+        searchPlaceholder: "Buscar alimento (ej: pollo, arroz, manzana...)",
+        searching: "Buscando...",
+        search: "Buscar",
+        cookingState: "Estado de Cocción",
+        foodType: "Tipo de Alimento",
+        allTypes: "Todos",
+        category: "Categoría",
+        clearFilters: "Borrar filtros",
+        allCategories: "Todas",
+        results: "resultados",
+        filteredBy: "Filtrado por:",
+        noResults: "No se encontraron alimentos.",
+        clear: "Limpiar filtros",
+        amount: "Cantidad (gramos)",
+        addToDay: "Añadir al día",
+        adding: "Añadiendo...",
+        added: "✅ Alimento añadido.",
+        nutritionDetails: "Detalles Nutricionales",
+        minerals: "Minerales",
+        vitamins: "Vitaminas",
+        meal: "Comida"
+    }
+};
 
 export default function FoodsPage() {
     const router = useRouter();
@@ -143,15 +196,22 @@ export default function FoodsPage() {
     };
 
     const hasActiveFilters = selectedCategory || selectedCookingState || selectedFoodBase;
+    const lang = profile?.language === 'en' ? 'en' : 'es'; // Default to Spanish if not set or explicitly es
+    const t = TRANSLATIONS[lang];
+
+    const getFoodName = (f: FoodItem) => {
+        if (lang === 'es' && f.name_es) return f.name_es;
+        return f.display_name || f.name;
+    };
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold">Food Search</h1>
-                <p className="text-gray-500 mt-1">USDA Database with 8,000+ foods.</p>
+                <h1 className="text-3xl font-bold">{t.title}</h1>
+                <p className="text-gray-500 mt-1">{t.subtitle}</p>
             </div>
 
-            {added && <Alert type="success">✅ Food added to your log.</Alert>}
+            {added && <Alert type="success">{t.added}</Alert>}
 
             {/* Search */}
             <Card>
@@ -160,7 +220,7 @@ export default function FoodsPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Search food (e.g: chicken, rice, apple...)"
+                            placeholder={t.searchPlaceholder}
                             value={query}
                             onChange={e => setQuery(e.target.value)}
                             onKeyDown={e => e.key === "Enter" && handleSearch()}
@@ -168,7 +228,7 @@ export default function FoodsPage() {
                         />
                     </div>
                     <Button onClick={handleSearch} disabled={loading}>
-                        {loading ? "Searching..." : "Search"}
+                        {loading ? t.searching : t.search}
                     </Button>
                 </div>
 
@@ -176,7 +236,7 @@ export default function FoodsPage() {
                 <div className="mt-4">
                     <div className="flex items-center gap-2 mb-2">
                         <ChefHat className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Cooking State</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.cookingState}</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {COOKING_STATES.map(state => (
@@ -189,7 +249,7 @@ export default function FoodsPage() {
                                     }`}
                             >
                                 <span>{state.icon}</span>
-                                {state.label}
+                                {lang === 'es' ? state.label_es : state.label}
                             </button>
                         ))}
                     </div>
@@ -279,7 +339,7 @@ export default function FoodsPage() {
                                 >
                                     <div className="flex justify-between items-start">
                                         <div className="flex-1 min-w-0">
-                                            <div className="font-medium text-gray-900 dark:text-white truncate">{food.display_name || food.name}</div>
+                                            <div className="font-medium text-gray-900 dark:text-white truncate">{getFoodName(food)}</div>
                                             <div className="flex flex-wrap gap-1.5 text-xs mt-1">
                                                 {food.cooking_state && <span className={`${getCookingStateColor(food.cooking_state)} px-1.5 py-0.5 rounded font-medium`}>{food.cooking_state}</span>}
                                                 {food.category && <span className="text-gray-500">{food.category}</span>}
@@ -325,7 +385,7 @@ export default function FoodsPage() {
                             <X className="h-5 w-5" />
                         </button>
 
-                        <h3 className="text-xl font-semibold pr-8">{selectedFood.display_name || selectedFood.name}</h3>
+                        <h3 className="text-xl font-semibold pr-8">{getFoodName(selectedFood)}</h3>
                         {selectedFood.display_name && selectedFood.display_name !== selectedFood.name && (
                             <p className="text-xs text-gray-400 mt-0.5 pr-8">{selectedFood.name}</p>
                         )}
@@ -336,7 +396,7 @@ export default function FoodsPage() {
 
                         <div className="mt-4">
                             <Input
-                                label="Amount (grams)"
+                                label={t.amount}
                                 type="number"
                                 min={1}
                                 value={grams}
@@ -388,7 +448,7 @@ export default function FoodsPage() {
 
                                     {/* Detailed nutrition */}
                                     <div className="border-t pt-3 dark:border-gray-700">
-                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Nutrition Details</h4>
+                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.nutritionDetails}</h4>
                                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                             <div className="flex justify-between"><span className="text-gray-500">Fiber</span><span className="font-medium">{n.fiber}g</span></div>
                                             <div className="flex justify-between"><span className="text-gray-500">Sugar</span><span className="font-medium">{n.sugar}g</span></div>
@@ -399,7 +459,7 @@ export default function FoodsPage() {
 
                                     {/* Minerals */}
                                     <div className="border-t pt-3 dark:border-gray-700">
-                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Minerals</h4>
+                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.minerals}</h4>
                                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                             <div className="flex justify-between"><span className="text-gray-500">Sodium</span><span className="font-medium">{n.sodium}mg</span></div>
                                             <div className="flex justify-between"><span className="text-gray-500">Potassium</span><span className="font-medium">{n.potassium}mg</span></div>
@@ -410,7 +470,7 @@ export default function FoodsPage() {
 
                                     {/* Vitamins */}
                                     <div className="border-t pt-3 dark:border-gray-700">
-                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Vitamins</h4>
+                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.vitamins}</h4>
                                         <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-sm">
                                             <div className="flex justify-between"><span className="text-gray-500">Vit. A</span><span className="font-medium">{n.vitaminA} IU</span></div>
                                             <div className="flex justify-between"><span className="text-gray-500">Vit. C</span><span className="font-medium">{n.vitaminC}mg</span></div>
@@ -422,7 +482,7 @@ export default function FoodsPage() {
                         })()}
 
                         <div className="mt-4">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Meal</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1.5">{t.meal}</label>
                             <div className="flex gap-2">
                                 {(["Desayuno", "Almuerzo", "Cena", "Snack"] as const).map(m => (
                                     <button
@@ -437,11 +497,12 @@ export default function FoodsPage() {
                         </div>
 
                         <Button onClick={handleAddToDay} disabled={adding} className="w-full mt-6">
-                            <Plus className="h-4 w-4" /> {adding ? "Adding..." : "Add to my day"}
+                            <Plus className="h-4 w-4" /> {adding ? t.adding : t.addToDay}
                         </Button>
                     </Card>
                 </div>
-            )}
-        </motion.div>
+            )
+            }
+        </motion.div >
     );
 }

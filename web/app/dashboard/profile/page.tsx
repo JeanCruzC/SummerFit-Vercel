@@ -4,12 +4,18 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Save, User } from "lucide-react";
 import { motion } from "framer-motion";
-import { Card, Button, Input, Select, Alert } from "@/components/ui";
+import { Card, Button, Input, Select, Alert, Switch } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile, upsertProfile } from "@/lib/supabase/database";
 import { calculateBMI, getBMICategory, calculateIdealWeightRange } from "@/lib/calculations";
 import { DIET_INFO } from "@/lib/diets";
 import { UserProfile, DietType } from "@/types";
+import dynamic from 'next/dynamic';
+
+const LocationPicker = dynamic(() => import('@/components/ui/LocationPicker'), {
+    ssr: false,
+    loading: () => <div className="h-[300px] w-full bg-gray-100 rounded-xl animate-pulse flex items-center justify-center text-gray-400">Cargando mapa...</div>
+});
 
 const DIET_OPTIONS: { value: DietType; label: string }[] = [
     { value: "Estándar", label: "Estándar" },
@@ -59,6 +65,16 @@ export default function ProfilePage() {
         activity_level: "Moderado",
         goal_speed: "moderado",
         diet_type: "Estándar",
+        language: "es",
+        full_name: "",
+        // Social defaults
+        phone: "",
+        location_name: "",
+        is_public_profile: true,
+        is_public_routine: true,
+        is_public_nutrition: false,
+        latitude: 19.4326, // Default CDMX
+        longitude: -99.1332
     });
 
     useEffect(() => {
@@ -149,6 +165,12 @@ export default function ProfilePage() {
                         value={profile.weight_kg}
                         onChange={e => handleChange("weight_kg", parseFloat(e.target.value) || 0)}
                     />
+                    <Select
+                        label="Idioma / Language"
+                        options={[{ value: "es", label: "Español" }, { value: "en", label: "English" }]}
+                        value={profile.language || 'es'}
+                        onChange={e => handleChange("language", e.target.value)}
+                    />
                 </div>
 
                 <div className="mt-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
@@ -158,6 +180,76 @@ export default function ProfilePage() {
                     </div>
                     <div className="mt-2 text-xs text-gray-500">
                         Peso ideal para tu altura: {idealRange.min} - {idealRange.max} kg
+                    </div>
+                </div>
+            </Card>
+
+            {/* Social & Privacy */}
+            <Card>
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <span className="text-xl">🌍</span> Comunidad y Privacidad
+                </h2>
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input
+                            label="Teléfono (Opcional)"
+                            placeholder="+52 55 1234 5678"
+                            type="tel"
+                            value={profile.phone || ''}
+                            onChange={e => handleChange("phone", e.target.value)}
+                        />
+                        <Input
+                            label="Ciudad / Zona"
+                            placeholder="Ej. Condesa, CDMX"
+                            value={profile.location_name || ''}
+                            onChange={e => handleChange("location_name", e.target.value)}
+                        />
+                    </div>
+
+                    <LocationPicker
+                        latitude={profile.latitude}
+                        longitude={profile.longitude}
+                        onLocationSelect={(lat, lng) => {
+                            handleChange("latitude", lat);
+                            handleChange("longitude", lng);
+                        }}
+                    />
+
+                    <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Configuración de Privacidad</h3>
+
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Perfil Público</label>
+                                <p className="text-xs text-gray-500">Permitir que otros te encuentren y te envíen solicitudes de amistad.</p>
+                            </div>
+                            <Switch
+                                checked={profile.is_public_profile !== false}
+                                onCheckedChange={(checked) => handleChange("is_public_profile", checked)}
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Compartir Rutina</label>
+                                <p className="text-xs text-gray-500">Tus amigos podrán ver tu plan de entrenamiento actual.</p>
+                            </div>
+                            <Switch
+                                checked={profile.is_public_routine !== false}
+                                onCheckedChange={(checked) => handleChange("is_public_routine", checked)}
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Compartir Comidas</label>
+                                <p className="text-xs text-gray-500">Tus amigos podrán ver tus registros de comida (macros).</p>
+                            </div>
+                            <Switch
+                                checked={profile.is_public_nutrition === true}
+                                onCheckedChange={(checked) => handleChange("is_public_nutrition", checked)}
+                            />
+                        </div>
                     </div>
                 </div>
             </Card>

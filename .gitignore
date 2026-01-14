@@ -29,3 +29,8 @@ ts-debug.log*
 .vercel
 musclewiki_complete_data/
 data/usda/
+
+# Python
+venv/
+__pycache__/
+*.pyc

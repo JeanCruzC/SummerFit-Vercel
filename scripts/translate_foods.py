@@ -1,163 +1,154 @@
-#!/usr/bin/env python3
-"""
-Food Database Translator and Cleaner
-
-This script:
-1. Translates food names from English to Spanish using deep-translator
-2. Normalizes categories
-3. Adds a 'food_type' column (basic/prepared)
-
-Usage:
-    pip install deep-translator textblob
-    python scripts/translate_foods.py
-"""
 
 import os
 import time
 import json
-import logging
-from pathlib import Path
-from typing import List, Dict, Any
+from supabase import create_client, Client
+from dotenv import load_dotenv
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# Load environment variables
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', 'web', '.env.local')
+load_dotenv(dotenv_path)
 
-try:
-    from supabase import create_client, Client
-except ImportError:
-    print("❌ supabase-py not installed. Run: pip install supabase")
+# Configuration
+SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+# Use Service Key if available to bypass RLS policies for updates
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") # Can be Qwen key
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1") # Default or Custom (e.g. Qwen)
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini") # Default or Custom (e.g. qwen-turbo)
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    print("Error: Missing Supabase credentials in .env")
     exit(1)
 
-try:
-    from deep_translator import GoogleTranslator
-except ImportError:
-    print("❌ deep-translator not installed. Run: pip install deep-translator")
-    exit(1)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# === CONFIG ===
-
-BATCH_SIZE = 50
-MAX_RETRIES = 3
-
-# Category mapping (English -> Spanish)
-CATEGORY_MAP = {
-    "Meats": "Carnes",
-    "Vegetables": "Verduras",
-    "Fruits": "Frutas",
-    "Fish": "Pescados",
-    "Beans and Lentils": "Legumbres",
-    "Grains and Pasta": "Granos y Pasta",
-    "Baked Foods": "Panadería",
-    "Soups and Sauces": "Sopas y Salsas",
-    "American Indian": "Comida Nativa",
-    "Dairy and Egg Products": "Lácteos y Huevos",
-    "Fats and Oils": "Grasas y Aceites",
-    "Poultry Products": "Aves y Pollo",
-    "Breakfast Cereals": "Cereales",
-    "Snacks": "Snacks",
-    "Sweets": "Dulces",
-    "Baby Foods": "Bebés",
-    "Beverages": "Bebidas",
-}
-
-# Basic vs Prepared classification
-BASIC_CATS = [
-    "Meats", "Vegetables", "Fruits", "Fish", "Beans and Lentils", 
-    "Grains and Pasta", "Dairy and Egg Products", "Fats and Oils", 
-    "Poultry Products", "Pork Products", "Beef Products", "Finfish and Shellfish Products"
-]
-
-def get_supabase_client() -> Client:
-    """Create Supabase client from environment variables."""
-    # Try to load from web/.env.local first
-    env_path = Path(__file__).parent.parent / "web" / ".env.local"
-    if env_path.exists():
-        with open(env_path) as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, value = line.split("=", 1)
-                    os.environ.setdefault(key.strip(), value.strip())
-    
-    url = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
-    key = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
-    
-    if not url or not key:
-        raise ValueError("Missing credentials in web/.env.local")
-        
-    return create_client(url, key)
-
-def translate_batch(texts: List[str]) -> List[str]:
-    """Translate a batch of texts using Google Translator."""
+def translate_batch_openai(texts):
+    """Translate a list of texts using OpenAI for context-aware translation"""
     try:
-        translator = GoogleTranslator(source='en', target='es')
-        # deep-translator handles batches internally usually, but let's do it safely
-        translated = translator.translate_batch(texts)
-        return translated
-    except Exception as e:
-        print(f"⚠️ Translation error: {e}")
-        return texts  # Return original on error
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=OPENAI_API_KEY,
+            base_url=OPENAI_BASE_URL
+        )
+        
+        prompt = (
+            "Translate the following food names/descriptions from English to Spanish. "
+            "Keep the culinary context. Return ONLY a JSON array of strings. "
+            "IMPORTANT: The array MUST have exactly the same number of items as the input, preserving the order.\n\n"
+            f"{json.dumps(texts)}"
+        )
 
-def process_foods():
-    client = get_supabase_client()
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a professional culinary translator. You output valid JSON only."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3
+        )
+        
+        content = response.choices[0].message.content
+        # robust parsing
+        if "```json" in content:
+            content = content.replace("```json", "").replace("```", "")
+        
+        return json.loads(content)
+    except Exception as e:
+        print(f"OpenAI Error: {e}")
+        return None
+
+def translate_batch_google(texts):
+    """Fallback using googletrans if no API key"""
+    try:
+        from googletrans import Translator
+        translator = Translator()
+        results = []
+        for text in texts:
+             # Add tiny delay to avoid rate limits
+            time.sleep(0.1)
+            results.append(translator.translate(text, dest='es').text)
+        return results
+    except Exception as e:
+        print(f"GoogleTrans Error: {e}")
+        return None
+
+def main():
+    print("Starting Food Translation Script...")
     
-    # 1. Get total count
-    count = client.table("foods").select("id", count="exact").execute().count
-    print(f"📊 Total foods to process: {count}")
+    BATCH_SIZE = 40
+    print(f"Starting Food Translation Script (Batch Size: {BATCH_SIZE})...")
     
-    # 2. Process in batches
-    processed = 0
-    updated = 0
-    
-    # Check if 'name_es' column exists, if not we might need to add it or overwrite 'name'
-    # For now, we'll overwrite 'name' but maybe we should backup first?
-    # Let's check a sample first
-    
-    page = 0
-    while processed < count:
-        # Fetch batch
-        response = client.table("foods").select("*").range(processed, processed + BATCH_SIZE - 1).execute()
+    # Get total count first for progress calculation
+    try:
+        total_count = supabase.table('foods').select('id', count='exact', head=True).execute().count
+        print(f"Total foods to process: {total_count}")
+    except Exception as e:
+        print(f"Error getting count: {e}")
+        total_count = 8000
+
+    while True:
+        # 1. Fetch untranslated foods
+        response = supabase.table('foods').select('id, name').is_('name_es', 'null').limit(BATCH_SIZE).execute()
         foods = response.data
         
         if not foods:
+            print("All foods translated! Exiting.")
             break
-            
-        # Filter foods that look like English (heuristic: contain English words)
-        english_keywords = ["Chicken", "Rice", "Apple", "Bread", "Cheese", "with", "and", "Roasted", "Cooked"]
-        to_translate = []
-        indices = []
+
+        # Calculate progress
+        try:
+            current_translated = supabase.table('foods').select('id', count='exact', head=True).not_.is_('name_es', 'null').execute().count
+            percent = (current_translated / total_count) * 100
+            print(f"Progress: {current_translated}/{total_count} ({percent:.2f}%) - Translating batch of {len(foods)}...")
+        except:
+             print(f"Translating batch of {len(foods)}...")
         
+        # Prepare batches
+        names = [f['name'] for f in foods]
+        
+        translations = []
+        
+        if OPENAI_API_KEY:
+            translations = translate_batch_openai(names)
+        else:
+            try:
+                import googletrans
+                translations = translate_batch_google(names)
+            except ImportError:
+                print("Error: googletrans missing")
+                return
+
+        if not translations or len(translations) != len(foods):
+            print(f"Batch translation failed/mismatch (Got {len(translations) if translations else 0}/{len(foods)}). \n⚠️ Switching to robust one-by-one translation for this batch...")
+            
+            translations = []
+            for name in names:
+                try:
+                    # Translate single item using same function but list of 1
+                    single_res = translate_batch_openai([name]) if OPENAI_API_KEY else translate_batch_google([name])
+                    if single_res and len(single_res) == 1:
+                        translations.append(single_res[0])
+                        print(f"  ✓ Translated: {name[:20]}... -> {single_res[0][:20]}...")
+                    else:
+                        print(f"  ✗ Failed individual: {name}")
+                        translations.append(None) # Mark as failed/skip
+                    time.sleep(0.5) # Be gentle
+                except Exception as e:
+                     print(f"  Error translating {name}: {e}")
+                     translations.append(None)
+
+        # Update database (handle partials from fallback)
+        success_count = 0
         for i, food in enumerate(foods):
-            name = food.get("name", "")
-            # Simple heuristic: if it has English common words, translate it
-            if any(k.lower() in name.lower() for k in english_keywords):
-                to_translate.append(name)
-                indices.append(i)
-        
-        if to_translate:
-            print(f"🔄 Translating batch of {len(to_translate)} items...")
-            translated_names = translate_batch(to_translate)
+            translated_name = translations[i] if i < len(translations) else None
             
-            # Update DB
-            for idx, new_name in zip(indices, translated_names):
-                food = foods[idx]
-                food_id = food.get("id")
-                
-                # Prepare update data
-                old_name = food.get("name")
-                # Don't update if translation failed or is identical (unless it was English and same word exists in Spanish)
-                if new_name and new_name != old_name:
-                    try:
-                        client.table("foods").update({"name": new_name}).eq("id", food_id).execute()
-                        print(f"  ✅ {old_name[:20]}... -> {new_name[:20]}...")
-                        updated += 1
-                    except Exception as e:
-                        print(f"  ❌ Failed to update {food_id}: {e}")
-                        # Continue to next item
+            if translated_name:
+                supabase.table('foods').update({'name_es': translated_name}).eq('id', food['id']).execute()
+                success_count += 1
             
-        processed += len(foods)
-        print(f"⏳ Progress: {processed}/{count} ({updated} updated)")
-        time.sleep(1) # Rate limit protection
+        print(f"Batch processing done. Saved {success_count}/{len(foods)} items. Sleeping 1s...")
+        time.sleep(1)
 
 if __name__ == "__main__":
-    process_foods()
+    main()

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronLeft, Check, TrendingDown, TrendingUp, Minus, Target, Flame, Scale, Ruler, AlertCircle } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, TrendingDown, TrendingUp, Minus, Target, Flame, Scale, Ruler, AlertCircle, Users, MapPin, Smartphone } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 // App colors - Purple theme to match the rest of the app
@@ -32,7 +32,10 @@ export default function OnboardingPage() {
     target_weight: "",
     activity_level: "",
     diet_type: "",
+
     goal_speed: "moderado",
+    phone: "",
+    location_name: "",
   });
 
   useEffect(() => {
@@ -53,7 +56,7 @@ export default function OnboardingPage() {
   };
 
   const handleNext = () => {
-    if (currentStep < 5) setCurrentStep(currentStep + 1);
+    if (currentStep < 6) setCurrentStep(currentStep + 1);
   };
 
   const handleBack = () => {
@@ -89,6 +92,8 @@ export default function OnboardingPage() {
       activity_level: activityMap[formData.activity_level] || "Moderado",
       diet_type: "Estándar",
       goal_speed: formData.goal_speed,
+      phone: formData.phone,
+      location_name: formData.location_name,
       onboarding_completed: true,
       updated_at: new Date().toISOString(),
     });
@@ -110,11 +115,12 @@ export default function OnboardingPage() {
       case 3: return formData.height && formData.weight && formData.target_weight;
       case 4: return formData.activity_level;
       case 5: return formData.goal_speed;
+      case 6: return true; // Optional step
       default: return false;
     }
   };
 
-  const TOTAL_STEPS = 5;
+  const TOTAL_STEPS = 6;
 
   return (
     <div style={{ backgroundColor: COLORS.background }} className="min-h-screen">
@@ -150,6 +156,7 @@ export default function OnboardingPage() {
               {currentStep === 3 && <MeasurementsStep formData={formData} onChange={handleChange} />}
               {currentStep === 4 && <ActivityStep formData={formData} onChange={handleChange} />}
               {currentStep === 5 && <SpeedStep formData={formData} onChange={handleChange} />}
+              {currentStep === 6 && <SocialStep formData={formData} onChange={handleChange} />}
 
               {/* Navigation */}
               <div className="flex gap-4 mt-8">
@@ -454,6 +461,53 @@ function SpeedStep({ formData, onChange }: any) {
       </div>
 
       <p className="text-center text-xs text-zinc-400 mt-6">No te preocupes, luego lo puedes cambiar</p>
+    </div>
+  );
+}
+
+// ============ STEP 6: Social (Optional) ============
+function SocialStep({ formData, onChange }: any) {
+  return (
+    <div>
+      <div className="flex justify-center mb-6">
+        <div className="h-20 w-20 rounded-full flex items-center justify-center" style={{ backgroundColor: COLORS.primaryLight }}>
+          <Users className="h-10 w-10" style={{ color: COLORS.primary }} />
+        </div>
+      </div>
+
+      <h1 className="text-2xl font-black text-center mb-2">Conecta con la Comunidad</h1>
+      <p className="text-center text-zinc-500 mb-8 text-sm">Opcional: Añade detalles para encontrar amigos cerca</p>
+
+      <div className="space-y-4">
+        <div>
+          <label className="text-sm font-bold text-zinc-700 mb-2 block flex items-center gap-2">
+            <Smartphone className="h-4 w-4" /> Teléfono
+          </label>
+          <input
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => onChange("phone", e.target.value)}
+            placeholder="+52 55 1234 5678"
+            className="w-full px-4 py-4 rounded-2xl border-2 border-zinc-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 outline-none transition text-lg font-medium"
+          />
+        </div>
+
+        <div>
+          <label className="text-sm font-bold text-zinc-700 mb-2 block flex items-center gap-2">
+            <MapPin className="h-4 w-4" /> Ciudad / Zona
+          </label>
+          <input
+            type="text"
+            value={formData.location_name}
+            onChange={(e) => onChange("location_name", e.target.value)}
+            placeholder="Ej. Condesa, CDMX"
+            className="w-full px-4 py-4 rounded-2xl border-2 border-zinc-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 outline-none transition text-lg font-medium"
+          />
+          <p className="text-xs text-zinc-400 mt-2">
+            Esto ayuda a sugerirte amigos en tu área. Puedes configurar la privacidad más tarde.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

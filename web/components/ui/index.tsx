@@ -22,7 +22,7 @@ export function Card({ children, className }: { children: React.ReactNode; class
 
 // Button component
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: "primary" | "secondary" | "ghost" | "danger";
+    variant?: "primary" | "secondary" | "ghost" | "danger" | "outline";
     size?: "sm" | "md" | "lg";
     children: React.ReactNode;
 }
@@ -35,6 +35,7 @@ export function Button({ variant = "primary", size = "md", children, className, 
         secondary: "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 hover:bg-gray-200",
         ghost: "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
         danger: "bg-red-600 text-white hover:bg-red-700",
+        outline: "border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
     };
 
     const sizes = {
@@ -266,5 +267,33 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
                 {children}
             </div>
         </div>
+    );
+}
+
+// Switch
+interface SwitchProps {
+    checked: boolean;
+    onCheckedChange: (checked: boolean) => void;
+}
+
+export function Switch({ checked, onCheckedChange }: SwitchProps) {
+    return (
+        <button
+            type="button"
+            role="switch"
+            aria-checked={checked}
+            onClick={() => onCheckedChange(!checked)}
+            className={cn(
+                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-950",
+                checked ? "bg-purple-600" : "bg-gray-200 dark:bg-gray-700"
+            )}
+        >
+            <span
+                className={cn(
+                    "pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform",
+                    checked ? "translate-x-5" : "translate-x-0"
+                )}
+            />
+        </button>
     );
 }

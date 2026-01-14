@@ -5,10 +5,11 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
     Bell, Calendar, ChevronDown, Dumbbell, Flame, Home, LogOut, Menu, Moon,
-    PieChart, Scale, Settings, Sun, Target, TrendingDown, UtensilsCrossed, User, X, Zap, ClipboardList
+    PieChart, Scale, Settings, Sun, Target, TrendingDown, UtensilsCrossed, User, Users, X, Zap, ClipboardList
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import InstallPrompt from "@/components/InstallPrompt";
+import SocialProfileReminder from "@/components/SocialProfileReminder";
 
 const NAV_ITEMS = [
     { key: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
     { key: "foods", label: "Alimentos", icon: PieChart, href: "/dashboard/foods" },
     { key: "tracking", label: "Diario", icon: Calendar, href: "/dashboard/tracking" },
     { key: "progress", label: "Progreso", icon: TrendingDown, href: "/dashboard/progress" },
+    { key: "community", label: "Comunidad", icon: Users, href: "/dashboard/community" },
     { key: "profile", label: "Perfil", icon: User, href: "/dashboard/profile" },
 ];
 
@@ -221,6 +223,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                 {/* PWA Install Prompt */}
                 <InstallPrompt />
+                <SocialProfileReminder />
             </div>
         </div>
     );

@@ -10,6 +10,17 @@ export interface UserProfile {
     activity_level: 'Sedentario' | 'Ligero' | 'Moderado' | 'Activo' | 'Muy activo';
     goal_speed?: 'conservador' | 'moderado' | 'acelerado'; // New field for progress speed preference
     diet_type: DietType;
+    language?: 'es' | 'en';
+    full_name?: string;
+    // Social & Location
+    phone?: string;
+    latitude?: number;
+    longitude?: number;
+    location_name?: string;
+    is_public_profile?: boolean;
+    is_public_routine?: boolean;
+    is_public_nutrition?: boolean;
+
     onboarding_completed?: boolean;
     created_at?: string;
     updated_at?: string;
@@ -65,7 +76,9 @@ export interface FoodItem {
     source_id?: string;
     fdc_id?: number;
     name: string;
+    name_es?: string; // Translated name
     category?: string;
+    category_es?: string; // Translated category
     kcal_per_100g: number;
     protein_g_per_100g: number;
     carbs_g_per_100g: number;
@@ -85,6 +98,7 @@ export interface FoodItem {
     data_source?: string;
     serving_size_g?: number;
     serving_description?: string;
+    serving_description_es?: string;
     brand_name?: string;
     ingredients?: string;
     // Extracted fields
@@ -261,4 +275,19 @@ export interface WorkoutPlanExercise {
     exercise?: Exercise;
     // Flag for exercises loaded from saved_routines (not editable directly)
     isFromSavedRoutine?: boolean;
+}
+
+// Social Types
+export interface Friendship {
+    id: string;
+    user_id: string;
+    friend_id: string;
+    status: 'pending' | 'accepted' | 'blocked';
+    created_at: string;
+}
+
+export interface Friend extends UserProfile {
+    friendship_id: string;
+    friendship_status: 'pending' | 'accepted' | 'blocked';
+    is_sender: boolean;
 }

@@ -9,7 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function CommunityFeed({ currentUserId, targetUserId }: { currentUserId: string, targetUserId?: string }) {
+export default function CommunityFeed({ currentUserId, targetUserId, showCreatePost = true }: { currentUserId: string, targetUserId?: string, showCreatePost?: boolean }) {
     const [posts, setPosts] = useState<FeedItem[]>([]);
     const [newPost, setNewPost] = useState("");
     const [loading, setLoading] = useState(true);

@@ -6,6 +6,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // User Design System Colors
+        "primary": "#a855f7",
+        "primary-dark": "#9333ea",
+        "background-light": "#FAFAFA",
+        "background-dark": "#000000",
+        "surface-light": "#FFFFFF",
+        "surface-dark": "#121212",
+        "text-main": "#181311",
+        "text-secondary": "#896d61",
+        "border-light": "#f4f1f0",
+        "border-dark": "#27272a",
+
+        // Existing Colors (kept for compatibility)
         canvas: "rgb(var(--bg) / <alpha-value>)",
         surface: "rgb(var(--surface) / <alpha-value>)",
         "surface-2": "rgb(var(--surface-2) / <alpha-value>)",
@@ -43,10 +56,13 @@ const config: Config = {
         }
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"]
+        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-lexend)", "sans-serif"]
       },
       boxShadow: {
-        soft: "0 1px 2px rgba(0,0,0,0.06)"
+        soft: "0 1px 2px rgba(0,0,0,0.06)",
+        'glow': '0 0 15px rgba(168, 85, 247, 0.4)',
+        'glow-sm': '0 0 8px rgba(168, 85, 247, 0.4)',
       },
       backgroundSize: {
         "300%": "300%",

@@ -14,9 +14,11 @@ import { calculateHealthMetrics, calculateMacros, calculateProjectionWithExercis
 import { getSupplementRecommendations } from "@/lib/supplements";
 import { AdaptationEngine } from "@/lib/intelligence/adaptation_engine";
 import { UserProfile, WorkoutPlan, DailyLog } from "@/types";
+import { useLanguage } from "@/lib/i18n/context";
 
 export default function DashboardPage() {
     const router = useRouter();
+    const { t, lang } = useLanguage();
     const [userId, setUserId] = useState<string | null>(null);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
@@ -199,7 +201,7 @@ export default function DashboardPage() {
     // Derived state for time range aggregation
     const aggregatedMetrics = useMemo(() => {
         const days = range === 'hoy' ? 1 : range === 'semana' ? 7 : 30;
-        const periodLabel = range === 'hoy' ? 'Hoy' : range === 'semana' ? 'Semana' : 'Mes';
+        const periodLabel = range === 'hoy' ? t('dates.today') : range === 'semana' ? t('dates.week') : t('dates.month');
 
         // Base calculations (always use these for targets/projections)
         const dailyTarget = projection?.daily_calories || 0;
@@ -222,7 +224,7 @@ export default function DashboardPage() {
                 targetCarbs: macros?.carbs_g || 0,
                 fat: todayTotals.fat_g,
                 targetFat: macros?.fat_g || 0,
-                label: "Objetivo hoy",
+                label: `${t('dashboard.target')} ${t('dates.today').toLowerCase()}`,
                 subLabel: `Plan ${mode.charAt(0).toUpperCase() + mode.slice(1)}`,
                 rateLabel: "Ritmo estimado",
                 rateValue: projection?.weekly_rate || 0,
@@ -409,17 +411,17 @@ export default function DashboardPage() {
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold">Dashboard</h1>
+                    <h1 className="text-3xl font-bold">{t('nav.dashboard')}</h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        Tu resumen diario de calorías, macros y progreso.
+                        {lang === 'es' ? 'Tu resumen diario de calorías, macros y progreso.' : 'Your daily summary of calories, macros, and progress.'}
                     </p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="secondary" onClick={() => router.push("/dashboard/profile")}>
-                        Editar perfil
+                        {t('common.edit')} {t('nav.profile')}
                     </Button>
                     <Button onClick={() => router.push("/dashboard/tracking")}>
-                        <UtensilsCrossed className="h-4 w-4" /> Registrar
+                        <UtensilsCrossed className="h-4 w-4" /> {t('common.add')}
                     </Button>
                 </div>
             </div>
@@ -489,16 +491,16 @@ export default function DashboardPage() {
                                 <Dumbbell className="h-6 w-6 text-white" />
                             </div>
                             <div>
-                                <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1">RUTINA ACTIVA</div>
+                                <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1">{t('dashboard.yourRoutine')}</div>
                                 <h3 className="text-xl font-bold">{activePlan.name}</h3>
-                                <p className="text-sm text-zinc-400">{activePlan.days_per_week} días / semana</p>
+                                <p className="text-sm text-zinc-400">{activePlan.days_per_week} {t('dashboard.days')} / {t('dates.week').toLowerCase()}</p>
                             </div>
                         </div>
                         <Button
                             onClick={() => router.push(`/dashboard/workout-plan/${activePlan.id}`)}
                             className="bg-white text-zinc-900 hover:bg-zinc-100 border-none font-bold px-6"
                         >
-                            Ver Rutina
+                            {t('dashboard.viewRoutine')}
                         </Button>
                     </div>
                     {/* Abstract bg decoration */}
@@ -517,9 +519,9 @@ export default function DashboardPage() {
                     </div>
                     <Segmented
                         options={[
-                            { label: "Hoy", value: "hoy" },
-                            { label: "Semana", value: "semana" },
-                            { label: "Mes", value: "mes" },
+                            { label: t('dates.today'), value: "hoy" },
+                            { label: t('dates.week'), value: "semana" },
+                            { label: t('dates.month'), value: "mes" },
                         ]}
                         value={range}
                         onChange={setRange}
@@ -535,7 +537,7 @@ export default function DashboardPage() {
                             </div>
                             <div>
                                 <div className="text-sm text-gray-500 font-medium">
-                                    {range === 'hoy' ? 'Objetivo diario' : `Meta ${range === 'semana' ? 'Semanal' : 'Mensual'}`}
+                                    {range === 'hoy' ? t('dashboard.dailySummary') : `${t('dashboard.goals')} ${range === 'semana' ? t('dates.week') : t('dates.month')}`}
                                 </div>
                                 <div className="text-4xl font-extrabold text-zinc-900 dark:text-white mt-1">
                                     {aggregatedMetrics.targetCalories}
@@ -544,20 +546,20 @@ export default function DashboardPage() {
                                 {/* Only show consumption if we have real data */}
                                 {aggregatedMetrics.hasRealData ? (
                                     <div className="text-sm text-gray-400 mt-1 font-medium">
-                                        {range === 'hoy' ? 'Consumidas' : 'Ingesta real'}:
+                                        {range === 'hoy' ? t('dashboard.consumed') : t('dashboard.consumed')}:
                                         <span className={aggregatedMetrics.calories > aggregatedMetrics.targetCalories ? " text-red-500" : " text-green-500"}>
                                             {aggregatedMetrics.calories}
                                         </span> kcal
                                     </div>
                                 ) : (
                                     <div className="text-xs text-gray-400 mt-1 italic">
-                                        Proyección - sin datos registrados
+                                        Projection - no data
                                     </div>
                                 )}
                                 {(projection.exercise_boost || 0) > 0 && range === 'hoy' && (
                                     <div className="text-xs font-semibold text-purple-600 mt-1 flex items-center gap-1">
                                         <Zap className="h-3 w-3" />
-                                        +{(projection.exercise_boost || 0)} kcal quemadas (extra)
+                                        +{(projection.exercise_boost || 0)} kcal {t('dashboard.caloriesBurned').toLowerCase()} (extra)
                                     </div>
                                 )}
                             </div>
@@ -567,7 +569,7 @@ export default function DashboardPage() {
                             {/* Card 1: Consumidas/Meta - changes based on data availability */}
                             <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700">
                                 <div className="text-xs text-gray-500">
-                                    {aggregatedMetrics.hasRealData ? (range === 'hoy' ? 'Consumidas' : 'Ingesta Total') : 'Meta'}
+                                    {aggregatedMetrics.hasRealData ? (range === 'hoy' ? t('dashboard.consumed') : t('dashboard.consumed')) : t('dashboard.goals')}
                                 </div>
                                 <div className="text-lg font-semibold mt-1">
                                     {aggregatedMetrics.hasRealData ? aggregatedMetrics.calories : aggregatedMetrics.targetCalories}
@@ -576,7 +578,7 @@ export default function DashboardPage() {
                             {/* Card 2: Restantes - only show if has data, otherwise show TDEE */}
                             <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700">
                                 <div className="text-xs text-gray-500">
-                                    {aggregatedMetrics.hasRealData ? 'Restantes' : 'TDEE'}
+                                    {aggregatedMetrics.hasRealData ? t('dashboard.remaining') : 'TDEE'}
                                 </div>
                                 <div className="text-lg font-semibold mt-1">
                                     {aggregatedMetrics.hasRealData
@@ -588,10 +590,7 @@ export default function DashboardPage() {
                             {/* Card 3: Déficit - always show the PLANNED deficit */}
                             <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700">
                                 <div className="text-xs text-gray-500">
-                                    {aggregatedMetrics.hasRealData
-                                        ? (range === 'hoy' ? 'Déficit Real' : `Déficit ${range === 'semana' ? 'Sem.' : 'Mes'}`)
-                                        : 'Déficit Plan'
-                                    }
+                                    Déficit
                                 </div>
                                 <div className="text-lg font-semibold mt-1">
                                     {Math.round(aggregatedMetrics.deficit)}
@@ -650,22 +649,22 @@ export default function DashboardPage() {
             </Card>
 
             {/* KPI Cards */}
-            < div className="grid grid-cols-1 md:grid-cols-4 gap-4" >
-                <StatCard icon={<Scale className="h-5 w-5" />} label="Peso actual" value={`${profile.weight_kg} kg`} caption={`IMC: ${metrics.bmi} (${metrics.bmi_category})`} />
-                <StatCard icon={<Target className="h-5 w-5" />} label="Meta" value={`${profile.target_weight_kg} kg`} caption={`Faltan ${Math.abs(profile.weight_kg - profile.target_weight_kg).toFixed(1)} kg`} />
-                <StatCard icon={<Calendar className="h-5 w-5" />} label="Fecha objetivo" value={projection.target_date} caption={activePlan ? "📅 Meta acelerada con ejercicio" : `~${projection.weeks} semanas`} />
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <StatCard icon={<Scale className="h-5 w-5" />} label={t('profile.weight')} value={`${profile.weight_kg} kg`} caption={`IMC: ${metrics.bmi} (${metrics.bmi_category})`} />
+                <StatCard icon={<Target className="h-5 w-5" />} label={t('dashboard.target')} value={`${profile.target_weight_kg} kg`} caption={`Diff: ${Math.abs(profile.weight_kg - profile.target_weight_kg).toFixed(1)} kg`} />
+                <StatCard icon={<Calendar className="h-5 w-5" />} label="Fecha objetivo" value={projection.target_date} caption={activePlan ? "📅 Meta acelerada" : `~${projection.weeks} ${t('dates.week').toLowerCase()}`} />
                 <StatCard
                     icon={<Zap className="h-5 w-5" />}
                     label="TDEE"
                     value={`${(projection as any).effectiveTDEE || metrics.tdee} kcal`}
-                    caption={activePlan ? `Base: ${metrics.tdee} + Ejercicio` : `TMB: ${metrics.bmr} kcal`}
+                    caption={activePlan ? `Base: ${metrics.tdee} + ${t('nav.exercises')}` : `TMB: ${metrics.bmr} kcal`}
                 />
-            </div >
+            </div>
 
             {/* Macros Card */}
             <Card>
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Macros ({range === 'hoy' ? 'hoy' : 'promedio'})</h3>
+                    <h3 className="text-lg font-semibold">Macros ({range === 'hoy' ? t('dates.today') : 'prom'})</h3>
                     <span className="text-xs font-medium px-2 py-1 bg-purple-50 text-purple-700 rounded-lg border border-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800">
                         {profile.diet_type}
                     </span>
@@ -673,24 +672,24 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700">
                         <div className="flex justify-between items-center mb-1">
-                            <div className="text-sm text-gray-500">Proteína</div>
-                            <div className="text-xs text-gray-400">Meta: {macros.protein_g}g</div>
+                            <div className="text-sm text-gray-500">{t('nutrition.protein')}</div>
+                            <div className="text-xs text-gray-400">{t('dashboard.goals')}: {macros.protein_g}g</div>
                         </div>
                         <div className="text-2xl font-semibold">{aggregatedMetrics.protein} g</div>
                         <div className="mt-2"><ProgressBar value={aggregatedMetrics.protein} max={macros.protein_g} color="purple" /></div>
                     </div>
                     <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700">
                         <div className="flex justify-between items-center mb-1">
-                            <div className="text-sm text-gray-500">Carbos</div>
-                            <div className="text-xs text-gray-400">Meta: {macros.carbs_g}g</div>
+                            <div className="text-sm text-gray-500">{t('nutrition.carbs')}</div>
+                            <div className="text-xs text-gray-400">{t('dashboard.goals')}: {macros.carbs_g}g</div>
                         </div>
                         <div className="text-2xl font-semibold">{aggregatedMetrics.carbs} g</div>
                         <div className="mt-2"><ProgressBar value={aggregatedMetrics.carbs} max={macros.carbs_g} color="purple" /></div>
                     </div>
                     <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700">
                         <div className="flex justify-between items-center mb-1">
-                            <div className="text-sm text-gray-500">Grasas</div>
-                            <div className="text-xs text-gray-400">Meta: {macros.fat_g}g</div>
+                            <div className="text-sm text-gray-500">{t('nutrition.fat')}</div>
+                            <div className="text-xs text-gray-400">{t('dashboard.goals')}: {macros.fat_g}g</div>
                         </div>
                         <div className="text-2xl font-semibold">{aggregatedMetrics.fat} g</div>
                         <div className="mt-2"><ProgressBar value={aggregatedMetrics.fat} max={macros.fat_g} color="purple" /></div>
@@ -701,7 +700,7 @@ export default function DashboardPage() {
             {/* Chart + Adherence */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <Card className="lg:col-span-2">
-                    <h3 className="text-lg font-semibold mb-4">Progreso semanal</h3>
+                    <h3 className="text-lg font-semibold mb-4">{t('dashboard.weeklyProgress')}</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={weeklyChartData}>
@@ -716,17 +715,17 @@ export default function DashboardPage() {
                 </Card>
 
                 <Card>
-                    <h3 className="text-lg font-semibold mb-4">Adherencia</h3>
+                    <h3 className="text-lg font-semibold mb-4">Adherence {t('dates.week')}</h3>
                     <div className="flex flex-col items-center">
                         <div className="relative">
                             <RingProgress value={adherence} size={140} strokeWidth={12} />
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
                                 <span className="text-3xl font-bold">{adherence}%</span>
-                                <span className="text-sm text-gray-500">esta semana</span>
+                                <span className="text-sm text-gray-500">{t('dates.week')}</span>
                             </div>
                         </div>
                         <Button className="mt-6 w-full" onClick={() => router.push("/dashboard/tracking")}>
-                            <UtensilsCrossed className="h-4 w-4" /> Registrar comida
+                            <UtensilsCrossed className="h-4 w-4" /> {t('dashboard.logFood')}
                         </Button>
                     </div>
                 </Card>

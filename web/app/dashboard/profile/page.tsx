@@ -10,6 +10,7 @@ import { getProfile, upsertProfile } from "@/lib/supabase/database";
 import { calculateBMI, getBMICategory, calculateIdealWeightRange } from "@/lib/calculations";
 import { DIET_INFO } from "@/lib/diets";
 import { UserProfile, DietType } from "@/types";
+import { useLanguage } from "@/lib/i18n/context";
 import dynamic from 'next/dynamic';
 
 const LocationPicker = dynamic(() => import('@/components/ui/LocationPicker'), {
@@ -20,40 +21,11 @@ const LocationPicker = dynamic(() => import('@/components/ui/LocationPicker'), {
 import SuccessOverlay from "@/components/ui/SuccessOverlay";
 import AvatarUpload from "@/components/ui/AvatarUpload";
 
-const DIET_OPTIONS: { value: DietType; label: string }[] = [
-    { value: "Estándar", label: "Estándar" },
-    { value: "Keto", label: "Keto" },
-    { value: "Low-Carb", label: "Low-Carb" },
-    { value: "Vegana", label: "Vegana" },
-    { value: "Vegetariana", label: "Vegetariana" },
-    { value: "Paleo", label: "Paleo" },
-    { value: "Mediterránea", label: "Mediterránea" },
-    { value: "Alta Proteína", label: "Alta Proteína" },
-    { value: "Diabéticos", label: "Diabéticos (Bajo Indice Glucémico)" },
-];
 
-const ACTIVITY_OPTIONS = [
-    { value: "Sedentario", label: "Sedentario (poco o nada de ejercicio)" },
-    { value: "Ligero", label: "Ligero (ejercicio 1-3 días/semana)" },
-    { value: "Moderado", label: "Moderado (ejercicio 3-5 días/semana)" },
-    { value: "Activo", label: "Activo (ejercicio 6-7 días/semana)" },
-    { value: "Muy activo", label: "Muy activo (atleta o trabajo físico)" },
-];
-
-const GOAL_OPTIONS = [
-    { value: "Definir", label: "Definir (perder grasa)" },
-    { value: "Mantener", label: "Mantener peso" },
-    { value: "Volumen", label: "Volumen (ganar músculo)" },
-];
-
-const SPEED_OPTIONS = [
-    { value: "conservador", label: "Conservador (lento y seguro)" },
-    { value: "moderado", label: "Moderado (balanceado)" },
-    { value: "acelerado", label: "Acelerado (rápido, exigente)" },
-];
 
 export default function ProfilePage() {
     const router = useRouter();
+    const { t, lang } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -128,8 +100,8 @@ export default function ProfilePage() {
                             user_id: profile.user_id,
                             type: 'weight_goal',
                             content: isGoalReached
-                                ? `¡Objetivo Alcanzado! 🎉 He llegado a mi meta de ${profile.weight_kg}kg.`
-                                : `¡Progreso! 🔥 He bajado ${lostAmount.toFixed(1)}kg.`,
+                                ? (lang === 'en' ? `Goal Reached! 🎉 I've hit my target of ${profile.weight_kg}kg.` : `¡Objetivo Alcanzado! 🎉 He llegado a mi meta de ${profile.weight_kg}kg.`)
+                                : (lang === 'en' ? `Progress! 🔥 I've lost ${lostAmount.toFixed(1)}kg.` : `¡Progreso! 🔥 He bajado ${lostAmount.toFixed(1)}kg.`),
                             metadata: {
                                 initial_weight: initialWeight,
                                 new_weight: profile.weight_kg,
@@ -154,6 +126,39 @@ export default function ProfilePage() {
     const idealRange = calculateIdealWeightRange(profile.height_cm);
     const dietInfo = DIET_INFO[profile.diet_type];
 
+    // Define options dynamically with translations
+    const dietOptions: { value: DietType; label: string }[] = [
+        { value: "Estándar", label: t('profile.diets.standard') },
+        { value: "Keto", label: t('profile.diets.keto') },
+        { value: "Low-Carb", label: t('profile.diets.lowcarb') },
+        { value: "Vegana", label: t('profile.diets.vegan') },
+        { value: "Vegetariana", label: t('profile.diets.vegetarian') },
+        { value: "Paleo", label: t('profile.diets.paleo') },
+        { value: "Mediterránea", label: t('profile.diets.mediterranean') },
+        { value: "Alta Proteína", label: t('profile.diets.highprotein') },
+        { value: "Diabéticos", label: t('profile.diets.diabetic') },
+    ];
+
+    const activityOptions = [
+        { value: "Sedentario", label: t('profile.activities.sedentary') },
+        { value: "Ligero", label: t('profile.activities.light') },
+        { value: "Moderado", label: t('profile.activities.moderate') },
+        { value: "Activo", label: t('profile.activities.active') },
+        { value: "Muy activo", label: t('profile.activities.veryActive') },
+    ];
+
+    const goalOptions = [
+        { value: "Definir", label: t('profile.goals.cut') },
+        { value: "Mantener", label: t('profile.goals.maintain') },
+        { value: "Volumen", label: t('profile.goals.bulk') },
+    ];
+
+    const speedOptions = [
+        { value: "conservador", label: t('profile.speeds.conservative') },
+        { value: "moderado", label: t('profile.speeds.moderate') },
+        { value: "acelerado", label: t('profile.speeds.accelerated') },
+    ];
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -171,29 +176,29 @@ export default function ProfilePage() {
                     onUpload={(url) => handleChange("avatar_url", url)}
                 />
                 <div className="text-center md:text-left">
-                    <h1 className="text-3xl font-bold">Tu Perfil</h1>
-                    <p className="text-gray-500 mt-1">Configura tus datos para cálculos personalizados.</p>
+                    <h1 className="text-3xl font-bold">{t('profile.title')}</h1>
+                    <p className="text-gray-500 mt-1">{lang === 'es' ? 'Configura tus datos para cálculos personalizados.' : 'Configure your data for personalized calculations.'}</p>
                 </div>
             </div>
 
-            <SuccessOverlay isVisible={showSuccess} message="Perfil guardado correctamente" />
+            <SuccessOverlay isVisible={showSuccess} message={t('profile.saved')} />
 
-            {saved && !showSuccess && <Alert type="success">✅ Perfil actualizado.</Alert>}
+            {saved && !showSuccess && <Alert type="success">✅ {t('profile.updated')}</Alert>}
 
             {/* Basic Info */}
             <Card>
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <User className="h-5 w-5" /> Información básica
+                    <User className="h-5 w-5" /> {t('profile.basicInfo')}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Select
-                        label="Género"
-                        options={[{ value: "M", label: "Masculino" }, { value: "F", label: "Femenino" }]}
+                        label={t('profile.gender')}
+                        options={[{ value: "M", label: t('profile.male') }, { value: "F", label: t('profile.female') }]}
                         value={profile.gender}
                         onChange={e => handleChange("gender", e.target.value)}
                     />
                     <Input
-                        label="Edad"
+                        label={t('profile.age')}
                         type="number"
                         min={14}
                         max={100}
@@ -201,7 +206,7 @@ export default function ProfilePage() {
                         onChange={e => handleChange("age", parseInt(e.target.value) || 0)}
                     />
                     <Input
-                        label="Altura (cm)"
+                        label={t('profile.height')}
                         type="number"
                         min={100}
                         max={250}
@@ -209,7 +214,7 @@ export default function ProfilePage() {
                         onChange={e => handleChange("height_cm", parseInt(e.target.value) || 0)}
                     />
                     <Input
-                        label="Peso actual (kg)"
+                        label={t('profile.weight')}
                         type="number"
                         min={30}
                         max={300}
@@ -218,8 +223,8 @@ export default function ProfilePage() {
                         onChange={e => handleChange("weight_kg", parseFloat(e.target.value) || 0)}
                     />
                     <Select
-                        label="Idioma / Language"
-                        options={[{ value: "es", label: "Español" }, { value: "en", label: "English" }]}
+                        label={t('profile.language')}
+                        options={[{ value: "es", label: t('profile.spanish') }, { value: "en", label: t('profile.english') }]}
                         value={profile.language || 'es'}
                         onChange={e => handleChange("language", e.target.value)}
                     />
@@ -227,11 +232,11 @@ export default function ProfilePage() {
 
                 <div className="mt-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                     <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">Tu IMC actual</span>
+                        <span className="text-sm text-gray-500">{t('profile.currentBMI')}</span>
                         <span className="text-lg font-semibold">{bmi} <span className="text-sm font-normal text-gray-500">({bmiCategory})</span></span>
                     </div>
                     <div className="mt-2 text-xs text-gray-500">
-                        Peso ideal para tu altura: {idealRange.min} - {idealRange.max} kg
+                        {t('profile.idealWeight')}: {idealRange.min} - {idealRange.max} kg
                     </div>
                 </div>
             </Card>
@@ -239,19 +244,19 @@ export default function ProfilePage() {
             {/* Social & Privacy */}
             <Card>
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <span className="text-xl">🌍</span> Comunidad y Privacidad
+                    <span className="text-xl">🌍</span> {t('profile.communityPrivacy')}
                 </h2>
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input
-                            label="Teléfono (Opcional)"
+                            label={t('profile.phone')}
                             placeholder="+52 55 1234 5678"
                             type="tel"
                             value={profile.phone || ''}
                             onChange={e => handleChange("phone", e.target.value)}
                         />
                         <Input
-                            label="Ciudad / Zona"
+                            label={t('profile.city')}
                             placeholder="Ej. Condesa, CDMX"
                             value={profile.location_name || ''}
                             onChange={e => handleChange("location_name", e.target.value)}
@@ -269,12 +274,12 @@ export default function ProfilePage() {
                     />
 
                     <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Configuración de Privacidad</h3>
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('nav.settings')}</h3>
 
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Perfil Público</label>
-                                <p className="text-xs text-gray-500">Permitir que otros te encuentren y te envíen solicitudes de amistad.</p>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile.publicProfile')}</label>
+                                <p className="text-xs text-gray-500">{t('profile.publicProfileDesc')}</p>
                             </div>
                             <Switch
                                 checked={profile.is_public_profile !== false}
@@ -284,8 +289,8 @@ export default function ProfilePage() {
 
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Compartir Rutina</label>
-                                <p className="text-xs text-gray-500">Tus amigos podrán ver tu plan de entrenamiento actual.</p>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile.shareRoutine')}</label>
+                                <p className="text-xs text-gray-500">{t('profile.shareRoutineDesc')}</p>
                             </div>
                             <Switch
                                 checked={profile.is_public_routine !== false}
@@ -295,8 +300,8 @@ export default function ProfilePage() {
 
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Compartir Comidas</label>
-                                <p className="text-xs text-gray-500">Tus amigos podrán ver tus registros de comida (macros).</p>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile.shareMeals')}</label>
+                                <p className="text-xs text-gray-500">{t('profile.shareMealsDesc')}</p>
                             </div>
                             <Switch
                                 checked={profile.is_public_nutrition === true}
@@ -309,10 +314,10 @@ export default function ProfilePage() {
 
             {/* Goals */}
             <Card>
-                <h2 className="text-lg font-semibold mb-4">🎯 Objetivos</h2>
+                <h2 className="text-lg font-semibold mb-4">🎯 {t('dashboard.goals')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
-                        label="Peso objetivo (kg)"
+                        label={t('profile.targetWeight')}
                         type="number"
                         min={30}
                         max={300}
@@ -321,26 +326,26 @@ export default function ProfilePage() {
                         onChange={e => handleChange("target_weight_kg", parseFloat(e.target.value) || 0)}
                     />
                     <Select
-                        label="Tu objetivo"
-                        options={GOAL_OPTIONS}
+                        label={t('profile.yourGoal')}
+                        options={goalOptions}
                         value={profile.goal}
                         onChange={e => handleChange("goal", e.target.value)}
                     />
                     <Select
-                        label="Velocidad de progreso"
-                        options={SPEED_OPTIONS}
+                        label={t('profile.speed')}
+                        options={speedOptions}
                         value={profile.goal_speed || "moderado"}
                         onChange={e => handleChange("goal_speed", e.target.value)}
                     />
                     <Select
-                        label="Nivel de actividad"
-                        options={ACTIVITY_OPTIONS}
+                        label={t('profile.activityLevel')}
+                        options={activityOptions}
                         value={profile.activity_level}
                         onChange={e => handleChange("activity_level", e.target.value)}
                     />
                     <Select
-                        label="Tipo de dieta"
-                        options={DIET_OPTIONS}
+                        label={t('profile.diet')}
+                        options={dietOptions}
                         value={profile.diet_type}
                         onChange={e => handleChange("diet_type", e.target.value as DietType)}
                     />
@@ -350,18 +355,18 @@ export default function ProfilePage() {
             {/* Diet Info */}
             {dietInfo && (
                 <Card>
-                    <h2 className="text-lg font-semibold mb-2">📋 Dieta: {profile.diet_type}</h2>
+                    <h2 className="text-lg font-semibold mb-2">📋 {t('profile.diet')}: {profile.diet_type}</h2>
                     <p className="text-sm text-gray-500 mb-4">{dietInfo.description}</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <div className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">✅ Beneficios</div>
+                            <div className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">✅ {t('profile.benefits')}</div>
                             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                 {dietInfo.benefits.map((b, i) => <li key={i}>• {b}</li>)}
                             </ul>
                         </div>
                         {dietInfo.restrictions.length > 0 && (
                             <div>
-                                <div className="text-sm font-medium text-amber-600 dark:text-amber-400 mb-2">⚠️ Evitar</div>
+                                <div className="text-sm font-medium text-amber-600 dark:text-amber-400 mb-2">⚠️ {t('profile.avoid')}</div>
                                 <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     {dietInfo.restrictions.map((r, i) => <li key={i}>• {r}</li>)}
                                 </ul>
@@ -373,7 +378,7 @@ export default function ProfilePage() {
 
             {/* Save Button */}
             <Button onClick={handleSave} disabled={saving} size="lg" className="w-full md:w-auto">
-                <Save className="h-4 w-4" /> {saving ? "Guardando..." : "Guardar perfil"}
+                <Save className="h-4 w-4" /> {saving ? t('profile.saving') : t('profile.save')}
             </Button>
         </motion.div>
     );

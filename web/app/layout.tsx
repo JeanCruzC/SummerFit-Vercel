@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Manrope } from "next/font/google";
+import { Manrope, Lexend } from "next/font/google";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -8,6 +8,13 @@ const manrope = Manrope({
   variable: "--font-sans",
   display: "swap",
   weight: ["400", "500", "600", "700", "800"]
+});
+
+const lexend = Lexend({
+  subsets: ["latin"],
+  variable: "--font-lexend",
+  display: "swap",
+  weight: ["300", "400", "500", "600", "700"]
 });
 
 export const metadata: Metadata = {
@@ -78,12 +85,13 @@ export default function RootLayout({
         <Script id="register-sw" strategy="afterInteractive">
           {registerSW}
         </Script>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96x96.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72x72.png" />
       </head>
-      <body className={`${manrope.variable} font-sans bg-canvas text-ink antialiased`}>
+      <body className={`${manrope.variable} ${lexend.variable} font-sans bg-canvas text-ink antialiased`}>
         {children}
       </body>
     </html>

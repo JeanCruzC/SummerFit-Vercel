@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 import { ProfileAnalyzer, type ProfileAnalysis } from "@/lib/intelligence/profile_analyzer";
 import { Brain, Target, Sparkles, Settings, CheckCircle, Activity, Clock, Gauge, Timer, Repeat, Info } from "lucide-react";
 
+import { useLanguage } from "@/lib/i18n/context";
+
 // Dumbbell icon SVG for exercises without images
 const DumbbellIcon = ({ className }: { className?: string }) => (
     <svg
@@ -50,6 +52,7 @@ function getGenderMedia(exercise: Exercise, userGender: 'M' | 'F') {
 
 export default function GeneratorPage() {
     const router = useRouter();
+    const { t, lang } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [equipment, setEquipment] = useState<UserEquipment[]>([]);
@@ -63,6 +66,14 @@ export default function GeneratorPage() {
     const [routine, setRoutine] = useState<GeneratedRoutine | null>(null);
     const [error, setError] = useState("");
     const [selectedExercise, setSelectedExercise] = useState<any>(null);
+
+    // Helper for BMI category reference
+    const getBMILabel = (category: string) => {
+        if (category === 'obese') return lang === 'en' ? 'Obesity' : 'Obesidad';
+        if (category === 'overweight') return lang === 'en' ? 'Overweight' : 'Sobrepeso';
+        if (category === 'normal') return 'Normal';
+        return lang === 'en' ? 'Underweight' : 'Bajo peso';
+    };
 
     useEffect(() => {
         async function loadData() {
@@ -280,26 +291,26 @@ export default function GeneratorPage() {
                     <h1 className="text-3xl font-black text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
                         <Brain className="h-9 w-9 text-purple-600" />
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-                            Smart Coach AI
+                            {t('generator.title')}
                         </span>
                     </h1>
                     <p className="text-zinc-600 dark:text-zinc-400">
-                        El sistema diseñará la estructura (Split), volumen e intensidad perfectos para tus días disponibles.
+                        {t('generator.subtitle')}
                     </p>
                     {analysis && (
                         <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                             <div className="flex items-start gap-3">
                                 <Target className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-zinc-900 dark:text-white mb-1">Análisis de Perfil</h3>
+                                    <h3 className="font-bold text-zinc-900 dark:text-white mb-1">{t('generator.profileAnalysis')}</h3>
                                     <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2">
-                                        IMC: <span className="font-bold">{analysis.bmi}</span> ({analysis.bmi_category === 'obese' ? 'Obesidad' : analysis.bmi_category === 'overweight' ? 'Sobrepeso' : analysis.bmi_category === 'normal' ? 'Normal' : 'Bajo peso'})
+                                        BMI: <span className="font-bold">{analysis.bmi}</span> ({getBMILabel(analysis.bmi_category)})
                                     </p>
                                     <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-                                        <CheckCircle className="inline h-4 w-4 mr-1" /> Objetivo recomendado: <span className="capitalize">{goal.replace('_', ' ')}</span>
+                                        <CheckCircle className="inline h-4 w-4 mr-1" /> {t('generator.recommendedGoal')}: <span className="capitalize">{t(`generator.goals.${goal}` as any) || goal}</span>
                                     </p>
                                     <p className="text-sm text-blue-700 dark:text-blue-300 font-medium mt-1">
-                                        <Activity className="inline h-4 w-4 mr-1" /> Cardio: {analysis.recommended_cardio.frequency}x/semana, {analysis.recommended_cardio.duration}min - {analysis.recommended_cardio.options.join(', ')}
+                                        <Activity className="inline h-4 w-4 mr-1" /> {t('generator.cardio')}: {analysis.recommended_cardio.frequency}x{t('generator.perWeek')}, {analysis.recommended_cardio.duration}min - {analysis.recommended_cardio.options.join(', ')}
                                     </p>
                                     {analysis.warnings.length > 0 && (
                                         <div className="mt-2 text-xs text-amber-600 dark:text-amber-400">
@@ -318,7 +329,7 @@ export default function GeneratorPage() {
 
                         {/* Goal Selection */}
                         <div className="col-span-1 md:col-span-2">
-                            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Objetivo Principal</label>
+                            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{t('generator.mainGoal')}</label>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                 {(['hypertrophy', 'strength', 'fat_loss', 'recomposition'] as const).map((g) => (
                                     <button
@@ -329,7 +340,7 @@ export default function GeneratorPage() {
                                             : 'border-gray-200 text-gray-500 hover:border-purple-200'
                                             }`}
                                     >
-                                        {g.replace('_', ' ')}
+                                        {t(`generator.goals.${g}` as any)}
                                     </button>
                                 ))}
                             </div>
@@ -337,21 +348,21 @@ export default function GeneratorPage() {
 
                         {/* Level */}
                         <div>
-                            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Nivel de Experiencia</label>
+                            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{t('generator.experienceLevel')}</label>
                             <select
                                 value={level}
                                 onChange={(e) => setLevel(e.target.value as RoutineLevel)}
                                 className="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border-none font-medium focus:ring-2 focus:ring-purple-500 text-zinc-900 dark:text-white"
                             >
-                                <option value="beginner">Principiante (Prioridad Técnica)</option>
-                                <option value="intermediate">Intermedio</option>
-                                <option value="advanced">Avanzado (Prioridad Volumen)</option>
+                                <option value="beginner">{t('generator.beginner')}</option>
+                                <option value="intermediate">{t('generator.intermediate')}</option>
+                                <option value="advanced">{t('generator.advanced')}</option>
                             </select>
                         </div>
 
                         {/* Days Available (NEW) */}
                         <div>
-                            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Días Disponibles por Semana</label>
+                            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{t('generator.daysAvailable')}</label>
                             <div className="flex gap-2">
                                 {[3, 4, 5, 6].map(d => (
                                     <button
@@ -373,9 +384,9 @@ export default function GeneratorPage() {
                         <div className="text-sm text-zinc-500">
                             <span className="sr-only">Stats</span>
                             {equipment.length > 0 ? (
-                                <span>✅ {equipment.length} equipos detectados</span>
+                                <span>✅ {equipment.length} {t('generator.detectedEquipment')}</span>
                             ) : (
-                                <span className="text-amber-500">⚠️ Sin equipo (usando Peso Corporal)</span>
+                                <span className="text-amber-500">⚠️ {t('generator.noEquipment')}</span>
                             )}
                         </div>
                         <button
@@ -385,11 +396,11 @@ export default function GeneratorPage() {
                         >
                             {generating ? (
                                 <>
-                                    <Settings className="h-5 w-5 animate-spin" /> Analizando Biomecánica...
+                                    <Settings className="h-5 w-5 animate-spin" /> {t('generator.analyzing')}
                                 </>
                             ) : (
                                 <>
-                                    <Sparkles className="h-5 w-5" /> Diseñar Plan Inteligente
+                                    <Sparkles className="h-5 w-5" /> {t('generator.generateBtn')}
                                 </>
                             )}
                         </button>
@@ -410,7 +421,7 @@ export default function GeneratorPage() {
                                 onClick={handleSaveRoutine}
                                 className="px-8 py-4 bg-green-600 text-white rounded-xl font-bold hover:bg-green-500 shadow-lg hover:shadow-green-500/25 transition-all flex items-center gap-2"
                             >
-                                <CheckCircle className="h-5 w-5" /> Guardar y Usar Esta Rutina
+                                <CheckCircle className="h-5 w-5" /> {t('generator.saveBtn')}
                             </button>
                         </div>
                         <div className="bg-zinc-900 dark:bg-black rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
@@ -423,12 +434,12 @@ export default function GeneratorPage() {
 
                                 <div className="mt-6 flex gap-6 text-sm font-medium">
                                     <div className="flex flex-col">
-                                        <span className="text-zinc-500 uppercase text-[10px] tracking-wider">Volumen Semanal</span>
-                                        <span className="text-2xl font-bold text-white">{routine.weeklyVolume} <span className="text-lg text-zinc-500 font-normal">series/músculo</span></span>
+                                        <span className="text-zinc-500 uppercase text-[10px] tracking-wider">{t('generator.weeklyVolume')}</span>
+                                        <span className="text-2xl font-bold text-white">{routine.weeklyVolume} <span className="text-lg text-zinc-500 font-normal">{t('generator.setsPerMuscle')}</span></span>
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="text-zinc-500 uppercase text-[10px] tracking-wider">Frecuencia</span>
-                                        <span className="text-2xl font-bold text-white">{(routine.days.length / 2).toFixed(1)}x <span className="text-lg text-zinc-500 font-normal">/semana</span></span>
+                                        <span className="text-zinc-500 uppercase text-[10px] tracking-wider">{t('generator.frequency')}</span>
+                                        <span className="text-2xl font-bold text-white">{(routine.days.length / 2).toFixed(1)}x <span className="text-lg text-zinc-500 font-normal">{t('generator.perWeek')}</span></span>
                                     </div>
                                 </div>
                             </div>
@@ -445,37 +456,37 @@ export default function GeneratorPage() {
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-black text-orange-900 dark:text-orange-100 uppercase tracking-wide">
-                                            Protocolo Metabólico
+                                            {t('generator.metabolicProtocol')}
                                         </h3>
                                         <div className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                                            Objetivo: {routine.cardio_plan.type === 'low_impact' ? 'Quema de Grasa (Protección Articular)' : routine.cardio_plan.type === 'hiit' ? 'Acondicionamiento Metabólico' : 'Salud Cardiovascular'}
+                                            {t('common.goal')}: {routine.cardio_plan.type === 'low_impact' ? t('generator.fatLossGoal') : routine.cardio_plan.type === 'hiit' ? t('generator.hiitGoal') : t('generator.cardioHealthGoal')}
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                                     <div className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border border-orange-100 dark:border-orange-900/50">
-                                        <div className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">Dosis Semanal</div>
+                                        <div className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">{t('generator.weeklyDose')}</div>
                                         <div className="text-3xl font-black text-zinc-900 dark:text-white">
-                                            {routine.cardio_plan.frequency_per_week} <span className="text-lg font-bold text-zinc-400">sesiones</span>
+                                            {routine.cardio_plan.frequency_per_week} <span className="text-lg font-bold text-zinc-400">{t('generator.sessions')}</span>
                                         </div>
-                                        <div className="text-xs font-medium text-orange-600 mt-1">Independiente de las pesas</div>
+                                        <div className="text-xs font-medium text-orange-600 mt-1">{t('generator.independent')}</div>
                                     </div>
                                     <div className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border border-orange-100 dark:border-orange-900/50">
-                                        <div className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">Duración</div>
+                                        <div className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">{t('generator.duration')}</div>
                                         <div className="text-3xl font-black text-zinc-900 dark:text-white">
                                             {routine.cardio_plan.duration} <span className="text-lg font-bold text-zinc-400">min</span>
                                         </div>
                                         <div className="text-xs font-medium text-zinc-500 mt-1">Zona Recomendada: 2 (Conversacional)</div>
                                     </div>
                                     <div className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border border-orange-100 dark:border-orange-900/50">
-                                        <div className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">Timing Óptimo</div>
+                                        <div className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">{t('generator.optimalTiming')}</div>
                                         <div className="font-bold text-zinc-900 dark:text-white leading-tight">
-                                            {routine.cardio_plan.type === 'low_impact' ? 'Cualquier momento' : 'Lejos de pierna pesada'}
+                                            {routine.cardio_plan.type === 'low_impact' ? t('generator.anyTime') : t('generator.farFromLegs')}
                                         </div>
                                         <div className="text-xs text-zinc-500 mt-2 leading-relaxed">
-                                            • Días de Pesas: <strong>Post-Entreno</strong><br />
-                                            • Días Libres: <strong>Sesión Única</strong>
+                                            • Días de Pesas: <strong>{t('generator.postWorkout')}</strong><br />
+                                            • Días Libres: <strong>{t('generator.singleSession')}</strong>
                                         </div>
                                     </div>
                                 </div>
@@ -483,7 +494,7 @@ export default function GeneratorPage() {
                                 <div>
                                     <h4 className="font-bold text-orange-900 dark:text-orange-200 mb-3 flex items-center gap-2">
                                         <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                                        Opciones Aprobadas
+                                        {t('generator.approvedOptions')}
                                     </h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {routine.cardio_plan.exercises[0].reason.split(', ').map((opt, i) => (
@@ -503,35 +514,35 @@ export default function GeneratorPage() {
                         <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 mb-4 border border-purple-200 dark:border-purple-800">
                             <div className="flex items-center gap-2 mb-3">
                                 <Info className="h-4 w-4 text-purple-600" />
-                                <span className="font-semibold text-purple-800 dark:text-purple-200 text-sm">¿Qué significan estas métricas?</span>
+                                <span className="font-semibold text-purple-800 dark:text-purple-200 text-sm">{t('generator.metricsTitle')}</span>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                                 <div className="flex items-start gap-2">
                                     <Repeat className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <strong className="text-zinc-800 dark:text-zinc-200">S×R</strong>
-                                        <p className="text-zinc-500">Series × Repeticiones</p>
+                                        <strong className="text-zinc-800 dark:text-zinc-200">{t('generator.sxr')}</strong>
+                                        <p className="text-zinc-500">{t('generator.sxrDesc')}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <Clock className="h-4 w-4 text-gray-600 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <strong className="text-zinc-800 dark:text-zinc-200">Descanso</strong>
-                                        <p className="text-zinc-500">Tiempo entre series</p>
+                                        <strong className="text-zinc-800 dark:text-zinc-200">{t('generator.rest')}</strong>
+                                        <p className="text-zinc-500">{t('generator.restDesc')}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <Gauge className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <strong className="text-zinc-800 dark:text-zinc-200">RIR</strong>
-                                        <p className="text-zinc-500">Reps en Reserva (0-2 = máximo esfuerzo)</p>
+                                        <strong className="text-zinc-800 dark:text-zinc-200">{t('generator.rir')}</strong>
+                                        <p className="text-zinc-500">{t('generator.rirDesc')}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <Timer className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <strong className="text-zinc-800 dark:text-zinc-200">Tempo</strong>
-                                        <p className="text-zinc-500">Cadencia (ej: 2-0-1-0 = 2s bajar, 0 pausa, 1s subir)</p>
+                                        <strong className="text-zinc-800 dark:text-zinc-200">{t('generator.tempo')}</strong>
+                                        <p className="text-zinc-500">{t('generator.tempoDesc')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -542,7 +553,7 @@ export default function GeneratorPage() {
                                 <div key={idx} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden hover:border-purple-200 transition-colors shadow-lg shadow-gray-200/50 dark:shadow-none">
                                     <div className="p-5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
                                         <div className="flex items-center justify-between mb-1">
-                                            <div className="text-xs font-bold text-purple-600 uppercase tracking-widest">Día {idx + 1}</div>
+                                            <div className="text-xs font-bold text-purple-600 uppercase tracking-widest">{t('generator.day')} {idx + 1}</div>
                                         </div>
                                         <h3 className="text-xl font-black text-zinc-900 dark:text-white">{day.dayName}</h3>
                                         <div className="text-sm font-medium text-zinc-500">{day.focus}</div>
@@ -603,18 +614,18 @@ export default function GeneratorPage() {
 
                                                             {/* Smart Prescription */}
                                                             <div className="mt-2 grid grid-cols-2 gap-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                                                                <div className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="S×R = Series × Repeticiones">
+                                                                <div className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="{t('generator.sxrDesc')}">
                                                                     <Repeat className="h-3 w-3 text-purple-600" />
-                                                                    <span className="font-bold text-purple-600">S×R</span> {exItem.sets} x {exItem.reps}
+                                                                    <span className="font-bold text-purple-600">{t('generator.sxr')}</span> {exItem.sets} x {exItem.reps}
                                                                 </div>
-                                                                <div className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="Descanso entre series (segundos)">
+                                                                <div className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="{t('generator.restDesc')}">
                                                                     <Clock className="h-3 w-3 text-gray-500" /> {exItem.rest}
                                                                 </div>
-                                                                <div className="bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="RIR = Reps en Reserva (0-2 óptimo para hipertrofia)">
-                                                                    <Gauge className="h-3 w-3" /> RIR {exItem.rir}
+                                                                <div className="bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="{t('generator.rirDesc')}">
+                                                                    <Gauge className="h-3 w-3" /> {t('generator.rir')} {exItem.rir}
                                                                 </div>
                                                                 {exItem.tempo && (
-                                                                    <div className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="Tempo = Excéntrica-Pausa-Concéntrica-Pausa (ej: 2-0-1-0 = 2s bajar, 0s pausa, 1s subir, 0s arriba)">
+                                                                    <div className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help" title="{t('generator.tempoDesc')}: 2-0-1-0">
                                                                         <Timer className="h-3 w-3" /> {exItem.tempo}
                                                                     </div>
                                                                 )}
@@ -670,7 +681,7 @@ export default function GeneratorPage() {
                                     } else {
                                         return (
                                             <div className="mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 p-8 text-center">
-                                                <p className="text-gray-400 mb-4">Sin imagen disponible</p>
+                                                <p className="text-gray-400 mb-4">{t('generator.noImage')}</p>
                                                 <a
                                                     href={youtubeSearchUrl}
                                                     target="_blank"
@@ -680,7 +691,7 @@ export default function GeneratorPage() {
                                                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                                                         <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                                                     </svg>
-                                                    Ver en YouTube
+                                                    {t('generator.viewOnYoutube')}
                                                 </a>
                                             </div>
                                         );
@@ -689,20 +700,20 @@ export default function GeneratorPage() {
 
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                                        <div className="text-xs text-zinc-500 mb-1">Series x Reps</div>
+                                        <div className="text-xs text-zinc-500 mb-1">{t('generator.sxrDesc')}</div>
                                         <div className="text-lg font-bold text-zinc-900 dark:text-white">{selectedExercise.sets} x {selectedExercise.reps}</div>
                                     </div>
                                     <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                                        <div className="text-xs text-zinc-500 mb-1">Descanso</div>
+                                        <div className="text-xs text-zinc-500 mb-1">{t('generator.rest')}</div>
                                         <div className="text-lg font-bold text-zinc-900 dark:text-white">{selectedExercise.rest}</div>
                                     </div>
                                     <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                                        <div className="text-xs text-zinc-500 mb-1">RIR</div>
+                                        <div className="text-xs text-zinc-500 mb-1">{t('generator.rir')}</div>
                                         <div className="text-lg font-bold text-zinc-900 dark:text-white">{selectedExercise.rir}</div>
                                     </div>
                                     {selectedExercise.tempo && (
                                         <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                                            <div className="text-xs text-zinc-500 mb-1">Tempo</div>
+                                            <div className="text-xs text-zinc-500 mb-1">{t('generator.tempo')}</div>
                                             <div className="text-lg font-bold text-zinc-900 dark:text-white">{selectedExercise.tempo}</div>
                                         </div>
                                     )}
@@ -718,7 +729,7 @@ export default function GeneratorPage() {
                                     onClick={() => setSelectedExercise(null)}
                                     className="w-full py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-bold hover:opacity-90 transition-all"
                                 >
-                                    Cerrar
+                                    {t('generator.close')}
                                 </button>
                             </div>
                         </div>

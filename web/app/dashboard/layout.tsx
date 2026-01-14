@@ -4,36 +4,38 @@ import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-    Bell, Calendar, ChevronDown, Dumbbell, Flame, Home, LogOut, Menu, Moon,
-    PieChart, Scale, Settings, Sun, Target, TrendingDown, UtensilsCrossed, User, Users, X, Zap, ClipboardList
+    Calendar, Dumbbell, Flame, Home, LogOut, Menu, Moon,
+    PieChart, Settings, Sun, TrendingDown, UtensilsCrossed, User, Users, X, ClipboardList, Globe
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import InstallPrompt from "@/components/InstallPrompt";
 import SocialProfileReminder from "@/components/SocialProfileReminder";
+import { LanguageProvider, useLanguage } from "@/lib/i18n/context";
 
+// Navigation items with translation keys
 const NAV_ITEMS = [
-    { key: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
-    { key: "workout-plan", label: "Rutinas", icon: ClipboardList, href: "/dashboard/workout-plan" },
-    { key: "exercises", label: "Ejercicios", icon: Dumbbell, href: "/dashboard/exercises" },
-    { key: "equipment", label: "Equipo", icon: Settings, href: "/dashboard/equipment" },
-    { key: "nutrition", label: "Nutrición", icon: UtensilsCrossed, href: "/dashboard/nutrition" },
-    { key: "foods", label: "Alimentos", icon: PieChart, href: "/dashboard/foods" },
-    { key: "tracking", label: "Diario", icon: Calendar, href: "/dashboard/tracking" },
-    { key: "progress", label: "Progreso", icon: TrendingDown, href: "/dashboard/progress" },
-    { key: "community", label: "Comunidad", icon: Users, href: "/dashboard/community" },
-    { key: "profile", label: "Perfil", icon: User, href: "/dashboard/profile" },
+    { key: "dashboard", labelKey: "nav.dashboard", icon: Home, href: "/dashboard" },
+    { key: "workout-plan", labelKey: "nav.routines", icon: ClipboardList, href: "/dashboard/workout-plan" },
+    { key: "exercises", labelKey: "nav.exercises", icon: Dumbbell, href: "/dashboard/exercises" },
+    { key: "equipment", labelKey: "nav.equipment", icon: Settings, href: "/dashboard/equipment" },
+    { key: "nutrition", labelKey: "nav.nutrition", icon: UtensilsCrossed, href: "/dashboard/nutrition" },
+    { key: "foods", labelKey: "nav.foods", icon: PieChart, href: "/dashboard/foods" },
+    { key: "tracking", labelKey: "nav.diary", icon: Calendar, href: "/dashboard/tracking" },
+    { key: "progress", labelKey: "nav.progress", icon: TrendingDown, href: "/dashboard/progress" },
+    { key: "community", labelKey: "nav.community", icon: Users, href: "/dashboard/community" },
+    { key: "profile", labelKey: "nav.profile", icon: User, href: "/dashboard/profile" },
 ];
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
+    const { t, lang, setLang } = useLanguage();
     const [theme, setTheme] = useState<"light" | "dark">("light");
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Init theme from localStorage or system preference
         const savedTheme = localStorage.getItem("theme");
         if (savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
             setTheme("dark");
@@ -75,12 +77,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         });
     };
 
+    const toggleLanguage = () => {
+        setLang(lang === 'es' ? 'en' : 'es');
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
                 <div className="text-center">
                     <div className="h-12 w-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
+                    <p className="text-gray-600 dark:text-gray-400">{t('common.loading')}</p>
                 </div>
             </div>
         );
@@ -101,9 +107,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             </div>
                             <span className="font-semibold">SummerFit</span>
                         </div>
-                        <button onClick={toggleTheme} className="p-2 -mr-2">
-                            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                        </button>
+                        <div className="flex items-center gap-1">
+                            <button onClick={toggleLanguage} className="p-2" title={lang === 'es' ? 'Switch to English' : 'Cambiar a Español'}>
+                                <Globe className="h-5 w-5" />
+                            </button>
+                            <button onClick={toggleTheme} className="p-2 -mr-2">
+                                {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -140,18 +151,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                                 }`}
                                         >
                                             <item.icon className={`h-5 w-5 ${isActive ? "text-purple-600 dark:text-purple-400" : ""}`} />
-                                            <span className="text-sm">{item.label}</span>
+                                            <span className="text-sm">{t(item.labelKey)}</span>
                                         </Link>
                                     );
                                 })}
                             </nav>
-                            <div className="absolute bottom-4 left-4 right-4">
+                            <div className="absolute bottom-4 left-4 right-4 space-y-2">
+                                <button
+                                    onClick={toggleLanguage}
+                                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                                >
+                                    <Globe className="h-5 w-5" />
+                                    <span className="text-sm font-medium">{lang === 'es' ? 'English' : 'Español'}</span>
+                                </button>
                                 <button
                                     onClick={handleLogout}
                                     className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
                                 >
                                     <LogOut className="h-5 w-5" />
-                                    <span className="text-sm font-medium">Cerrar sesión</span>
+                                    <span className="text-sm font-medium">{t('nav.logout')}</span>
                                 </button>
                             </div>
                         </div>
@@ -188,7 +206,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                                 }`}
                                         >
                                             <item.icon className={`h-5 w-5 ${isActive ? "text-purple-600 dark:text-purple-400" : ""}`} />
-                                            <span className="text-sm font-medium">{item.label}</span>
+                                            <span className="text-sm font-medium">{t(item.labelKey)}</span>
                                         </Link>
                                     );
                                 })}
@@ -197,18 +215,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                         <div className="mt-auto p-4 space-y-2">
                             <button
+                                onClick={toggleLanguage}
+                                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                            >
+                                <Globe className="h-5 w-5" />
+                                <span className="text-sm font-medium">{lang === 'es' ? 'English' : 'Español'}</span>
+                            </button>
+                            <button
                                 onClick={toggleTheme}
                                 className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                             >
                                 {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                                <span className="text-sm font-medium">{theme === "dark" ? "Modo claro" : "Modo oscuro"}</span>
+                                <span className="text-sm font-medium">{t('nav.darkMode')}</span>
                             </button>
                             <button
                                 onClick={handleLogout}
                                 className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
                             >
                                 <LogOut className="h-5 w-5" />
-                                <span className="text-sm font-medium">Cerrar sesión</span>
+                                <span className="text-sm font-medium">{t('nav.logout')}</span>
                             </button>
                         </div>
                     </aside>
@@ -226,5 +251,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <SocialProfileReminder />
             </div>
         </div>
+    );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <LanguageProvider>
+            <DashboardContent>{children}</DashboardContent>
+        </LanguageProvider>
     );
 }

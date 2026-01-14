@@ -9,7 +9,7 @@ import { Card, Button, Chip, Skeleton, InfoTooltip } from "@/components/ui";
 import { MapPin, ArrowLeft, Trophy, Dumbbell, Calendar, Flame, TrendingUp, Utensils, Target, Activity, Eye } from "lucide-react";
 import CommunityFeed from "@/components/dashboard/CommunityFeed";
 import FloatingChat from "@/components/dashboard/FloatingChat";
-import WorkoutHistoryModal from "@/components/dashboard/WorkoutHistoryModal";
+import FriendRoutineModal from "@/components/dashboard/FriendRoutineModal";
 import { motion } from "framer-motion";
 
 export default function FriendProfilePage() {
@@ -29,7 +29,7 @@ export default function FriendProfilePage() {
     const [totalWorkouts, setTotalWorkouts] = useState(0);
 
     // Modal State
-    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [isRoutineOpen, setIsRoutineOpen] = useState(false);
 
     // Computed Metrics
     const [metrics, setMetrics] = useState<HealthMetrics | null>(null);
@@ -383,9 +383,9 @@ export default function FriendProfilePage() {
                                     <Button
                                         variant="outline"
                                         className="w-full text-xs h-8"
-                                        onClick={() => setIsHistoryOpen(true)}
+                                        onClick={() => setIsRoutineOpen(true)}
                                     >
-                                        <Eye className="w-3 h-3 mr-2" /> Ver Historial Reciente
+                                        <Eye className="w-3 h-3 mr-2" /> Ver Rutina Semanal
                                     </Button>
 
                                 </div>
@@ -457,12 +457,12 @@ export default function FriendProfilePage() {
                 />
             )}
 
-            {/* History Modal */}
-            <WorkoutHistoryModal
-                isOpen={isHistoryOpen}
-                onClose={() => setIsHistoryOpen(false)}
-                userId={targetUserId}
-                userName={profile?.full_name || "Amigo"}
+            {/* Friend Routine Modal */}
+            <FriendRoutineModal
+                isOpen={isRoutineOpen}
+                onClose={() => setIsRoutineOpen(false)}
+                plan={activeRoutine}
+                friendName={profile?.full_name || "Amigo"}
             />
         </div>
     );

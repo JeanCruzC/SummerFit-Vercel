@@ -209,9 +209,10 @@ export default function ProfilePage() {
                     <LocationPicker
                         latitude={profile.latitude}
                         longitude={profile.longitude}
-                        onLocationSelect={(lat, lng) => {
+                        onLocationSelect={(lat: number, lng: number, address?: string) => {
                             handleChange("latitude", lat);
                             handleChange("longitude", lng);
+                            if (address) handleChange("location_name", address);
                         }}
                     />
 

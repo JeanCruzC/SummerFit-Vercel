@@ -19,8 +19,34 @@ const icon = L.icon({
 interface LocationPickerProps {
     latitude?: number;
     longitude?: number;
-    onLocationSelect: (lat: number, lng: number) => void;
+    onLocationSelect: (lat: number, lng: number, address?: string) => void;
 }
+
+// Helper for reverse geocoding
+const fetchAddress = async (lat: number, lng: number): Promise<string | undefined> => {
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+        const data = await res.json();
+        if (data && data.address) {
+            // Priority: road + suburb/city
+            const addr = data.address;
+            const street = addr.road || addr.pedestrian || "";
+            const area = addr.suburb || addr.neighbourhood || addr.city_district || addr.hamlet || "";
+            const city = addr.city || addr.town || addr.village || addr.county || "";
+
+            // Construct meaningful address: "Street, Area, City"
+            let constructed = [];
+            if (street) constructed.push(street);
+            if (area && area !== city) constructed.push(area);
+            if (city) constructed.push(city);
+
+            return constructed.join(", ") || "Ubicación seleccionada";
+        }
+    } catch (error) {
+        console.error("Error reverse geocoding:", error);
+    }
+    return undefined;
+};
 
 function LocationMarker({ onSelect, position }: { onSelect: (lat: number, lng: number) => void; position: [number, number] | null }) {
     const map = useMapEvents({
@@ -47,14 +73,19 @@ export default function LocationPicker({ latitude, longitude, onLocationSelect }
     // Default to Mexico City center if no pos
     const defaultCenter: [number, number] = [19.4326, -99.1332];
 
+    const handleSelect = async (lat: number, lng: number) => {
+        setPosition([lat, lng]);
+        const address = await fetchAddress(lat, lng);
+        onLocationSelect(lat, lng, address);
+    }
+
     const handleGetCurrentLocation = () => {
         setLoadingLoc(true);
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (pos) => {
+                async (pos) => {
                     const { latitude, longitude } = pos.coords;
-                    setPosition([latitude, longitude]);
-                    onLocationSelect(latitude, longitude);
+                    await handleSelect(latitude, longitude);
                     setLoadingLoc(false);
                 },
                 (err) => {
@@ -75,7 +106,7 @@ export default function LocationPicker({ latitude, longitude, onLocationSelect }
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Ubicación</label>
                 <Button
                     variant="outline"
-                    size="sm"
+                    size="sm" // Corrected size
                     onClick={handleGetCurrentLocation}
                     disabled={loadingLoc}
                     className="text-xs flex gap-1"
@@ -99,10 +130,7 @@ export default function LocationPicker({ latitude, longitude, onLocationSelect }
                     />
                     <LocationMarker
                         position={position}
-                        onSelect={(lat, lng) => {
-                            setPosition([lat, lng]);
-                            onLocationSelect(lat, lng);
-                        }}
+                        onSelect={handleSelect}
                     />
                 </MapContainer>
             </div>

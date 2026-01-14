@@ -119,6 +119,7 @@ export interface MealEntry {
     log_date: string;
     meal_type: 'Desayuno' | 'Almuerzo' | 'Cena' | 'Snack';
     food_name: string;
+    emoji?: string; // Added for UI display
     grams: number;
     calories: number;
     protein_g: number;

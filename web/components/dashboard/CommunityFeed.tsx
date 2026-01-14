@@ -9,7 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function CommunityFeed({ currentUserId }: { currentUserId: string }) {
+export default function CommunityFeed({ currentUserId, targetUserId }: { currentUserId: string, targetUserId?: string }) {
     const [posts, setPosts] = useState<FeedItem[]>([]);
     const [newPost, setNewPost] = useState("");
     const [loading, setLoading] = useState(true);
@@ -20,7 +20,7 @@ export default function CommunityFeed({ currentUserId }: { currentUserId: string
     useEffect(() => {
         fetchFeed();
         fetchMyProfile();
-    }, []);
+    }, [targetUserId]); // Refetch if target changes
 
     const fetchMyProfile = async () => {
         const supabase = createClient();
@@ -33,12 +33,18 @@ export default function CommunityFeed({ currentUserId }: { currentUserId: string
     const fetchFeed = async () => {
         const supabase = createClient();
 
-        // Fetch feed items joined with profiles
-        const { data, error } = await supabase
+        // Build query
+        let query = supabase
             .from("activity_feed")
             .select("*, profiles(*)")
             .order("created_at", { ascending: false })
             .limit(20);
+
+        if (targetUserId) {
+            query = query.eq('user_id', targetUserId);
+        }
+
+        const { data, error } = await query;
 
         if (data && !error) {
             // Map profiles to user property

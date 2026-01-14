@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, MapPin, UserPlus, Users, Filter, Map as MapIcon, List, Check } from "lucide-react";
+import { Search, MapPin, UserPlus, Users, Filter, Map as MapIcon, List, Check, User } from "lucide-react";
 import { Card, Input, Button, Chip, Skeleton, Select } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { UserProfile } from "@/types";
 import dynamic from 'next/dynamic';
+import Link from "next/link";
 
 const CommunityMap = dynamic(() => import('@/components/ui/CommunityMap'), {
     ssr: false,
@@ -308,9 +309,11 @@ export default function CommunityPage() {
 
                                                 <div className="mt-6">
                                                     {friendship?.status === 'accepted' ? (
-                                                        <Button className="w-full bg-green-500 hover:bg-green-600 text-white" disabled>
-                                                            <Check className="h-4 w-4 mr-2" /> Amigos
-                                                        </Button>
+                                                        <Link href={`/dashboard/community/profile/${user.user_id}`} className="w-full">
+                                                            <Button className="w-full bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 transition-colors">
+                                                                <User className="h-4 w-4 mr-2" /> Ver Perfil
+                                                            </Button>
+                                                        </Link>
                                                     ) : friendship?.status === 'pending' ? (
                                                         <Button className="w-full bg-yellow-100 text-yellow-700" disabled>
                                                             {friendship.isSender ? 'Enviada' : 'Pendiente'}

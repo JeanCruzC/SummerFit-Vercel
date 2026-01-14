@@ -20,10 +20,34 @@ export function Card({ children, className }: { children: React.ReactNode; class
     );
 }
 
+// Avatar Component
+export function Avatar({ className, children }: { className?: string, children: React.ReactNode }) {
+    return (
+        <div className={cn("relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full", className)}>
+            {children}
+        </div>
+    );
+}
+
+export function AvatarImage({ src, className }: { src?: string | null, className?: string }) {
+    if (!src) return null;
+    return (
+        <img src={src} className={cn("aspect-square h-full w-full object-cover", className)} alt="Avatar" />
+    );
+}
+
+export function AvatarFallback({ className, children }: { className?: string, children: React.ReactNode }) {
+    return (
+        <div className={cn("flex h-full w-full items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800", className)}>
+            {children}
+        </div>
+    );
+}
+
 // Button component
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: "primary" | "secondary" | "ghost" | "danger" | "outline";
-    size?: "sm" | "md" | "lg";
+    size?: "sm" | "md" | "lg" | "icon";
     children: React.ReactNode;
 }
 
@@ -42,6 +66,7 @@ export function Button({ variant = "primary", size = "md", children, className, 
         sm: "h-9 px-3 text-sm",
         md: "h-11 px-4 text-sm",
         lg: "h-12 px-6 text-base",
+        icon: "h-10 w-10 p-2",
     };
 
     return (

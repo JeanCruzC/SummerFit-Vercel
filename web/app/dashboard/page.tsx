@@ -85,7 +85,7 @@ export default function DashboardPage() {
         const checkStreak = async () => {
             // 1. Calculate Streak
             const today = new Date();
-            const dates = historyLogs.map(log => log.date.split('T')[0]).sort((a, b) => b.localeCompare(a));
+            const dates = historyLogs.map(log => log.log_date.split('T')[0]).sort((a, b) => b.localeCompare(a));
 
             // Simple consecutive check
             let streak = 0;

@@ -17,6 +17,8 @@ const LocationPicker = dynamic(() => import('@/components/ui/LocationPicker'), {
     loading: () => <div className="h-[300px] w-full bg-gray-100 rounded-xl animate-pulse flex items-center justify-center text-gray-400">Cargando mapa...</div>
 });
 
+import SuccessOverlay from "@/components/ui/SuccessOverlay";
+
 const DIET_OPTIONS: { value: DietType; label: string }[] = [
     { value: "Estándar", label: "Estándar" },
     { value: "Keto", label: "Keto" },
@@ -54,6 +56,7 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
     const [profile, setProfile] = useState<UserProfile>({
         user_id: "",
         gender: "M",
@@ -103,7 +106,11 @@ export default function ProfilePage() {
         setSaving(true);
         const success = await upsertProfile(profile);
         setSaving(false);
-        if (success) setSaved(true);
+        if (success) {
+            setSaved(true);
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 2500); // 2.5s animation
+        }
     };
 
     const bmi = calculateBMI(profile.weight_kg, profile.height_cm);
@@ -126,7 +133,9 @@ export default function ProfilePage() {
                 <p className="text-gray-500 mt-1">Configura tus datos para cálculos personalizados.</p>
             </div>
 
-            {saved && <Alert type="success">✅ Perfil guardado correctamente.</Alert>}
+            <SuccessOverlay isVisible={showSuccess} message="Perfil guardado correctamente" />
+
+            {saved && !showSuccess && <Alert type="success">✅ Perfil actualizado.</Alert>}
 
             {/* Basic Info */}
             <Card>

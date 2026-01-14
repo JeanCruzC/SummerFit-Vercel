@@ -110,12 +110,8 @@ export default function CommunityPage() {
         }
     };
 
-    const filteredUsers = users.filter(u =>
-        (u.location_name?.toLowerCase().includes(filter.toLowerCase())) ||
-        (u.goal?.toLowerCase().includes(filter.toLowerCase())) ||
-        (u.full_name?.toLowerCase().includes(filter.toLowerCase())) ||
-        (u.activity_level?.toLowerCase().includes(filter.toLowerCase()))
-    );
+    // Use users directly as they are now server-filtered
+    const displayUsers = users;
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
@@ -174,7 +170,7 @@ export default function CommunityPage() {
                     {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 rounded-2xl" />)}
                 </div>
             ) : viewMode === "map" ? (
-                <CommunityMap users={filteredUsers} currentLocation={currentUserPos} />
+                <CommunityMap users={displayUsers} currentLocation={currentUserPos} />
             ) : viewMode === "feed" ? (
                 <div className="text-center py-20 bg-gray-50 dark:bg-gray-900 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700">
                     <Users className="h-16 w-16 mx-auto text-gray-300 mb-4" />
@@ -185,12 +181,12 @@ export default function CommunityPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredUsers.length === 0 ? (
+                    {displayUsers.length === 0 ? (
                         <div className="col-span-full text-center py-10 text-gray-500">
                             No se encontraron usuarios con esos criterios.
                         </div>
                     ) : (
-                        filteredUsers.map(user => {
+                        displayUsers.map(user => {
                             const friendship = getFriendshipStatus(user.user_id);
                             return (
                                 <motion.div

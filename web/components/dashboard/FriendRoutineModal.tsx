@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
-import { X, Calendar, Dumbbell, Clock, ChevronRight } from "lucide-react";
+import { X, Calendar, Dumbbell, Clock, ChevronRight, Flame, Zap, Moon } from "lucide-react";
 import { WorkoutPlan } from "@/types";
 
 interface FriendRoutineModalProps {
@@ -13,14 +13,35 @@ interface FriendRoutineModalProps {
 }
 
 const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-// DB Indices: Mon->1, Tue->2, ... Sun->0
+const DAYS_FULL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const DB_INDICES = [1, 2, 3, 4, 5, 6, 0];
+
+// Workout type color/icon mapping
+const WORKOUT_STYLES: Record<string, { gradient: string; icon: any; label: string }> = {
+    'upper': { gradient: 'from-blue-500 to-cyan-500', icon: Dumbbell, label: 'Upper' },
+    'lower': { gradient: 'from-orange-500 to-red-500', icon: Flame, label: 'Lower' },
+    'push': { gradient: 'from-purple-500 to-pink-500', icon: Zap, label: 'Push' },
+    'pull': { gradient: 'from-emerald-500 to-teal-500', icon: Dumbbell, label: 'Pull' },
+    'full': { gradient: 'from-violet-500 to-purple-600', icon: Flame, label: 'Full Body' },
+    'default': { gradient: 'from-gray-500 to-gray-600', icon: Dumbbell, label: 'Entrenamiento' }
+};
+
+function getWorkoutStyle(dayName: string) {
+    const nameLower = dayName?.toLowerCase() || '';
+    if (nameLower.includes('upper') || nameLower.includes('superior')) return WORKOUT_STYLES['upper'];
+    if (nameLower.includes('lower') || nameLower.includes('inferior') || nameLower.includes('pierna')) return WORKOUT_STYLES['lower'];
+    if (nameLower.includes('push') || nameLower.includes('empuje')) return WORKOUT_STYLES['push'];
+    if (nameLower.includes('pull') || nameLower.includes('tirón')) return WORKOUT_STYLES['pull'];
+    if (nameLower.includes('full') || nameLower.includes('completo')) return WORKOUT_STYLES['full'];
+    return WORKOUT_STYLES['default'];
+}
 
 export default function FriendRoutineModal({ isOpen, onClose, plan, friendName }: FriendRoutineModalProps) {
     const [loading, setLoading] = useState(true);
     const [weeklySchedule, setWeeklySchedule] = useState<any[]>(new Array(7).fill(null));
     const [error, setError] = useState<string | null>(null);
     const [selectedDay, setSelectedDay] = useState<any | null>(null);
+    const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
     useEffect(() => {
         if (isOpen && plan) {
@@ -28,6 +49,7 @@ export default function FriendRoutineModal({ isOpen, onClose, plan, friendName }
         } else {
             setWeeklySchedule(new Array(7).fill(null));
             setSelectedDay(null);
+            setSelectedDayIndex(null);
         }
     }, [isOpen, plan]);
 
@@ -38,19 +60,7 @@ export default function FriendRoutineModal({ isOpen, onClose, plan, friendName }
 
         try {
             const supabase = createClient();
-
-            // 1. Check if we have a source_routine_id (created from template)
-            // If not, we might need to look at workout_exercises directly if user created custom plan manually (future proofing)
-            // For now, based on calendar/page.tsx, let's assume structure follows saved_routines if source_routine_id exists, 
-            // but we might need to handle manual plans differently.
-
-            // Let's first try to get the saved_routine if it exists
             let routineData = null;
-
-            // Note: The specific field for source routine might need to be verified in schema, 
-            // but based on calendar/page.tsx it seems to query 'workout_plans' to get it.
-            // Since we passed 'plan', let's trust it has the fields.
-            // Extend type locally if needed since standard type might be missing it
             const sourceRoutineId = (plan as any).source_routine_id;
 
             if (sourceRoutineId) {
@@ -63,10 +73,8 @@ export default function FriendRoutineModal({ isOpen, onClose, plan, friendName }
             }
 
             if (routineData) {
-                // Logic from calendar/page.tsx to build weekly schedule
                 const schedule = new Array(7).fill(null);
 
-                // Try fetching user specific schedule override first
                 const { data: userSchedule } = await supabase
                     .from('user_schedule')
                     .select('*')
@@ -75,37 +83,27 @@ export default function FriendRoutineModal({ isOpen, onClose, plan, friendName }
 
                 if (userSchedule && userSchedule.length > 0) {
                     userSchedule.forEach((day: any) => {
-                        // Map day_of_week (0-6) to our array index (0=Mon, 6=Sun)
-                        // DB: 0=Sun, 1=Mon... 6=Sat. 
-                        // Our Array: 0=Mon, ... 5=Sat, 6=Sun
                         let arrayIndex = day.day_of_week === 0 ? 6 : day.day_of_week - 1;
-
-                        // Hydrate with exercise details from template
                         const templateDay = routineData.schedule.days.find((d: any) => d.id === day.routine_day_id);
 
                         schedule[arrayIndex] = {
                             ...day,
                             day_name: templateDay?.dayName || 'Entrenamiento',
+                            focus: templateDay?.focus || '',
                             exercises: templateDay?.exercises || []
                         };
                     });
                 } else if (routineData.recommended_schedule && routineData.schedule?.days) {
-                    // Fallback to recommended schedule
-                    // recommended_schedule array matches indices: 0=Mon, 1=Tue... (Wait, need to verify this assumption)
-                    // In calendar/page.tsx:
-                    // const dbDayIndices = [1, 2, 3, 4, 5, 6, 0]; // Mon->1, Tue->2...
-                    // Loop i from 0 to recommended_schedule.length (7)
-                    // If i=0, dbIndex=1 (Mon). So recommended_schedule[0] IS Monday.
-
                     let routineDayCounter = 0;
                     for (let i = 0; i < 7; i++) {
                         const activity = routineData.recommended_schedule[i];
                         if (activity !== 'Rest') {
                             const templateDay = routineData.schedule.days[routineDayCounter % routineData.schedule.days.length];
-                            schedule[i] = { // i=0 is Mon, matches our array
+                            schedule[i] = {
                                 day_name: templateDay?.dayName || activity,
+                                focus: templateDay?.focus || '',
                                 exercises: templateDay?.exercises || [],
-                                time_slot: 'morning' // Default/Placeholder
+                                time_slot: 'morning'
                             };
                             routineDayCounter++;
                         }
@@ -115,10 +113,7 @@ export default function FriendRoutineModal({ isOpen, onClose, plan, friendName }
                 setWeeklySchedule(schedule);
             }
 
-            // If routineData lookup failed (e.g. deleted source routine) but we have a plan, 
-            // OR if we didn't have a source_routine_id to begin with, try fetching exercises directly.
             if (!routineData) {
-                // Fetch from workout_plan_exercises table
                 const { data: exercises } = await supabase
                     .from('workout_plan_exercises')
                     .select('*, exercise:exercises(*)')
@@ -128,31 +123,38 @@ export default function FriendRoutineModal({ isOpen, onClose, plan, friendName }
 
                 if (exercises && exercises.length > 0) {
                     const schedule = new Array(7).fill(null);
+                    const dayGroups: Record<number, any[]> = {};
 
                     exercises.forEach((ex: any) => {
-                        // Assumption: day_of_week in workout_plan_exercises is often 1-based (Mon=1 ... Sun=7)
-                        // But need to be careful. Let's assume standard ISO: 1=Mon, 7=Sun.
-                        // Our array is 0=Mon, 6=Sun.
                         let arrayIndex = ex.day_of_week - 1;
-
-                        // Handle potential 0=Sun case if data is mixed
                         if (ex.day_of_week === 0) arrayIndex = 6;
+                        if (!dayGroups[arrayIndex]) dayGroups[arrayIndex] = [];
+                        dayGroups[arrayIndex].push(ex);
+                    });
 
-                        if (arrayIndex >= 0 && arrayIndex < 7) {
-                            if (!schedule[arrayIndex]) {
-                                schedule[arrayIndex] = {
-                                    day_name: `Día ${ex.day_of_week}`,
-                                    exercises: [],
-                                    time_slot: 'any'
-                                };
-                            }
-                            schedule[arrayIndex].exercises.push({
-                                exercise: ex.exercise,
-                                sets: ex.sets,
-                                reps: ex.reps,
-                                rest: ex.rest_seconds ? `${ex.rest_seconds}s` : '-'
-                            });
+                    Object.entries(dayGroups).forEach(([idx, exs]) => {
+                        const arrayIndex = parseInt(idx);
+                        // Determine workout type from exercise primary muscles
+                        const muscles = exs.map(e => e.exercise?.primary_muscles || []).flat();
+                        let workoutType = 'Entrenamiento';
+                        if (muscles.some((m: string) => ['pecho', 'hombros', 'tríceps', 'chest', 'shoulders', 'triceps'].includes(m?.toLowerCase()))) {
+                            workoutType = 'Upper / Push';
+                        } else if (muscles.some((m: string) => ['espalda', 'bíceps', 'back', 'biceps'].includes(m?.toLowerCase()))) {
+                            workoutType = 'Upper / Pull';
+                        } else if (muscles.some((m: string) => ['piernas', 'cuádriceps', 'glúteos', 'legs', 'quads', 'glutes'].includes(m?.toLowerCase()))) {
+                            workoutType = 'Lower Body';
                         }
+
+                        schedule[arrayIndex] = {
+                            day_name: workoutType,
+                            focus: `${exs.length} ejercicios`,
+                            exercises: exs.map(e => ({
+                                exercise: e.exercise,
+                                sets: e.sets,
+                                reps: e.reps,
+                                rest: e.rest_seconds ? `${e.rest_seconds}s` : '-'
+                            }))
+                        };
                     });
                     setWeeklySchedule(schedule);
                 } else {
@@ -167,6 +169,16 @@ export default function FriendRoutineModal({ isOpen, onClose, plan, friendName }
         }
     };
 
+    const handleDaySelect = (dayData: any, idx: number) => {
+        if (dayData) {
+            setSelectedDay(dayData);
+            setSelectedDayIndex(idx);
+        }
+    };
+
+    const workoutDays = weeklySchedule.filter(d => d !== null).length;
+    const totalExercises = weeklySchedule.reduce((sum, d) => sum + (d?.exercises?.length || 0), 0);
+
     return (
         <Transition appear show={isOpen} as={Fragment}>
             <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -179,135 +191,202 @@ export default function FriendRoutineModal({ isOpen, onClose, plan, friendName }
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-md" />
                 </Transition.Child>
 
                 <div className="fixed inset-0 overflow-y-auto">
-                    <div className="flex min-h-full items-center justify-center p-4 text-center">
+                    <div className="flex min-h-full items-center justify-center p-4">
                         <Transition.Child
                             as={Fragment}
                             enter="ease-out duration-300"
-                            enterFrom="opacity-0 scale-95"
+                            enterFrom="opacity-0 scale-90"
                             enterTo="opacity-100 scale-100"
                             leave="ease-in duration-200"
                             leaveFrom="opacity-100 scale-100"
-                            leaveTo="opacity-0 scale-95"
+                            leaveTo="opacity-0 scale-90"
                         >
-                            <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-900 p-6 text-left align-middle shadow-xl transition-all border border-gray-200 dark:border-gray-800">
-                                <div className="flex justify-between items-center mb-6">
-                                    <div>
-                                        <Dialog.Title as="h3" className="text-xl font-bold leading-6 text-gray-900 dark:text-white flex items-center gap-2">
-                                            <Calendar className="h-5 w-5 text-purple-500" />
-                                            Rutina de {friendName}
-                                        </Dialog.Title>
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            {plan?.name || "Rutina Actual"} • {plan?.days_per_week} días/semana
-                                        </p>
-                                    </div>
+                            <Dialog.Panel className="w-full max-w-5xl transform overflow-hidden rounded-3xl bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 shadow-2xl transition-all border border-gray-200/50 dark:border-gray-800/50">
+                                {/* Premium Header */}
+                                <div className="relative bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 p-6 pb-16">
+                                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyem0wLTR2Mkgy NHYtMmgxMnptMC00djJIMjR2LTJoMTJ6TTI0IDE0aDEydjJIMjR2LTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
                                     <button
                                         onClick={onClose}
-                                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                                     >
-                                        <X className="h-5 w-5 text-gray-500" />
+                                        <X className="h-5 w-5 text-white" />
                                     </button>
+                                    <div className="relative">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
+                                                <Calendar className="h-6 w-6 text-white" />
+                                            </div>
+                                            <div>
+                                                <Dialog.Title as="h3" className="text-2xl font-black text-white">
+                                                    Rutina de {friendName}
+                                                </Dialog.Title>
+                                                <p className="text-purple-100 text-sm">
+                                                    {plan?.name || "Rutina Actual"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Stats Bar */}
+                                <div className="relative -mt-8 mx-6 mb-4">
+                                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-4 flex items-center justify-around">
+                                        <div className="text-center">
+                                            <div className="text-2xl font-black text-purple-600">{workoutDays}</div>
+                                            <div className="text-xs text-gray-500 font-medium">Días/Semana</div>
+                                        </div>
+                                        <div className="h-8 w-px bg-gray-200 dark:bg-gray-700" />
+                                        <div className="text-center">
+                                            <div className="text-2xl font-black text-orange-500">{totalExercises}</div>
+                                            <div className="text-xs text-gray-500 font-medium">Ejercicios</div>
+                                        </div>
+                                        <div className="h-8 w-px bg-gray-200 dark:bg-gray-700" />
+                                        <div className="text-center">
+                                            <div className="text-2xl font-black text-emerald-500">~{Math.round((plan?.estimated_calories_weekly || 0) / 7)}</div>
+                                            <div className="text-xs text-gray-500 font-medium">kcal/día</div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {loading ? (
                                     <div className="flex items-center justify-center py-20">
-                                        <div className="h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                                        <div className="h-10 w-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
                                     </div>
                                 ) : error ? (
-                                    <div className="text-center py-10 text-gray-500">
-                                        {error}
+                                    <div className="text-center py-16 text-gray-500 px-6">
+                                        <Moon className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-700 mb-4" />
+                                        <p className="font-medium">{error}</p>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col md:flex-row gap-6 h-[500px]">
-                                        {/* Weekly Grid (Left side) */}
-                                        <div className="w-full md:w-1/3 flex flex-col gap-2 overflow-y-auto pr-2">
-                                            {DAYS.map((dayName, idx) => {
-                                                const dayData = weeklySchedule[idx];
-                                                const isSelected = selectedDay === dayData && dayData !== null;
+                                    <div className="p-6 pt-2">
+                                        <div className="flex flex-col lg:flex-row gap-6 min-h-[400px]">
+                                            {/* Weekly Grid */}
+                                            <div className="w-full lg:w-2/5 space-y-2">
+                                                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Semana de Entrenamiento</h4>
+                                                {DAYS.map((dayName, idx) => {
+                                                    const dayData = weeklySchedule[idx];
+                                                    const isSelected = selectedDayIndex === idx && dayData !== null;
+                                                    const style = dayData ? getWorkoutStyle(dayData.day_name) : null;
+                                                    const IconComponent = style?.icon || Dumbbell;
 
-                                                return (
-                                                    <div
-                                                        key={idx}
-                                                        onClick={() => dayData && setSelectedDay(dayData)}
-                                                        className={`p-4 rounded-xl border transition-all cursor-${dayData ? 'pointer' : 'default'} relative overflow-hidden group 
-                                                            ${isSelected
-                                                                ? 'bg-purple-600 text-white border-purple-600 shadow-md ring-2 ring-purple-200 dark:ring-purple-900'
-                                                                : dayData
-                                                                    ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700'
-                                                                    : 'bg-gray-50 dark:bg-gray-900/50 border-transparent opacity-60'
-                                                            }`}
-                                                    >
-                                                        <div className="flex justify-between items-center">
-                                                            <span className={`font-bold text-sm ${isSelected ? 'text-purple-100' : 'text-gray-400'}`}>{dayName}</span>
-                                                            {dayData && (
-                                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isSelected ? 'bg-white/20 text-white' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'}`}>
-                                                                    {dayData.exercises.length} ej.
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className={`mt-2 font-bold truncate ${isSelected ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                                                            {dayData ? dayData.day_name : 'Descanso'}
-                                                        </div>
-
-                                                        {dayData && (
-                                                            <ChevronRight className={`absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity ${isSelected ? 'text-white' : 'text-gray-400'}`} />
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-
-                                        {/* Detail View (Right side) */}
-                                        <div className="w-full md:w-2/3 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 overflow-y-auto">
-                                            {selectedDay ? (
-                                                <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                                                    <div className="flex items-center gap-3 mb-6">
-                                                        <div className="h-10 w-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center font-bold text-purple-600 dark:text-purple-400">
-                                                            {selectedDay.exercises.length}
-                                                        </div>
-                                                        <div>
-                                                            <h4 className="text-xl font-black text-gray-900 dark:text-white leading-tight">
-                                                                {selectedDay.day_name}
-                                                            </h4>
-                                                            <p className="text-sm text-gray-500">Detalles de la sesión</p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="space-y-3">
-                                                        {selectedDay.exercises.map((ex: any, i: number) => (
-                                                            <div key={i} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-4">
-                                                                <div className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-xs">
-                                                                    {i + 1}
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            onClick={() => handleDaySelect(dayData, idx)}
+                                                            className={`relative overflow-hidden rounded-xl transition-all duration-200 ${dayData ? 'cursor-pointer group' : 'cursor-default'} 
+                                                                ${isSelected
+                                                                    ? 'ring-2 ring-purple-500 ring-offset-2 dark:ring-offset-gray-900'
+                                                                    : ''
+                                                                }`}
+                                                        >
+                                                            <div className={`p-4 flex items-center gap-4 
+                                                                ${dayData
+                                                                    ? `bg-gradient-to-r ${style?.gradient} ${isSelected ? '' : 'opacity-90 hover:opacity-100'}`
+                                                                    : 'bg-gray-100 dark:bg-gray-800/50 opacity-60'
+                                                                }`}
+                                                            >
+                                                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${dayData ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                                                                    {dayData ? (
+                                                                        <IconComponent className="h-5 w-5 text-white" />
+                                                                    ) : (
+                                                                        <Moon className="h-5 w-5 text-gray-400" />
+                                                                    )}
                                                                 </div>
-                                                                <div className="flex-1">
-                                                                    <div className="font-bold text-gray-900 dark:text-white">
-                                                                        {ex.exercise?.title || "Ejercicio desconocido"}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className={`text-xs font-bold uppercase tracking-wider ${dayData ? 'text-white/70' : 'text-gray-400'}`}>
+                                                                        {DAYS_FULL[idx]}
                                                                     </div>
-                                                                    <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
-                                                                        <span className="flex items-center gap-1">
-                                                                            <Dumbbell className="h-3 w-3" /> {ex.sets} series x {ex.reps || "Fallo"} reps
+                                                                    <div className={`font-bold truncate ${dayData ? 'text-white' : 'text-gray-500'}`}>
+                                                                        {dayData ? dayData.day_name : 'Descanso'}
+                                                                    </div>
+                                                                </div>
+                                                                {dayData && (
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                                                                            {dayData.exercises.length} ej.
                                                                         </span>
-                                                                        {ex.rest && (
-                                                                            <span className="flex items-center gap-1">
-                                                                                <Clock className="h-3 w-3" /> {ex.rest} descanso
-                                                                            </span>
-                                                                        )}
+                                                                        <ChevronRight className={`h-5 w-5 text-white/60 group-hover:translate-x-1 transition-transform`} />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Detail View */}
+                                            <div className="w-full lg:w-3/5">
+                                                <div className="bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-gray-200 dark:border-gray-800 h-full min-h-[400px] overflow-hidden">
+                                                    {selectedDay ? (
+                                                        <div className="h-full flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
+                                                            {/* Detail Header */}
+                                                            <div className={`bg-gradient-to-r ${getWorkoutStyle(selectedDay.day_name).gradient} p-5`}>
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
+                                                                        {(() => {
+                                                                            const Icon = getWorkoutStyle(selectedDay.day_name).icon;
+                                                                            return <Icon className="h-7 w-7 text-white" />;
+                                                                        })()}
+                                                                    </div>
+                                                                    <div>
+                                                                        <h4 className="text-xl font-black text-white">
+                                                                            {selectedDay.day_name}
+                                                                        </h4>
+                                                                        <p className="text-white/80 text-sm">
+                                                                            {DAYS_FULL[selectedDayIndex!]} • {selectedDay.exercises.length} ejercicios
+                                                                        </p>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                        ))}
-                                                    </div>
+
+                                                            {/* Exercises List */}
+                                                            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                                                {selectedDay.exercises.map((ex: any, i: number) => (
+                                                                    <div
+                                                                        key={i}
+                                                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow flex items-center gap-4"
+                                                                    >
+                                                                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/30 dark:to-purple-800/20 flex items-center justify-center text-purple-600 dark:text-purple-400 font-black text-sm flex-shrink-0">
+                                                                            {i + 1}
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="font-bold text-gray-900 dark:text-white truncate">
+                                                                                {ex.exercise?.title || "Ejercicio"}
+                                                                            </div>
+                                                                            <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                                                                                <span className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700/50 px-2 py-1 rounded-full">
+                                                                                    <Dumbbell className="h-3 w-3" />
+                                                                                    <span className="font-medium">{ex.sets} × {ex.reps || "Fallo"}</span>
+                                                                                </span>
+                                                                                {ex.rest && ex.rest !== '-' && (
+                                                                                    <span className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700/50 px-2 py-1 rounded-full">
+                                                                                        <Clock className="h-3 w-3" />
+                                                                                        <span className="font-medium">{ex.rest}</span>
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 p-8">
+                                                            <div className="h-20 w-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+                                                                <Calendar className="h-10 w-10 text-gray-300 dark:text-gray-600" />
+                                                            </div>
+                                                            <p className="font-bold text-lg text-gray-500 dark:text-gray-400">Selecciona un día</p>
+                                                            <p className="text-sm max-w-xs">
+                                                                Haz clic en cualquier día de entrenamiento para ver los ejercicios de {friendName}
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 p-8">
-                                                    <Calendar className="h-16 w-16 text-gray-200 dark:text-gray-700 mb-4" />
-                                                    <p className="font-medium text-lg text-gray-500">Selecciona un día para ver los detalles</p>
-                                                    <p className="text-sm">Explora cómo organiza {friendName} su semana de entrenamiento.</p>
-                                                </div>
-                                            )}
+                                            </div>
                                         </div>
                                     </div>
                                 )}

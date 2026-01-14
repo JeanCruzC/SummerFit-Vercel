@@ -290,5 +290,18 @@ export interface Friendship {
 export interface Friend extends UserProfile {
     friendship_id: string;
     friendship_status: 'pending' | 'accepted' | 'blocked';
-    is_sender: boolean;
+    is_sender: boolean; // True if I sent the request
+}
+
+export interface FeedItem {
+    id: string;
+    user_id: string;
+    type: 'post' | 'workout' | 'weight_goal' | 'streak' | 'milestone' | 'recipe';
+    content: string;
+    metadata?: any;
+    images?: string[];
+    likes_count: number;
+    created_at: string;
+    // Joined
+    user?: UserProfile;
 }

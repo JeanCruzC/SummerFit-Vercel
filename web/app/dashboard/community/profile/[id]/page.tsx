@@ -1,14 +1,13 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { UserProfile, DailyLog, WorkoutPlan, MealEntry, HealthMetrics } from "@/types";
 import { calculateHealthMetrics } from "@/lib/calculations";
-import { Card, Button, Chip, Skeleton } from "@/components/ui";
-import { MapPin, ArrowLeft, Trophy, Dumbbell, Calendar, Flame, TrendingUp, Utensils, Target, Activity } from "lucide-react";
+import { Card, Button, Chip, Skeleton, InfoTooltip } from "@/components/ui";
+import { MapPin, ArrowLeft, Trophy, Dumbbell, Calendar, Flame, TrendingUp, Utensils, Target, Activity, Eye } from "lucide-react";
 import CommunityFeed from "@/components/dashboard/CommunityFeed";
 import FloatingChat from "@/components/dashboard/FloatingChat";
+import WorkoutHistoryModal from "@/components/dashboard/WorkoutHistoryModal";
 import { motion } from "framer-motion";
 
 export default function FriendProfilePage() {
@@ -26,6 +25,9 @@ export default function FriendProfilePage() {
     const [recentLogs, setRecentLogs] = useState<DailyLog[]>([]);
     const [streak, setStreak] = useState(0);
     const [totalWorkouts, setTotalWorkouts] = useState(0);
+
+    // Modal State
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
     // Computed Metrics
     const [metrics, setMetrics] = useState<HealthMetrics | null>(null);
@@ -285,8 +287,11 @@ export default function FriendProfilePage() {
                                     {streak} <Flame className="h-4 w-4 text-orange-500" />
                                 </div>
                             </div>
-                            <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-2xl text-center">
-                                <div className="text-xs text-gray-500 mb-1">Entrenamientos</div>
+                            <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-2xl text-center relative">
+                                <div className="text-xs text-gray-500 mb-1 flex justify-center items-center gap-1">
+                                    Entrenamientos
+                                    <InfoTooltip content="Total histórico de sesiones completadas" />
+                                </div>
                                 <div className="text-xl font-bold text-gray-900 dark:text-white">
                                     {totalWorkouts}
                                 </div>
@@ -298,7 +303,9 @@ export default function FriendProfilePage() {
                     {canViewNutrition ? (
                         <Card className="p-6">
                             <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                                <Utensils className="h-5 w-5 text-green-500" /> Nutrición <span className="text-xs font-normal text-gray-400 ml-auto bg-gray-100 px-2 py-1 rounded-full">Hoy</span>
+                                <Utensils className="h-5 w-5 text-green-500" /> Nutrición
+                                <InfoTooltip content="Suma de las comidas registradas hoy" />
+                                <span className="text-xs font-normal text-gray-400 ml-auto bg-gray-100 px-2 py-1 rounded-full">Hoy</span>
                             </h3>
                             {nutritionStats ? (
                                 <div className="space-y-4">
@@ -371,9 +378,14 @@ export default function FriendProfilePage() {
                                         </div>
                                     </div>
 
-                                    <Button variant="outline" className="w-full text-xs h-8" disabled>
-                                        Ver Calendario Completo
+                                    <Button
+                                        variant="outline"
+                                        className="w-full text-xs h-8"
+                                        onClick={() => setIsHistoryOpen(true)}
+                                    >
+                                        <Eye className="w-3 h-3 mr-2" /> Ver Historial Reciente
                                     </Button>
+
                                 </div>
                             ) : (
                                 <div className="text-center py-6 bg-blue-50/50 rounded-2xl border border-blue-100 dark:border-blue-900/30">
@@ -442,6 +454,14 @@ export default function FriendProfilePage() {
                     targetUserAvatar={profile.avatar_url}
                 />
             )}
+
+            {/* History Modal */}
+            <WorkoutHistoryModal
+                isOpen={isHistoryOpen}
+                onClose={() => setIsHistoryOpen(false)}
+                userId={targetUserId}
+                userName={profile?.full_name || "Amigo"}
+            />
         </div>
     );
 }

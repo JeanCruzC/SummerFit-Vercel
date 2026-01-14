@@ -15,6 +15,7 @@ const CommunityMap = dynamic(() => import('@/components/ui/CommunityMap'), {
 });
 
 import CommunityFeed from "@/components/dashboard/CommunityFeed";
+import FloatingChat from "@/components/dashboard/FloatingChat";
 import { Friendship } from "@/types";
 
 export default function CommunityPage() {
@@ -25,6 +26,7 @@ export default function CommunityPage() {
     const [filter, setFilter] = useState("");
     const [currentUserPos, setCurrentUserPos] = useState<{ lat: number; lng: number } | undefined>(undefined);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [currentUser, setCurrentUser] = useState<any>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -33,6 +35,7 @@ export default function CommunityPage() {
             // Get current user
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
+                setCurrentUser(user); // Set current user for FloatingChat
                 setCurrentUserId(user.id);
                 // Get location
                 const { data: profile } = await supabase.from("profiles").select("latitude, longitude").eq("user_id", user.id).single();

@@ -190,10 +190,10 @@ export default function FloatingChat({ currentUserId, targetUserId: initialTarge
                 <AnimatePresence>
                     {isOpen && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="mb-4 w-80 md:w-96 shadow-2xl rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex flex-col"
+                            initial={{ opacity: 0, scale: 0.8, y: 20, x: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, y: 20, x: 20, transition: { duration: 0.2 } }}
+                            className="mb-4 w-80 md:w-96 shadow-2xl rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex flex-col origin-bottom-right"
                             style={{ height: "550px", maxHeight: "80vh" }}
                         >
                             {/* Header */}
@@ -291,8 +291,8 @@ export default function FloatingChat({ currentUserId, targetUserId: initialTarge
 
                                                     <div className={`max-w-[75%] space-y-1`}>
                                                         <div className={`px-4 py-2 text-sm break-words shadow-sm ${isMe
-                                                                ? 'bg-purple-600 text-white rounded-2xl rounded-tr-none'
-                                                                : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-tl-none border border-gray-100 dark:border-gray-700'
+                                                            ? 'bg-purple-600 text-white rounded-2xl rounded-tr-none'
+                                                            : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-tl-none border border-gray-100 dark:border-gray-700'
                                                             }`}>
                                                             {msg.content}
                                                         </div>
@@ -337,8 +337,10 @@ export default function FloatingChat({ currentUserId, targetUserId: initialTarge
                 {/* New Launcher Style (Pill/Bar) */}
                 {!isOpen && (
                     <motion.button
-                        layoutId="chat-launcher"
+                        // layoutId removed to prevent glitching, simple scale animation instead
                         onClick={() => setIsOpen(true)}
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className="group flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl rounded-full pl-4 pr-1 py-1 cursor-pointer hover:border-purple-200 transition-colors"

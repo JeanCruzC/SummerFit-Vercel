@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { UserProfile, DailyLog, WorkoutPlan, MealEntry } from "@/types";
+import { UserProfile, DailyLog, WorkoutPlan, MealEntry, HealthMetrics } from "@/types";
+import { calculateHealthMetrics } from "@/lib/calculations";
 import { Card, Button, Chip, Skeleton } from "@/components/ui";
-import { MapPin, ArrowLeft, Trophy, Dumbbell, Calendar, Flame, TrendingUp, Utensils } from "lucide-react";
+import { MapPin, ArrowLeft, Trophy, Dumbbell, Calendar, Flame, TrendingUp, Utensils, Target, Activity } from "lucide-react";
 import CommunityFeed from "@/components/dashboard/CommunityFeed";
 import FloatingChat from "@/components/dashboard/FloatingChat";
 import { motion } from "framer-motion";
@@ -25,6 +26,9 @@ export default function FriendProfilePage() {
     const [recentLogs, setRecentLogs] = useState<DailyLog[]>([]);
     const [streak, setStreak] = useState(0);
     const [totalWorkouts, setTotalWorkouts] = useState(0);
+
+    // Computed Metrics
+    const [metrics, setMetrics] = useState<HealthMetrics | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -51,6 +55,12 @@ export default function FriendProfilePage() {
 
             const friendProfile = profileData as UserProfile;
             setProfile(friendProfile);
+
+            // Calculate Metrics on the fly
+            if (friendProfile.weight_kg && friendProfile.height_cm && friendProfile.age && friendProfile.gender) {
+                const computed = calculateHealthMetrics(friendProfile, friendProfile.goal_speed || 'moderado');
+                setMetrics(computed);
+            }
 
             // 3. Fetch Additional Stats (Parallel)
             const today = new Date().toISOString().split('T')[0];
@@ -152,6 +162,7 @@ export default function FriendProfilePage() {
         )
     }
 
+    // Determine privacy access (default public if not specified, for now)
     const canViewRoutine = profile.is_public_routine !== false;
     const canViewNutrition = profile.is_public_nutrition !== false;
 
@@ -211,6 +222,53 @@ export default function FriendProfilePage() {
                     </div>
                 </div>
             </Card>
+
+            {/* GOAL & METRICS SECTION (New dynamic section) */}
+            {canViewNutrition && metrics && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card className="p-4 flex flex-col justify-between border-l-4 border-l-purple-500">
+                        <div className="text-gray-500 text-xs font-medium uppercase mb-1">Fecha Objetivo</div>
+                        <div className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-purple-500" />
+                            {new Date(metrics.target_date).toLocaleDateString("es-ES", { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
+                        <div className="text-xs text-green-600 mt-1 font-medium bg-green-50 w-fit px-2 py-0.5 rounded-full">
+                            {metrics.risk_msg}
+                        </div>
+                    </Card>
+                    <Card className="p-4 flex flex-col justify-between">
+                        <div className="text-gray-500 text-xs font-medium uppercase mb-1">Objetivo Diario</div>
+                        <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                            {metrics.target_calories} <span className="text-sm font-normal text-gray-500">kcal</span>
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                            TDEE: {metrics.tdee} kcal
+                        </div>
+                    </Card>
+                    <Card className="p-4 flex flex-col justify-between">
+                        <div className="text-gray-500 text-xs font-medium uppercase mb-1">Plan Actual</div>
+                        <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-900 dark:text-white capitalize">{profile.goal_speed || 'Moderado'}</span>
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                            Déficit: {Math.abs(metrics.deficit_or_surplus)} kcal
+                        </div>
+                    </Card>
+                    <Card className="p-4 flex flex-col justify-between">
+                        <div className="text-gray-500 text-xs font-medium uppercase mb-1">Configuración</div>
+                        <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Actividad:</span>
+                                <span className="font-medium text-gray-800 dark:text-white">{profile.activity_level?.split(' ')[0]}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Dieta:</span>
+                                <span className="font-medium text-gray-800 dark:text-white">{profile.diet_type}</span>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Column: Stats & Info */}
@@ -289,13 +347,33 @@ export default function FriendProfilePage() {
                                 <Dumbbell className="h-5 w-5 text-blue-500" /> Rutina Actual
                             </h3>
                             {activeRoutine ? (
-                                <div className="space-y-3">
-                                    <div className="font-medium text-lg text-gray-800 dark:text-white">{activeRoutine.name}</div>
-                                    <p className="text-sm text-gray-500 line-clamp-2">{activeRoutine.description}</p>
-                                    <div className="flex gap-2 text-xs">
-                                        <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md">{activeRoutine.days_per_week} días/sem</span>
-                                        <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded-md">{Math.round(activeRoutine.estimated_calories_weekly)} kcal/sem</span>
+                                <div className="space-y-4">
+                                    <div>
+                                        <div className="font-medium text-lg text-gray-800 dark:text-white flex items-center gap-2">
+                                            {activeRoutine.name}
+                                            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">ACTIVO</span>
+                                        </div>
+                                        <p className="text-sm text-gray-500 line-clamp-2 mt-1">{activeRoutine.description}</p>
                                     </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500 flex items-center gap-1"><Calendar className="h-3 w-3" /> Frecuencia</span>
+                                            <span className="font-medium">{activeRoutine.days_per_week} días / semana</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500 flex items-center gap-1"><Flame className="h-3 w-3" /> Quema est.</span>
+                                            <span className="font-medium">~{Math.round(activeRoutine.estimated_calories_weekly)} kcal</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500 flex items-center gap-1"><Activity className="h-3 w-3" /> Carga</span>
+                                            <span className="font-medium">{activeRoutine.total_met_hours?.toFixed(1) || '--'} Horas MET</span>
+                                        </div>
+                                    </div>
+
+                                    <Button variant="outline" className="w-full text-xs h-8" disabled>
+                                        Ver Calendario Completo
+                                    </Button>
                                 </div>
                             ) : (
                                 <div className="text-center py-6 bg-blue-50/50 rounded-2xl border border-blue-100 dark:border-blue-900/30">

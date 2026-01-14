@@ -107,7 +107,22 @@
         "addFood": "Agregar Alimento",
         "searchFood": "Buscar alimento...",
         "servingSize": "Tamaño de Porción",
-        "nutritionFacts": "Información Nutricional"
+        "nutritionFacts": "Información Nutricional",
+        "tracking": {
+            "dailySummary": "Resumen Diario",
+            "trackProgress": "Sigue tu progreso hacia tus metas.",
+            "consumed": "Consumidas",
+            "left": "Restantes",
+            "noFoodLogged": "No hay alimentos registrados.",
+            "recommended": "Recomendado",
+            "hydration": "Hidratación",
+            "clearSection": "Limpiar Sección",
+            "confirmClear": "¿Eliminar todo en esta sección?",
+            "protein": "Proteína",
+            "carbs": "Carbohidratos",
+            "fats": "Grasas",
+            "addFood": "Agregar Comida"
+        }
     },
     "profile": {
         "title": "Perfil",

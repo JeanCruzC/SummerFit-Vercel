@@ -12,7 +12,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function TrackingPage() {
     const router = useRouter();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [selectedDate, setSelectedDate] = useState(getUserLocalDate());
     const [meals, setMeals] = useState<MealEntry[]>([]);
@@ -74,7 +74,7 @@ export default function TrackingPage() {
     };
 
     const handleClearSection = async (type: string) => {
-        if (!confirm(`¿Eliminar todo en ${type}?`)) return; // Simple confirmation
+        if (!confirm(t('nutrition.tracking.confirmClear'))) return; // Simple confirmation
         const { data: { session } } = await createClient().auth.getSession();
         if (!session) return;
 
@@ -131,8 +131,8 @@ export default function TrackingPage() {
                 {/* Date Controls */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-text-main dark:text-white">Daily Summary</h1>
-                        <p className="text-text-secondary dark:text-gray-400 mt-1">Track your progress towards your goals.</p>
+                        <h1 className="text-3xl font-bold tracking-tight text-text-main dark:text-white">{t('nutrition.tracking.dailySummary')}</h1>
+                        <p className="text-text-secondary dark:text-gray-400 mt-1">{t('nutrition.tracking.trackProgress')}</p>
                     </div>
                     <div className="flex items-center gap-3 bg-surface-light dark:bg-surface-dark p-1.5 rounded-full shadow-sm border border-border-light dark:border-purple-900/30 self-start sm:self-auto">
                         <button
@@ -147,8 +147,8 @@ export default function TrackingPage() {
                         </button>
                         <div className="flex items-center gap-2 px-2">
                             <span className="material-symbols-outlined text-[18px] text-primary">calendar_today</span>
-                            <span className="font-medium text-sm text-text-main dark:text-white whitespace-nowrap">
-                                {displayDate}
+                            <span className="font-medium text-sm text-text-main dark:text-white whitespace-nowrap capitalize">
+                                {new Date(selectedDate + 'T00:00:00').toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { weekday: 'long', day: 'numeric', month: 'short' })}
                             </span>
                         </div>
                         <button
@@ -172,7 +172,7 @@ export default function TrackingPage() {
                             <div>
                                 <div className="flex items-center gap-2 mb-1 opacity-90">
                                     <span className="material-symbols-outlined text-[20px]">local_fire_department</span>
-                                    <span className="text-sm font-medium">Calories</span>
+                                    <span className="text-sm font-medium">{t('nutrition.calories')}</span>
                                 </div>
                                 <div className="flex items-baseline gap-1">
                                     <span className="text-3xl font-bold tracking-tight">{Math.round(totals.calories)}</span>
@@ -181,8 +181,8 @@ export default function TrackingPage() {
                             </div>
                             <div className="mt-4">
                                 <div className="flex justify-between text-xs font-medium mb-1.5 opacity-90">
-                                    <span>{Math.round(caloriesPercent)}% Consumed</span>
-                                    <span>{Math.round(caloriesLeft)} left</span>
+                                    <span>{Math.round(caloriesPercent)}% {t('nutrition.tracking.consumed')}</span>
+                                    <span>{Math.round(caloriesLeft)} {t('nutrition.tracking.left')}</span>
                                 </div>
                                 <div className="w-full bg-black/40 rounded-full h-2">
                                     <div className="bg-white h-2 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]" style={{ width: `${caloriesPercent}%` }}></div>
@@ -199,8 +199,8 @@ export default function TrackingPage() {
                             <span className="text-xs font-bold text-text-secondary dark:text-gray-300 bg-gray-50 dark:bg-white/5 px-2 py-1 rounded">{Math.round(proteinPercent)}%</span>
                         </div>
                         <div>
-                            <p className="text-text-secondary dark:text-gray-400 text-sm font-medium">Protein</p>
-                            <p className="text-xl font-bold text-text-main dark:text-white">{Math.round(proteinLeft)}g <span className="text-xs font-normal text-text-secondary dark:text-gray-400">left</span></p>
+                            <p className="text-text-secondary dark:text-gray-400 text-sm font-medium">{t('nutrition.tracking.protein')}</p>
+                            <p className="text-xl font-bold text-text-main dark:text-white">{Math.round(proteinLeft)}g <span className="text-xs font-normal text-text-secondary dark:text-gray-400">{t('nutrition.tracking.left')}</span></p>
                             <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 mt-3">
                                 <div className="bg-primary h-1.5 rounded-full shadow-glow-sm" style={{ width: `${proteinPercent}%` }}></div>
                             </div>
@@ -215,8 +215,8 @@ export default function TrackingPage() {
                             <span className="text-xs font-bold text-text-secondary dark:text-gray-300 bg-gray-50 dark:bg-white/5 px-2 py-1 rounded">{Math.round(carbsPercent)}%</span>
                         </div>
                         <div>
-                            <p className="text-text-secondary dark:text-gray-400 text-sm font-medium">Carbs</p>
-                            <p className="text-xl font-bold text-text-main dark:text-white">{Math.round(carbsLeft)}g <span className="text-xs font-normal text-text-secondary dark:text-gray-400">left</span></p>
+                            <p className="text-text-secondary dark:text-gray-400 text-sm font-medium">{t('nutrition.tracking.carbs')}</p>
+                            <p className="text-xl font-bold text-text-main dark:text-white">{Math.round(carbsLeft)}g <span className="text-xs font-normal text-text-secondary dark:text-gray-400">{t('nutrition.tracking.left')}</span></p>
                             <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 mt-3">
                                 <div className="bg-primary h-1.5 rounded-full shadow-glow-sm" style={{ width: `${carbsPercent}%` }}></div>
                             </div>
@@ -231,8 +231,8 @@ export default function TrackingPage() {
                             <span className="text-xs font-bold text-text-secondary dark:text-gray-300 bg-gray-50 dark:bg-white/5 px-2 py-1 rounded">{Math.round(fatPercent)}%</span>
                         </div>
                         <div>
-                            <p className="text-text-secondary dark:text-gray-400 text-sm font-medium">Fats</p>
-                            <p className="text-xl font-bold text-text-main dark:text-white">{Math.round(fatLeft)}g <span className="text-xs font-normal text-text-secondary dark:text-gray-400">left</span></p>
+                            <p className="text-text-secondary dark:text-gray-400 text-sm font-medium">{t('nutrition.tracking.fats')}</p>
+                            <p className="text-xl font-bold text-text-main dark:text-white">{Math.round(fatLeft)}g <span className="text-xs font-normal text-text-secondary dark:text-gray-400">{t('nutrition.tracking.left')}</span></p>
                             <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 mt-3">
                                 <div className="bg-primary h-1.5 rounded-full shadow-glow-sm" style={{ width: `${fatPercent}%` }}></div>
                             </div>
@@ -246,7 +246,12 @@ export default function TrackingPage() {
                         const typeMeals = mealsByType[type];
                         const typeCalories = typeMeals.reduce((a, m) => a + (m.calories || 0), 0);
                         const icons: Record<string, string> = { Desayuno: "wb_twilight", Almuerzo: "sunny", Cena: "bedtime", Snack: "cookie" };
-                        const titles: Record<string, string> = { Desayuno: "Breakfast", Almuerzo: "Lunch", Cena: "Dinner", Snack: "Snacks" };
+                        const titles: Record<string, string> = {
+                            Desayuno: t('nutrition.breakfast'),
+                            Almuerzo: t('nutrition.lunch'),
+                            Cena: t('nutrition.dinner'),
+                            Snack: t('nutrition.snacks')
+                        };
 
                         // Recommendations placeholder
                         const recs: Record<string, string> = {
@@ -265,7 +270,7 @@ export default function TrackingPage() {
                                         </div>
                                         <div>
                                             <h3 className="font-bold text-lg text-text-main dark:text-white">{titles[type]}</h3>
-                                            <p className="text-xs text-text-secondary dark:text-gray-400 font-medium">Recommended: {recs[type]}</p>
+                                            <p className="text-xs text-text-secondary dark:text-gray-400 font-medium">{t('nutrition.tracking.recommended')}: {recs[type]}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -276,7 +281,7 @@ export default function TrackingPage() {
                                             <button
                                                 onClick={() => handleClearSection(type)}
                                                 className="p-1 hover:bg-gray-200 dark:hover:bg-white/10 rounded text-gray-400 hover:text-red-500 transition-colors"
-                                                title="Clear Section"
+                                                title={t('nutrition.tracking.clearSection')}
                                             >
                                                 <span className="material-symbols-outlined text-[18px]">delete_sweep</span>
                                             </button>
@@ -289,12 +294,12 @@ export default function TrackingPage() {
                                         <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-full mb-1">
                                             <span className="material-symbols-outlined text-text-secondary dark:text-gray-500 text-[32px]">no_meals</span>
                                         </div>
-                                        <p className="text-text-secondary dark:text-gray-400 text-sm">No food logged yet.</p>
+                                        <p className="text-text-secondary dark:text-gray-400 text-sm">{t('nutrition.tracking.noFoodLogged')}</p>
                                         <button
                                             onClick={() => router.push("/dashboard/foods")}
                                             className="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors shadow-glow-sm flex items-center gap-2"
                                         >
-                                            <span className="material-symbols-outlined text-[18px]">add</span> Add Food
+                                            <span className="material-symbols-outlined text-[18px]">add</span> {t('nutrition.tracking.addFood')}
                                         </button>
                                     </div>
                                 ) : (
@@ -336,7 +341,7 @@ export default function TrackingPage() {
                                                 className="w-full py-3 flex items-center justify-center gap-2 bg-primary text-white font-medium hover:bg-primary-dark transition-all rounded-xl shadow-glow-sm group"
                                             >
                                                 <span className="material-symbols-outlined group-hover:scale-110 transition-transform">add_circle</span>
-                                                Add Food
+                                                {t('nutrition.tracking.addFood')}
                                             </button>
                                         </div>
                                     </div>
@@ -353,7 +358,7 @@ export default function TrackingPage() {
                             <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-500 p-2 rounded-lg">
                                 <span className="material-symbols-outlined">water_drop</span>
                             </span>
-                            <span className="font-bold text-text-main dark:text-white">Hydration</span>
+                            <span className="font-bold text-text-main dark:text-white">{t('nutrition.tracking.hydration')}</span>
                         </div>
                         <span className="text-sm font-medium text-text-secondary dark:text-gray-400">{(waterGlasses * 0.25).toFixed(2)} / 3.00 L</span>
                     </div>

@@ -238,22 +238,7 @@ export function Segmented({ options, value, onChange }: SegmentedProps) {
     );
 }
 
-// Chip/Tag
-export function Chip({ children, color = "gray", className }: { children: React.ReactNode; color?: "gray" | "purple" | "green" | "red" | "amber"; className?: string }) {
-    const colors = {
-        gray: "bg-gray-100 text-gray-600 border-gray-200",
-        purple: "bg-purple-100 text-purple-700 border-purple-200",
-        green: "bg-green-100 text-green-700 border-green-200",
-        red: "bg-red-100 text-red-700 border-red-200",
-        amber: "bg-amber-100 text-amber-700 border-amber-200",
-    };
 
-    return (
-        <span className={cn("inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium", colors[color], className)}>
-            {children}
-        </span>
-    );
-}
 
 // Ring Progress
 export function RingProgress({ value, size = 120, strokeWidth = 10 }: { value: number; size?: number; strokeWidth?: number }) {

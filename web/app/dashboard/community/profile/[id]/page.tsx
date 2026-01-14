@@ -18,6 +18,11 @@ export default function FriendProfilePage() {
     const [loading, setLoading] = useState(true);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+    // Messaging Logic
+    const [messages, setMessages] = useState<any[]>([]);
+    const [newMessage, setNewMessage] = useState("");
+    const [sending, setSending] = useState(false);
+
     useEffect(() => {
         const fetchData = async () => {
             const supabase = createClient();
@@ -46,34 +51,7 @@ export default function FriendProfilePage() {
         fetchData();
     }, [targetUserId]);
 
-    if (loading) {
-        return (
-            <div className="max-w-4xl mx-auto space-y-6">
-                <Skeleton className="h-64 w-full rounded-3xl" />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Skeleton className="h-40 rounded-2xl" />
-                    <Skeleton className="h-40 rounded-2xl" />
-                    <Skeleton className="h-40 rounded-2xl" />
-                </div>
-            </div>
-        )
-    }
-
-    if (!profile) {
-        return (
-            <div className="text-center py-20">
-                <h2 className="text-2xl font-bold text-gray-800">Perfil no encontrado</h2>
-                <Button onClick={() => router.back()} className="mt-4">Volver</Button>
-            </div>
-        )
-    }
-
-    return (
-    // Messaging Logic
-    const [messages, setMessages] = useState<any[]>([]);
-    const [newMessage, setNewMessage] = useState("");
-    const [sending, setSending] = useState(false);
-
+    // Chat Subscription & Fetch
     useEffect(() => {
         if (!currentUserId || !targetUserId) return;
 
@@ -142,6 +120,28 @@ export default function FriendProfilePage() {
         }
         setSending(false);
     };
+
+    if (loading) {
+        return (
+            <div className="max-w-4xl mx-auto space-y-6">
+                <Skeleton className="h-64 w-full rounded-3xl" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Skeleton className="h-40 rounded-2xl" />
+                    <Skeleton className="h-40 rounded-2xl" />
+                    <Skeleton className="h-40 rounded-2xl" />
+                </div>
+            </div>
+        )
+    }
+
+    if (!profile) {
+        return (
+            <div className="text-center py-20">
+                <h2 className="text-2xl font-bold text-gray-800">Perfil no encontrado</h2>
+                <Button onClick={() => router.back()} className="mt-4">Volver</Button>
+            </div>
+        )
+    }
 
     return (
         <div className="max-w-5xl mx-auto space-y-8">
@@ -277,4 +277,3 @@ export default function FriendProfilePage() {
         </div>
     );
 }
-

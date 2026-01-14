@@ -25,6 +25,7 @@
     "unzip-stream": "^0.3.4"
   },
   "dependencies": {
-    "date-fns": "^4.1.0"
+    "date-fns": "^4.1.0",
+    "react-easy-crop": "^5.5.6"
   }
 }

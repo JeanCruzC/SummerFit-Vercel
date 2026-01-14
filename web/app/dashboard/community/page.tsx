@@ -307,20 +307,20 @@ export default function CommunityPage() {
                                                     )}
                                                 </div>
 
-                                                <div className="mt-6">
+                                                <div className="mt-6 flex gap-2">
                                                     {friendship?.status === 'accepted' ? (
                                                         <Link href={`/dashboard/community/profile/${user.user_id}`} className="w-full">
-                                                            <Button className="w-full bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 transition-colors">
+                                                            <Button className="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 dark:bg-transparent dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors">
                                                                 <User className="h-4 w-4 mr-2" /> Ver Perfil
                                                             </Button>
                                                         </Link>
                                                     ) : friendship?.status === 'pending' ? (
-                                                        <Button className="w-full bg-yellow-100 text-yellow-700" disabled>
+                                                        <Button className="w-full bg-yellow-100 text-yellow-700 border border-yellow-200" disabled>
                                                             {friendship.isSender ? 'Enviada' : 'Pendiente'}
                                                         </Button>
                                                     ) : (
                                                         <Button
-                                                            className="w-full bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:opacity-90 transition-opacity shadown-sm"
+                                                            className="w-full bg-purple-600 text-white hover:bg-purple-700 transition-colors shadow-sm"
                                                             onClick={() => handleConnect(user.user_id)}
                                                         >
                                                             <UserPlus className="h-4 w-4 mr-2" /> Conectar

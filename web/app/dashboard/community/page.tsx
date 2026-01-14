@@ -182,8 +182,21 @@ export default function CommunityPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {displayUsers.length === 0 ? (
-                        <div className="col-span-full text-center py-10 text-gray-500">
-                            No se encontraron usuarios con esos criterios.
+                        <div className="col-span-full text-center py-20">
+                            {filter ? (
+                                <>
+                                    <div className="text-gray-400 mb-2 text-4xl">🔍</div>
+                                    <p className="text-gray-500">No se encontraron usuarios que coincidan con "{filter}".</p>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="text-gray-300 mb-4 text-6xl">👥</div>
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Aún no hay otros miembros</h3>
+                                    <p className="text-gray-500 mt-2 max-w-sm mx-auto">
+                                        Parece que eres el primero aquí o no se han cargado los usuarios. ¡Invita a tus amigos a unirse!
+                                    </p>
+                                </>
+                            )}
                         </div>
                     ) : (
                         displayUsers.map(user => {

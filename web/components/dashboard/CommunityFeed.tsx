@@ -108,41 +108,42 @@ export default function CommunityFeed({ currentUserId, targetUserId, showCreateP
     return (
         <div className="max-w-2xl mx-auto space-y-6">
             {/* Create Post - Twitter Style */}
-            <Card className="p-4 overflow-hidden border-none shadow-sm dark:bg-gray-800">
-                <div className="flex gap-4">
-                    <div className="flex-shrink-0">
-                        {userProfile?.avatar_url ? (
-                            <img src={userProfile.avatar_url} alt="Me" className="h-10 w-10 rounded-full object-cover" />
-                        ) : (
-                            <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">
-                                {(userProfile?.full_name || "Y")[0]}
+            {showCreatePost && (
+                <Card className="p-4 overflow-hidden border-none shadow-sm dark:bg-gray-800">
+                    <div className="flex gap-4">
+                        <div className="flex-shrink-0">
+                            {userProfile?.avatar_url ? (
+                                <img src={userProfile.avatar_url} alt="Me" className="h-10 w-10 rounded-full object-cover" />
+                            ) : (
+                                <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">
+                                    {(userProfile?.full_name || "Y")[0]}
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex-1">
+                            <textarea
+                                value={newPost}
+                                onChange={(e) => setNewPost(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder="¿Qué estás pensando hoy? Comparte tu progreso..."
+                                className="w-full resize-none bg-transparent text-lg placeholder-gray-400 border-none focus:ring-0 p-2 min-h-[80px]"
+                            />
+                            <div className="border-t border-gray-100 dark:border-gray-700 pt-3 flex justify-between items-center">
+                                <div className="flex gap-2 text-purple-500">
+                                    {/* Future Interactions */}
+                                </div>
+                                <Button
+                                    size="sm"
+                                    onClick={handlePost}
+                                    disabled={posting || !newPost.trim()}
+                                    className="rounded-full px-6 font-bold bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+                                >
+                                    {posting ? "Publicando..." : "Publicar"}
+                                </Button>
                             </div>
-                        )}
-                    </div>
-                    <div className="flex-1">
-                        <textarea
-                            value={newPost}
-                            onChange={(e) => setNewPost(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="¿Qué estás pensando hoy? Comparte tu progreso..."
-                            className="w-full resize-none bg-transparent text-lg placeholder-gray-400 border-none focus:ring-0 p-2 min-h-[80px]"
-                        />
-                        <div className="border-t border-gray-100 dark:border-gray-700 pt-3 flex justify-between items-center">
-                            <div className="flex gap-2 text-purple-500">
-                                {/* Future Interactions */}
-                            </div>
-                            <Button
-                                size="sm"
-                                onClick={handlePost}
-                                disabled={posting || !newPost.trim()}
-                                className="rounded-full px-6 font-bold bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
-                            >
-                                {posting ? "Publicando..." : "Publicar"}
-                            </Button>
                         </div>
                     </div>
-                </div>
-            </Card>
+                </Card>
 
             {/* Feed List */}
             <div className="space-y-4">

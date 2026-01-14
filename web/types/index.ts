@@ -71,6 +71,8 @@ export interface HealthMetrics {
     weeks_to_goal: number;
     target_date: Date;
     warnings: string[];
+    risk_msg?: string;
+    risk_level?: 'safe' | 'moderate' | 'high';
 }
 
 // Food item from database

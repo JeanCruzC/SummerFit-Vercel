@@ -428,6 +428,8 @@ export function calculateHealthMetrics(
         weeks_to_goal: projection.weeks,
         target_date: targetDate,
         warnings: projection.warnings,
+        risk_msg: projection.risk_msg,
+        risk_level: projection.risk_level,
     };
 }
 

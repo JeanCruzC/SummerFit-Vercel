@@ -38,15 +38,15 @@ export async function searchFoods(query: string, limit = 50): Promise<FoodItem[]
 
     if (words.length === 0) return [];
 
-    // Build query - each word must be present in name
+    // Build query - search in BOTH name (EN) and name_es (ES) fields
     let queryBuilder = supabase
         .from('foods')
         .select('*')
         .like('data_source', 'usda%');
 
-    // Add ILIKE filter for each word
+    // Add OR filter for each word to match in either name OR name_es
     for (const word of words) {
-        queryBuilder = queryBuilder.ilike('name', `%${word}%`);
+        queryBuilder = queryBuilder.or(`name.ilike.%${word}%,name_es.ilike.%${word}%`);
     }
 
     const { data, error } = await queryBuilder.limit(limit);

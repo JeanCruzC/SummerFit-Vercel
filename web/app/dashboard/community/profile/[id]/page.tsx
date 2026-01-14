@@ -188,7 +188,7 @@ export default function FriendProfilePage() {
             <Card className="overflow-hidden border-none shadow-lg dark:bg-gray-800">
                 <div className="h-40 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600"></div>
                 <div className="px-8 pb-8">
-                    <div className="relative flex flex-col md:flex-row justify-between items-end -mt-16 md:-mt-12 mb-6 gap-4">
+                    <div className="relative flex flex-col md:flex-row justify-between md:items-start -mt-16 md:-mt-12 mb-6 gap-4">
                         <div className="h-32 w-32 md:h-40 md:w-40 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden bg-white shadow-md flex-shrink-0">
                             {profile.avatar_url ? (
                                 <img src={profile.avatar_url} alt={profile.full_name} className="h-full w-full object-cover" />
@@ -199,7 +199,7 @@ export default function FriendProfilePage() {
                             )}
                         </div>
 
-                        <div className="flex-1 md:pb-4">
+                        <div className="flex-1 md:mt-14">
                             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
                                 {profile.full_name || "Usuario de SummerFit"}
                             </h1>

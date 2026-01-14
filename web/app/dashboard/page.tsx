@@ -78,6 +78,66 @@ export default function DashboardPage() {
         loadData();
     }, [router]);
 
+    // Check for Streak (after historyLogs is set)
+    useEffect(() => {
+        if (!userId || historyLogs.length === 0) return;
+
+        const checkStreak = async () => {
+            // 1. Calculate Streak
+            const today = new Date();
+            const dates = historyLogs.map(log => log.date.split('T')[0]).sort((a, b) => b.localeCompare(a));
+
+            // Simple consecutive check
+            let streak = 0;
+            let currentCheckDate = new Date();
+
+            // Check if today is logged
+            const todayStr = currentCheckDate.toISOString().split('T')[0];
+            const hasToday = dates.includes(todayStr);
+
+            if (!hasToday) {
+                // If not logged today, check yesterday to see if streak is alive
+                currentCheckDate.setDate(currentCheckDate.getDate() - 1);
+            }
+
+            while (true) {
+                const dateStr = currentCheckDate.toISOString().split('T')[0];
+                if (dates.includes(dateStr)) {
+                    streak++;
+                    currentCheckDate.setDate(currentCheckDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+
+            // 2. Trigger Rule: Milestone (3, 7, 14, 30...) AND Today Logged
+            if (streak > 0 && hasToday && [3, 7, 14, 21, 30, 60, 90].includes(streak)) {
+                const supabase = createClient();
+
+                // 3. Check if already posted TODAY
+                const { data: existing } = await supabase
+                    .from("activity_feed")
+                    .select("id")
+                    .eq("user_id", userId)
+                    .eq("type", "streak")
+                    .gte("created_at", new Date().toISOString().split('T')[0]) // Created today
+                    .maybeSingle();
+
+                if (!existing) {
+                    await supabase.from("activity_feed").insert({
+                        user_id: userId,
+                        type: 'streak',
+                        content: `¡Racha en llamas! 🔥 He completado ${streak} días seguidos de actividad.`,
+                        metadata: { streak_days: streak }
+                    });
+                    console.log("Streak posted:", streak);
+                }
+            }
+        };
+
+        checkStreak();
+    }, [userId, historyLogs]);
+
     const getDefaultProfile = (uid: string): UserProfile => ({
         user_id: uid,
         gender: "M",

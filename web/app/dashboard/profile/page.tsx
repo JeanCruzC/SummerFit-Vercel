@@ -90,6 +90,7 @@ export default function ProfilePage() {
             const data = await getProfile(session.user.id);
             if (data) {
                 setProfile(data);
+                setInitialWeight(data.weight_kg);
             } else {
                 setProfile(p => ({ ...p, user_id: session.user.id }));
             }
@@ -103,15 +104,49 @@ export default function ProfilePage() {
         setSaved(false);
     };
 
+    // Keep track of initial weight to detect changes
+    const [initialWeight, setInitialWeight] = useState<number | null>(null);
+
     const handleSave = async () => {
         setSaving(true);
         const success = await upsertProfile(profile);
-        setSaving(false);
+
         if (success) {
             setSaved(true);
             setShowSuccess(true);
+
+            // Check for Weight Loss Trigger
+            if (initialWeight && profile.weight_kg < initialWeight) {
+                const lostAmount = initialWeight - profile.weight_kg;
+                const isGoalReached = profile.weight_kg <= profile.target_weight_kg && initialWeight > profile.target_weight_kg;
+
+                // Only post if significant change (> 0.5kg) or goal reached
+                if (lostAmount >= 0.5 || isGoalReached) {
+                    try {
+                        const supabase = createClient();
+                        await supabase.from("activity_feed").insert({
+                            user_id: profile.user_id,
+                            type: 'weight_goal',
+                            content: isGoalReached
+                                ? `¡Objetivo Alcanzado! 🎉 He llegado a mi meta de ${profile.weight_kg}kg.`
+                                : `¡Progreso! 🔥 He bajado ${lostAmount.toFixed(1)}kg.`,
+                            metadata: {
+                                initial_weight: initialWeight,
+                                new_weight: profile.weight_kg,
+                                lost_amount: lostAmount
+                            }
+                        });
+                        // Update initial weight so we don't trigger again until next drop
+                        setInitialWeight(profile.weight_kg);
+                    } catch (err) {
+                        console.error("Error creating feed post:", err);
+                    }
+                }
+            }
+
             setTimeout(() => setShowSuccess(false), 2500); // 2.5s animation
         }
+        setSaving(false);
     };
 
     const bmi = calculateBMI(profile.weight_kg, profile.height_cm);

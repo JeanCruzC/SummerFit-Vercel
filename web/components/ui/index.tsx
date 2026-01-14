@@ -7,13 +7,22 @@ function cn(...classes: (string | boolean | undefined)[]) {
     return classes.filter(Boolean).join(" ");
 }
 
-export const Chip = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+// Chip/Tag
+export function Chip({ children, color = "gray", className }: { children: React.ReactNode; color?: "gray" | "purple" | "green" | "red" | "amber"; className?: string }) {
+    const colors = {
+        gray: "bg-gray-100 text-gray-600 border-gray-200",
+        purple: "bg-purple-100 text-purple-700 border-purple-200",
+        green: "bg-green-100 text-green-700 border-green-200",
+        red: "bg-red-100 text-red-700 border-red-200",
+        amber: "bg-amber-100 text-amber-700 border-amber-200",
+    };
+
     return (
-        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${className || "bg-gray-100 text-gray-800"}`}>
+        <span className={cn("inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium", colors[color], className)}>
             {children}
         </span>
     );
-};
+}
 
 export const InfoTooltip = ({ content }: { content: string }) => {
     return (

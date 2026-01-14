@@ -151,13 +151,20 @@ export async function getMealEntries(userId: string, date: string): Promise<Meal
     const supabase = createClient();
     const { data, error } = await supabase
         .from('meal_entries')
-        .select('*')
+        .select('*, foods : food_id (emoji)')
         .eq('user_id', userId)
         .eq('log_date', date)
         .order('created_at', { ascending: true });
 
     if (error) return [];
-    return data as MealEntry[];
+
+    // Flatten the emoji from the joined relation if present
+    const flattened = (data as any[]).map((entry: any) => ({
+        ...entry,
+        emoji: entry.foods?.emoji
+    }));
+
+    return flattened as MealEntry[];
 }
 
 export async function addMealEntry(entry: Omit<MealEntry, 'id' | 'created_at'>): Promise<boolean> {

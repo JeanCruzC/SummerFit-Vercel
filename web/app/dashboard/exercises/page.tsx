@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getUserEquipment, getExercisesByEquipment, searchExercises } from "@/lib/supabase/exercises";
 import type { Exercise, UserEquipment } from "@/types";
+import { useLanguage, translateMuscle } from "@/lib/i18n/context";
 
 export default function ExercisesPage() {
     const router = useRouter();
@@ -21,6 +22,7 @@ export default function ExercisesPage() {
     const [filterForce, setFilterForce] = useState("");
     const [filterMechanic, setFilterMechanic] = useState("");
     const [locationType, setLocationType] = useState<"all" | "home" | "gym">("all");
+    const { t, lang, getText } = useLanguage();
 
     useEffect(() => {
         loadData();
@@ -154,11 +156,14 @@ export default function ExercisesPage() {
                 <div>
                     <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white mb-2 flex items-center gap-3">
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-500">
-                            Biblioteca de Ejercicios
+                            {t('exercises.title')}
                         </span>
                     </h1>
                     <p className="text-zinc-600 dark:text-zinc-400 text-lg">
-                        Explora {filteredExercises.length} ejercicios optimizados para tu equipamiento.
+                        {lang === 'es'
+                            ? `Explora ${filteredExercises.length} ejercicios optimizados para tu equipamiento.`
+                            : `Explore ${filteredExercises.length} exercises optimized for your equipment.`
+                        }
                     </p>
                 </div>
 
@@ -174,7 +179,7 @@ export default function ExercisesPage() {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Buscar por nombre, músculo o tipo..."
+                            placeholder={t('exercises.searchPlaceholder')}
                             className="w-full pl-12 pr-4 py-4 rounded-xl bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-700 text-zinc-900 dark:text-white placeholder-zinc-400 font-medium focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all"
                         />
                     </div>
@@ -187,13 +192,13 @@ export default function ExercisesPage() {
                                 onClick={() => setLocationType("all")}
                                 className={`flex-1 py-2 px-3 rounded-lg text-xs md:text-sm font-bold transition-all ${locationType === "all" ? "bg-white dark:bg-gray-700 shadow text-purple-600" : "text-gray-500"}`}
                             >
-                                Todos
+                                {t('common.all')}
                             </button>
                             <button
                                 onClick={() => setLocationType("home")}
                                 className={`flex-1 py-2 px-3 rounded-lg text-xs md:text-sm font-bold transition-all ${locationType === "home" ? "bg-white dark:bg-gray-700 shadow text-green-600" : "text-gray-500"}`}
                             >
-                                Casa
+                                {lang === 'es' ? 'Casa' : 'Home'}
                             </button>
                             <button
                                 onClick={() => setLocationType("gym")}
@@ -335,6 +340,11 @@ function ScoreStars({ score }: { score: number }) {
 function ExerciseCard({ exercise }: { exercise: Exercise }) {
     const [isHovered, setIsHovered] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
+    const { lang, getText, t } = useLanguage();
+
+    // Get language-appropriate title
+    const displayTitle = lang === 'es' ? exercise.title : (exercise.title_en || exercise.title);
+    const displayDescription = lang === 'es' ? (exercise.description_es || exercise.description) : exercise.description;
 
     // Prefer video -> gif -> image
     // Prefer "male" & "front" angle if available, or just first video
@@ -440,7 +450,7 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
             <div className="p-5 flex flex-col flex-1">
                 <div className="mb-3">
                     <h3 className="text-lg font-bold text-zinc-900 dark:text-white leading-tight mb-1 group-hover:text-purple-600 transition-colors">
-                        {exercise.title}
+                        {displayTitle}
                     </h3>
                     <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 mb-2">
                         <span className="font-semibold text-purple-600 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">{exercise.body_part}</span>

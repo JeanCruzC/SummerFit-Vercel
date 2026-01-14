@@ -200,6 +200,7 @@ export interface Exercise {
     title: string;
     title_en?: string;
     description?: string;
+    description_es?: string;
     type?: 'Fuerza' | 'Cardio' | 'Flexibilidad';
     level?: 'Principiante' | 'Intermedio' | 'Avanzado';
     body_part?: string;

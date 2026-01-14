@@ -18,6 +18,8 @@ export interface UserProfile {
     latitude?: number;
     longitude?: number;
     location_name?: string;
+    city?: string; // Alias for location_name or separate field
+    gym_experience?: string; // e.g. "Principiante", "Intermedio"
     is_public_profile?: boolean;
     is_public_routine?: boolean;
     is_public_nutrition?: boolean;

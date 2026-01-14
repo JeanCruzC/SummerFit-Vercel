@@ -192,7 +192,7 @@ export function Segmented({ options, value, onChange }: SegmentedProps) {
 }
 
 // Chip/Tag
-export function Chip({ children, color = "gray" }: { children: React.ReactNode; color?: "gray" | "purple" | "green" | "red" | "amber" }) {
+export function Chip({ children, color = "gray", className }: { children: React.ReactNode; color?: "gray" | "purple" | "green" | "red" | "amber"; className?: string }) {
     const colors = {
         gray: "bg-gray-100 text-gray-600 border-gray-200",
         purple: "bg-purple-100 text-purple-700 border-purple-200",
@@ -202,7 +202,7 @@ export function Chip({ children, color = "gray" }: { children: React.ReactNode; 
     };
 
     return (
-        <span className={cn("inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium", colors[color])}>
+        <span className={cn("inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium", colors[color], className)}>
             {children}
         </span>
     );

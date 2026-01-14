@@ -14,7 +14,6 @@ const CommunityMap = dynamic(() => import('@/components/ui/CommunityMap'), {
 });
 
 import CommunityFeed from "@/components/dashboard/CommunityFeed";
-
 import { Friendship } from "@/types";
 
 export default function CommunityPage() {
@@ -133,9 +132,6 @@ export default function CommunityPage() {
         }
     };
 
-    // Use users directly as they are now server-filtered
-    const displayUsers = users;
-
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
             {/* Header */}
@@ -176,24 +172,23 @@ export default function CommunityPage() {
                 <Card className="p-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Buscar por nombre, ciudad, objetivo..."
-                            className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition"
+                        <Input
+                            placeholder="Buscar usuarios por nombre..."
+                            className="pl-10"
                             value={filter}
-                            onChange={e => setFilter(e.target.value)}
+                            onChange={(e) => setFilter(e.target.value)}
                         />
                     </div>
                 </Card>
             )}
 
-            {/* Content */}
+            {/* Content Switch */}
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 rounded-2xl" />)}
                 </div>
             ) : viewMode === "map" ? (
-                <CommunityMap users={displayUsers} currentLocation={currentUserPos} />
+                <CommunityMap users={users} currentLocation={currentUserPos} />
             ) : viewMode === "feed" ? (
                 <CommunityFeed currentUserId={currentUserId!} />
             ) : (
@@ -209,23 +204,31 @@ export default function CommunityPage() {
                                     .filter(f => f.status === 'pending' && f.friend_id === currentUserId)
                                     .map(request => {
                                         // Need to find the profile of the requestor
-                                        // Since we don't have it in 'users' list maybe (if filtered), usually we'd need to fetch them
-                                        // For MVP let's see if they are in 'users' array, otherwise show generic info or id
-                                        // NOTE: Ideally we should fetch these profiles specifically.
-                                        // For now, let's assume we can fetch them or they are in 'users' if public. 
+                                        // Since users array excludes self, but includes others.
+                                        // Wait, users array only has *public* profiles.
+                                        // If requestor is not in public profiles list (e.g. private profile), we might not find them here easily without fetching.
+                                        // For now, assume they are in 'users' or we just show a generic placeholder if not found.
+
+                                        // Find requestor in loaded users (might be incomplete if filtered)
+                                        // In real app, you'd fetch specific user profile by ID if missing.
+
                                         // If not public, we might see "Usuario desconocido" for now which is a bug to fix later.
                                         const requestor = users.find(u => u.user_id === request.user_id);
+
                                         return (
                                             <Card key={request.id} className="p-3 flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="h-8 w-8 rounded-full bg-yellow-200 flex items-center justify-center text-yellow-700 font-bold">
+                                                    <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">
                                                         {(requestor?.full_name || "U")[0]}
                                                     </div>
-                                                    <span className="font-medium text-sm">{requestor?.full_name || "Usuario"}</span>
+                                                    <div>
+                                                        <p className="font-medium text-sm">{requestor?.full_name || "Usuario"}</p>
+                                                        <p className="text-xs text-gray-500">Quiere ser tu amigo</p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex gap-2">
-                                                    <Button size="xs" onClick={() => handleAcceptFriend(request.user_id)} className="bg-green-500 hover:bg-green-600 text-white">
-                                                        Aceptar
+                                                <div className="flex gap-1">
+                                                    <Button size="sm" className="bg-purple-600 text-white h-8" onClick={() => handleAcceptFriend(request.user_id)}>
+                                                        <Check className="h-4 w-4" />
                                                     </Button>
                                                 </div>
                                             </Card>
@@ -237,7 +240,7 @@ export default function CommunityPage() {
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {displayUsers.length === 0 ? (
+                        {users.length === 0 ? (
                             <div className="col-span-full text-center py-20">
                                 {filter ? (
                                     <>
@@ -255,81 +258,81 @@ export default function CommunityPage() {
                                 )}
                             </div>
                         ) : (
-                            displayUsers.map(user => {
+                            users.map(user => {
                                 const friendship = getFriendshipStatus(user.user_id);
                                 return (
                                     <motion.div
                                         key={user.user_id}
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition"
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="h-full"
                                     >
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="flex items-center gap-3">
-                                                {user.avatar_url ? (
-                                                    <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-white dark:border-gray-700 shadow-sm relative">
-                                                        <img
-                                                            src={user.avatar_url}
-                                                            alt={user.full_name || "Usuario"}
-                                                            className="object-cover h-full w-full"
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-xl shadow-sm">
-                                                        {user.gender === 'M' ? '👨' : '👩'}
-                                                    </div>
-                                                )}
-                                                <div>
-                                                    <div className="font-semibold text-lg">
-                                                        {user.full_name || "Usuario SummerFit"}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500 flex items-center gap-1">
-                                                        <MapPin className="h-3 w-3" /> {user.location_name || "Ubicación desconocida"}
+                                        <Card className="h-full hover:shadow-lg transition-all duration-300 border-transparent hover:border-purple-100 dark:hover:border-purple-900/50 overflow-hidden group">
+                                            <div className="relative h-24 bg-gradient-to-r from-purple-500 to-pink-500">
+                                                <div className="absolute -bottom-10 left-6">
+                                                    <div className="h-20 w-20 rounded-full border-4 border-white dark:border-gray-900 bg-white dark:bg-gray-800 shadow-md overflow-hidden">
+                                                        {user.avatar_url ? (
+                                                            <img src={user.avatar_url} alt={user.full_name} className="h-full w-full object-cover" />
+                                                        ) : (
+                                                            <div className="h-full w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-400">
+                                                                <Users className="h-8 w-8" />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                            <div className="pt-12 p-6">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-purple-600 transition-colors">
+                                                            {user.full_name || "Usuario"}
+                                                        </h3>
+                                                        <p className="text-sm text-gray-500 flex items-center gap-1">
+                                                            <MapPin className="h-3 w-3" /> {user.city || "Ubicación desconocida"}
+                                                        </p>
+                                                    </div>
+                                                </div>
 
-                                        <div className="space-y-3 mb-6">
-                                            <div className="flex flex-wrap gap-2">
-                                                <Chip color="purple">{user.goal}</Chip>
-                                                <Chip color="gray">{user.activity_level}</Chip>
-                                            </div>
-                                            <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
-                                                <div className="text-center">
-                                                    <div className="font-bold">{user.age}</div>
-                                                    <div className="text-[10px] uppercase text-gray-400">Edad</div>
+                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                    {user.gym_experience && (
+                                                        <Chip className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-0">
+                                                            {user.gym_experience}
+                                                        </Chip>
+                                                    )}
+                                                    {user.goal && (
+                                                        <Chip className="bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300 border-0">
+                                                            {user.goal}
+                                                        </Chip>
+                                                    )}
                                                 </div>
-                                                <div className="text-center border-l border-gray-200 dark:border-gray-600 pl-4">
-                                                    <div className="font-bold">{user.diet_type}</div>
-                                                    <div className="text-[10px] uppercase text-gray-400">Dieta</div>
-                                                </div>
-                                            </div>
-                                        </div>
 
-                                        {friendship?.status === 'accepted' ? (
-                                            <Button className="w-full bg-green-500 hover:bg-green-600 text-white" disabled>
-                                                <Check className="h-4 w-4 mr-2" /> Amigos
-                                            </Button>
-                                        ) : friendship?.status === 'pending' ? (
-                                            <Button className="w-full bg-amber-500/10 text-amber-600 border border-amber-200" disabled variant="secondary">
-                                                {friendship.isSender ? "Solicitud Enviada" : "Solicitud Pendiente"}
-                                            </Button>
-                                        ) : (
-                                            <Button
-                                                className="w-full"
-                                                variant="secondary"
-                                                onClick={() => handleConnect(user.user_id)}
-                                            >
-                                                <UserPlus className="h-4 w-4 mr-2" /> Conectar
-                                            </Button>
-                                        )}
+                                                <div className="mt-6">
+                                                    {friendship?.status === 'accepted' ? (
+                                                        <Button className="w-full bg-green-500 hover:bg-green-600 text-white" disabled>
+                                                            <Check className="h-4 w-4 mr-2" /> Amigos
+                                                        </Button>
+                                                    ) : friendship?.status === 'pending' ? (
+                                                        <Button className="w-full bg-yellow-100 text-yellow-700" disabled>
+                                                            {friendship.isSender ? 'Enviada' : 'Pendiente'}
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            className="w-full bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:opacity-90 transition-opacity shadown-sm"
+                                                            onClick={() => handleConnect(user.user_id)}
+                                                        >
+                                                            <UserPlus className="h-4 w-4 mr-2" /> Conectar
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </Card>
                                     </motion.div>
                                 );
                             })
                         )}
                     </div>
-            )}
                 </div>
-            );
+            )}
+        </div>
+    );
 }

@@ -69,6 +69,81 @@ export default function FriendProfilePage() {
     }
 
     return (
+    // Messaging Logic
+    const [messages, setMessages] = useState<any[]>([]);
+    const [newMessage, setNewMessage] = useState("");
+    const [sending, setSending] = useState(false);
+
+    useEffect(() => {
+        if (!currentUserId || !targetUserId) return;
+
+        // 1. Fetch initial messages
+        const fetchMessages = async () => {
+            const supabase = createClient();
+            const { data } = await supabase
+                .from("private_messages")
+                .select("*")
+                .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${currentUserId})`)
+                .order("created_at", { ascending: true });
+
+            if (data) setMessages(data);
+        };
+
+        fetchMessages();
+
+        // 2. Realtime Subscription
+        const supabase = createClient();
+        const channel = supabase
+            .channel(`chat:${currentUserId}-${targetUserId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'private_messages',
+                    filter: `receiver_id=in.(${currentUserId},${targetUserId})`
+                },
+                (payload) => {
+                    // Only add if it belongs to this conversation
+                    const msg = payload.new as any;
+                    if (
+                        (msg.sender_id === currentUserId && msg.receiver_id === targetUserId) ||
+                        (msg.sender_id === targetUserId && msg.receiver_id === currentUserId)
+                    ) {
+                        setMessages(prev => [...prev, msg]);
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [currentUserId, targetUserId]);
+
+    const handleSendMessage = async () => {
+        if (!newMessage.trim() || !currentUserId || !targetUserId) return;
+        setSending(true);
+
+        const supabase = createClient();
+        const msgContent = newMessage;
+        setNewMessage(""); // Optimistic clear
+
+        const { error } = await supabase.from("private_messages").insert({
+            sender_id: currentUserId,
+            receiver_id: targetUserId,
+            content: msgContent
+        });
+
+        if (error) {
+            console.error("Error sending message:", error);
+            alert("No se pudo enviar el mensaje");
+            setNewMessage(msgContent); // Revert on error
+        }
+        setSending(false);
+    };
+
+    return (
         <div className="max-w-5xl mx-auto space-y-8">
             {/* Back Button */}
             <button
@@ -91,9 +166,6 @@ export default function FriendProfilePage() {
                                     {(profile.full_name || "U")[0]}
                                 </div>
                             )}
-                        </div>
-                        <div className="flex gap-2 mb-2">
-                            {/* Actions if needed */}
                         </div>
                     </div>
 
@@ -142,20 +214,52 @@ export default function FriendProfilePage() {
                                 <span className="text-gray-500">Entrenamientos</span>
                                 <span className="font-bold text-gray-900 dark:text-white">0</span>
                             </div>
-                            {/* Can fetch real stats later */}
                         </div>
                     </Card>
 
-                    <Card className="p-6 bg-gradient-to-br from-purple-500 to-indigo-600 text-white border-none">
-                        <h3 className="font-bold text-lg mb-2">¡Motiva a {profile.full_name?.split(' ')[0]}!</h3>
-                        <p className="text-purple-100 text-sm mb-4">Envíale un mensaje de apoyo para que siga cumpliendo sus metas.</p>
+                    <Card className="flex flex-col h-[400px] bg-white dark:bg-gray-800 border-none shadow-sm overflow-hidden">
+                        <div className="p-4 bg-purple-600 text-white font-bold flex items-center gap-2">
+                            <MessageCircle className="h-5 w-5" /> Chat con {profile.full_name?.split(' ')[0]}
+                        </div>
 
-                        <div className="flex gap-2">
+                        {/* Messages Area */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900/50">
+                            {messages.length === 0 ? (
+                                <div className="text-center text-gray-400 text-sm py-10">
+                                    ¡Salúda a {profile.full_name?.split(' ')[0]}! <br />
+                                    <span className="text-xs opacity-70">Los mensajes desaparecen en 12h</span>
+                                </div>
+                            ) : (
+                                messages.map((msg) => {
+                                    const isMe = msg.sender_id === currentUserId;
+                                    return (
+                                        <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${isMe
+                                                    ? 'bg-purple-600 text-white rounded-br-none'
+                                                    : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-sm rounded-bl-none'
+                                                }`}>
+                                                {msg.content}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        {/* Input Area */}
+                        <div className="p-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex gap-2">
                             <Input
-                                placeholder="Escribe tu mensaje..."
-                                className="bg-white/10 border-white/20 text-white placeholder-white/60 focus:bg-white/20"
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                                placeholder="Escribe..."
+                                className="bg-gray-100 dark:bg-gray-900 border-transparent focus:bg-white transition-all rounded-full px-4"
                             />
-                            <Button className="bg-white text-purple-600 hover:bg-white/90 border-none shrink-0" onClick={() => alert("¡Mensaje enviado! (Simulado)")}>
+                            <Button
+                                className="bg-purple-600 text-white hover:bg-purple-700 rounded-full h-10 w-10 p-0 shrink-0"
+                                onClick={handleSendMessage}
+                                disabled={sending || !newMessage.trim()}
+                            >
                                 <Send className="h-4 w-4" />
                             </Button>
                         </div>

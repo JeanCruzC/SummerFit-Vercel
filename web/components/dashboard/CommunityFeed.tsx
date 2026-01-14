@@ -144,6 +144,7 @@ export default function CommunityFeed({ currentUserId, targetUserId, showCreateP
                         </div>
                     </div>
                 </Card>
+            )}
 
             {/* Feed List */}
             <div className="space-y-4">

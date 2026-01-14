@@ -156,36 +156,27 @@ export function generateSimpleMeal(
 
     // 2. Apply strict Diet Filters
     if (dietType === 'keto') {
-        // Remove high carb foods (grains, starchy veg, high sugar fruits)
-        // Keep only: proteins (mostly), fats, non-starchy veg
         foods = foods.filter(f => {
-            if (f.category === 'carb') return false; // No rice, potato, oats
-            if (f.category === 'fruit' && !['strawberries'].includes(f.id)) return false; // Only berries
-            if (f.category === 'dairy' && f.id === 'milk') return false; // Limit milk (sugar)
+            if (f.category === 'carb') return false;
+            if (f.category === 'fruit' && !['strawberries'].includes(f.id)) return false;
+            if (f.category === 'dairy' && f.id === 'milk') return false;
             return true;
         });
     }
 
     if (dietType === 'vegan') {
-        // Remove animal products
         foods = foods.filter(f => !['protein', 'dairy'].includes(f.category) ||
-            ['beans_black', 'lentils', 'tofu', 'tempeh'].includes(f.id) // Exceptions if they were categorized as protein (our simple DB marks beans as carb usually but let's check)
+            ['beans_black', 'lentils', 'tofu', 'tempeh'].includes(f.id)
         );
-        // Our simple DB has beans/lentils as 'carb'. We need to ensure we have vegan proteins.
-        // Actually checks categories: 'protein' in SIMPLE_FOODS are meats/fish/eggs.
-        // We need to allow beans/lentils/quinoa to act as protein source for vegans.
     }
 
     if (dietType === 'vegetarian') {
-        // Remove meats
         foods = foods.filter(f => !['chicken_breast', 'chicken_thigh', 'beef_ground', 'beef_steak', 'pork_loin', 'fish_tilapia', 'fish_salmon', 'tuna_canned', 'turkey_breast'].includes(f.id));
     }
 
     if (dietType === 'diabetes_friendly' || conditions.includes('diabetes_type_2')) {
-        // Limit high GI foods. Prefer whole grains.
         foods = foods.filter(f =>
-            // Exclude white rice, white bread, potato? Maybe potato is ok with skin but let's be strict for "Diabetes Friendly" preset
-            !['rice_white', 'bread_white' /*if exists*/].includes(f.id)
+            !['rice_white', 'bread_white'].includes(f.id)
         );
     }
 
@@ -196,9 +187,7 @@ export function generateSimpleMeal(
     let fruits = foods.filter(f => f.category === 'fruit');
     let dairy = foods.filter(f => f.category === 'dairy');
 
-    // Special handling for Vegan Protein sources if list is empty
     if ((dietType === 'vegan' || dietType === 'vegetarian') && proteins.length === 0) {
-        // Treat high-protein carbs (beans, lentils, quinoa) as protein sources for meal generation
         proteins = foods.filter(f => ['beans_black', 'lentils', 'quinoa'].includes(f.id));
     }
 
@@ -207,103 +196,154 @@ export function generateSimpleMeal(
     // Macro Ratios per diet
     let proteinRatio = 0.35;
     let carbRatio = 0.35;
-    let fatRatio = 0.30; // Implicit remnant
+    // fatRatio is the remainder
 
     if (dietType === 'keto') {
         proteinRatio = 0.25;
-        carbRatio = 0.05; // Very low
-        // Fat takes the rest (~70%)
+        carbRatio = 0.05;
+        // Fat ~70%
+    } else if (dietType === 'diabetes_friendly') {
+        proteinRatio = 0.40;
+        carbRatio = 0.25;
+    } else if (dietType === 'high_protein') {
+        proteinRatio = 0.45;
+        carbRatio = 0.30;
+    } else if (dietType === 'low_carb') {
+        proteinRatio = 0.40;
+        carbRatio = 0.20;
+    } else if (dietType === 'vegan') {
+        proteinRatio = 0.25; // Harder to hit high protein without meat
+        carbRatio = 0.45;
     }
 
-    if (dietType === 'diabetes_friendly') {
-        proteinRatio = 0.40;
-        carbRatio = 0.25; // Lower carb
-    }
+    // Helper to calculate portion
+    const calcPortion = (food: SimpleFoodItem, calories: number) => {
+        if (!food || calories <= 0) return 0;
+        return Math.round(calories / (food.kcal / 100));
+    };
 
     if (type === 'breakfast') {
-        // Breakfast logic adjusted for diet
-        let carb = carbs.find(c => ['oats', 'bread_whole'].includes(c.id)) || carbs[0];
+        let carb = carbs.find(c => ['oats', 'bread_whole', 'quinoa'].includes(c.id)) || carbs[0];
         let protein = proteins.find(p => p.id === 'eggs') || dairy.find(d => d.id === 'yogurt_greek') || proteins[0];
         let fruit = fruits[Math.floor(Math.random() * fruits.length)];
 
-        // KETO overrides handled by filtering above
-
-
-        if (carb && carbRatio > 0.05) {
-            const carbCal = targetCalories * carbRatio;
-            const p = Math.round(carbCal / (carb.kcal / 100));
-            items.push({ food: carb, portion_g: p, macros: calculateItemMacros(carb, p) });
+        // Prioritize protein source for vegan/veg if eggs not available
+        if (dietType === 'vegan') {
+            protein = proteins[0]; // Bean/Lentil/Tofu
         }
+
+        // 1. Protein
         if (protein) {
-            const protCal = targetCalories * proteinRatio;
-            const p = Math.round(protCal / (protein.kcal / 100));
-            items.push({ food: protein, portion_g: p, macros: calculateItemMacros(protein, p) });
+            const pCals = targetCalories * proteinRatio;
+            const portion = calcPortion(protein, pCals);
+            // Cap but higher
+            const finalPortion = Math.min(portion, 400);
+            items.push({ food: protein, portion_g: finalPortion, macros: calculateItemMacros(protein, finalPortion) });
         }
+
+        // 2. Carb
+        if (carb && carbRatio > 0.05) {
+            const cCals = targetCalories * carbRatio;
+            const portion = calcPortion(carb, cCals);
+            const finalPortion = Math.min(portion, 400);
+            items.push({ food: carb, portion_g: finalPortion, macros: calculateItemMacros(carb, finalPortion) });
+        }
+
+        // 3. Fruit
         if (fruit && dietType !== 'keto') {
             items.push({ food: fruit, portion_g: fruit.portion_g, macros: calculateItemMacros(fruit, fruit.portion_g) });
-        }
-
-        // Keto needs fat source if no carb
-        if (dietType === 'keto') {
-            const fat = fats[Math.floor(Math.random() * fats.length)];
-            if (fat) items.push({ food: fat, portion_g: 30, macros: calculateItemMacros(fat, 30) });
         }
 
     } else if (type === 'snack') {
+        // Simple snack logic: fruit + fat/protein
         const fruit = fruits[Math.floor(Math.random() * fruits.length)];
-        const snackOption = [...fats, ...dairy][Math.floor(Math.random() * (fats.length + dairy.length))];
+        const snackOption = [...fats, ...dairy, ...proteins][Math.floor(Math.random() * (fats.length + dairy.length + proteins.length))];
 
         if (fruit && dietType !== 'keto') {
             items.push({ food: fruit, portion_g: fruit.portion_g, macros: calculateItemMacros(fruit, fruit.portion_g) });
         }
-        if (snackOption) {
-            // Check vegan dairy
-            if (dietType === 'vegan' && snackOption.category === 'dairy') {
-                // Skip dairy for vegan
-            } else {
-                items.push({ food: snackOption, portion_g: snackOption.portion_g, macros: calculateItemMacros(snackOption, snackOption.portion_g) });
-            }
+
+        // Fill remainder with snack option
+        const currentCals = sumMacros(items.map(i => i.macros)).kcal;
+        const remaining = targetCalories - currentCals;
+
+        if (snackOption && remaining > 30) {
+            const portion = calcPortion(snackOption, remaining);
+            // Ensure portion isn't tiny or huge
+            const finalPortion = Math.min(Math.max(portion, 20), 200);
+            items.push({ food: snackOption, portion_g: finalPortion, macros: calculateItemMacros(snackOption, finalPortion) });
         }
+
     } else {
-        // Lunch/Dinner
+        // Lunch & Dinner
         const protein = proteins[Math.floor(Math.random() * proteins.length)];
         const carb = carbs[Math.floor(Math.random() * carbs.length)];
         const veg1 = vegetables[Math.floor(Math.random() * vegetables.length)];
-        const veg2 = vegetables.filter(v => v.id !== veg1?.id)[Math.floor(Math.random() * (vegetables.length - 1))];
-        const fat = fats[Math.floor(Math.random() * fats.length)]; // Add fat source explicitly for keto/balanced
 
+        // 1. Add Protein
         if (protein) {
-            const proteinPortion = Math.round((targetCalories * proteinRatio) / (protein.kcal / 100));
+            const pCals = targetCalories * proteinRatio;
+            const portion = calcPortion(protein, pCals);
+            const finalPortion = Math.min(portion, 600); // Increased cap significantly
             items.push({
                 food: protein,
-                portion_g: Math.min(proteinPortion, 300),
+                portion_g: finalPortion,
                 cooking_state: protein.cooking_states?.[0],
-                macros: calculateItemMacros(protein, Math.min(proteinPortion, 300))
+                macros: calculateItemMacros(protein, finalPortion)
             });
         }
-        if (carb && dietType !== 'keto') {
-            const carbPortion = Math.round((targetCalories * carbRatio) / (carb.kcal / 100));
-            // For Diabetes, ensure portion isn't huge
-            const maxCarb = (dietType === 'diabetes_friendly') ? 150 : 300;
 
+        // 2. Add Carb
+        if (carb && dietType !== 'keto') {
+            const cCals = targetCalories * carbRatio;
+            const portion = calcPortion(carb, cCals);
+            const maxCarb = (dietType === 'diabetes_friendly' || dietType === 'low_carb') ? 200 : 500;
+            const finalPortion = Math.min(portion, maxCarb);
             items.push({
                 food: carb,
-                portion_g: Math.min(carbPortion, maxCarb),
+                portion_g: finalPortion,
                 cooking_state: carb.cooking_states?.[0],
-                macros: calculateItemMacros(carb, Math.min(carbPortion, maxCarb))
+                macros: calculateItemMacros(carb, finalPortion)
             });
         }
-        if (veg1) {
-            items.push({ food: veg1, portion_g: veg1.portion_g, cooking_state: veg1.cooking_states?.[0], macros: calculateItemMacros(veg1, veg1.portion_g) });
-        }
-        if (veg2) {
-            items.push({ food: veg2, portion_g: veg2.portion_g / 2, cooking_state: veg2.cooking_states?.[0], macros: calculateItemMacros(veg2, veg2.portion_g / 2) });
-        }
 
-        // Add Fat for Keto or if needed to fill calories
-        if (dietType === 'keto' && fat) {
-            // Keto relies on fat. Add avocado/oil/nuts
-            items.push({ food: fat, portion_g: 40, macros: calculateItemMacros(fat, 40) });
+        // 3. Add Veggies (Low cal, mostly for health)
+        if (veg1) {
+            items.push({ food: veg1, portion_g: 150, cooking_state: veg1.cooking_states?.[0], macros: calculateItemMacros(veg1, 150) });
+        }
+    }
+
+    // --- GAP FILLER & FAT ADJUSTMENT ---
+    // Ensure we hit close to targetCalories by adding/adjusting fat
+    const currentTotals = sumMacros(items.map(i => i.macros));
+    const deficit = targetCalories - currentTotals.kcal;
+
+    // Tolerance: if deficit > 10% of meal target, fill it
+    if (deficit > (targetCalories * 0.10)) {
+        // Pick a fat source
+        let fatSource = fats[Math.floor(Math.random() * fats.length)];
+        // Fallback to olive oil if no fat source found
+        if (!fatSource) fatSource = SIMPLE_FOODS.find(f => f.id === 'olive_oil')!;
+
+        // Check if we already have a fat source in items to just increase it?
+        // Simpler to just add/push a new item for "Cooking Oil" or "Side of Avocado"
+
+        if (fatSource) {
+            const portion = calcPortion(fatSource, deficit);
+            // Cap fat portion reasonable per meal (e.g. 100g nuts is a lot, but 10g oil is fine)
+            // If it's oil, keep it under 30ml unless huge needs. If avocado, up to 200g.
+            let maxFat = 100;
+            if (fatSource.id === 'olive_oil') maxFat = 40;
+
+            const finalPortion = Math.min(portion, maxFat);
+
+            if (finalPortion > 5) {
+                items.push({
+                    food: fatSource,
+                    portion_g: finalPortion,
+                    macros: calculateItemMacros(fatSource, finalPortion)
+                });
+            }
         }
     }
 

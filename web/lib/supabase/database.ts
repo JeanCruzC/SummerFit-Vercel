@@ -188,6 +188,18 @@ export async function deleteMealEntry(id: number): Promise<boolean> {
     return !error;
 }
 
+export async function deleteMealEntriesByType(userId: string, date: string, type: string): Promise<boolean> {
+    const supabase = createClient();
+    const { error } = await supabase
+        .from('meal_entries')
+        .delete()
+        .eq('user_id', userId)
+        .eq('log_date', date)
+        .eq('meal_type', type);
+
+    return !error;
+}
+
 // ============ DAILY LOGS ============
 
 export async function getDailyLog(userId: string, date: string): Promise<DailyLog | null> {

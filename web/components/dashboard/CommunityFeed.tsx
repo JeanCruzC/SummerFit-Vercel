@@ -130,7 +130,6 @@ export default function CommunityFeed({ currentUserId, targetUserId }: { current
                         <div className="border-t border-gray-100 dark:border-gray-700 pt-3 flex justify-between items-center">
                             <div className="flex gap-2 text-purple-500">
                                 {/* Future Interactions */}
-                                <button className="p-2 hover:bg-purple-50 dark:hover:bg-gray-700 rounded-full transition-colors"><Dumbbell className="h-5 w-5" /></button>
                             </div>
                             <Button
                                 size="sm"

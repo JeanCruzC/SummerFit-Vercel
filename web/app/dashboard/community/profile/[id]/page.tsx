@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { UserProfile } from "@/types";
 import { Card, Button, Input, Chip, Skeleton } from "@/components/ui";
-import { MapPin, ArrowLeft, Trophy, Dumbbell, Calendar, MessageCircle } from "lucide-react";
+import { MapPin, ArrowLeft, Trophy, Dumbbell, Calendar, MessageCircle, Send } from "lucide-react";
 import CommunityFeed from "@/components/dashboard/CommunityFeed";
 import { motion } from "framer-motion";
 
@@ -149,9 +149,16 @@ export default function FriendProfilePage() {
                     <Card className="p-6 bg-gradient-to-br from-purple-500 to-indigo-600 text-white border-none">
                         <h3 className="font-bold text-lg mb-2">¡Motiva a {profile.full_name?.split(' ')[0]}!</h3>
                         <p className="text-purple-100 text-sm mb-4">Envíale un mensaje de apoyo para que siga cumpliendo sus metas.</p>
-                        <Button className="w-full bg-white text-purple-600 hover:bg-gray-100 border-none">
-                            <MessageCircle className="h-4 w-4 mr-2" /> Enviar Mensaje
-                        </Button>
+
+                        <div className="flex gap-2">
+                            <Input
+                                placeholder="Escribe tu mensaje..."
+                                className="bg-white/10 border-white/20 text-white placeholder-white/60 focus:bg-white/20"
+                            />
+                            <Button className="bg-white text-purple-600 hover:bg-white/90 border-none shrink-0" onClick={() => alert("¡Mensaje enviado! (Simulado)")}>
+                                <Send className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </Card>
                 </div>
 
@@ -159,7 +166,7 @@ export default function FriendProfilePage() {
                 <div className="lg:col-span-2">
                     <h3 className="font-bold text-xl mb-4 text-gray-800 dark:text-white">Actividad Reciente</h3>
                     {currentUserId && (
-                        <CommunityFeed currentUserId={currentUserId} targetUserId={targetUserId} />
+                        <CommunityFeed currentUserId={currentUserId} targetUserId={targetUserId} showCreatePost={false} />
                     )}
                 </div>
             </div>

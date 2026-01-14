@@ -217,7 +217,7 @@ export default function GeneratorPage() {
                                 exercise_id: ex.exercise.id,
                                 day_of_week: dayOfWeek,
                                 sets: ex.sets,
-                                reps: ex.reps,
+                                reps: parseInt(ex.reps) || 10, // Parse first number from "6-10" range
                                 duration_minutes: ex.duration_minutes || 0,
                                 rest_seconds: parseInt(ex.rest) || 60,
                                 order_in_day: order

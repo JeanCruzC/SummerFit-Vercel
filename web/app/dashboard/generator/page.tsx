@@ -228,8 +228,15 @@ export default function GeneratorPage() {
                 });
 
                 if (exerciseInserts.length > 0) {
+                    console.log(`📝 Inserting ${exerciseInserts.length} exercises to plan ${mainPlan.id}`);
                     const { error: exError } = await supabase.from('workout_plan_exercises').insert(exerciseInserts);
-                    if (exError) console.error("Error inserting exercises:", exError);
+                    if (exError) {
+                        console.error("❌ Error inserting exercises:", exError);
+                        throw new Error(`Failed to save exercises: ${exError.message}`);
+                    }
+                    console.log("✅ Exercises inserted successfully!");
+                } else {
+                    console.warn("⚠️ No exercises to insert! exerciseInserts is empty.");
                 }
             }
 

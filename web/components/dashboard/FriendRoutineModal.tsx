@@ -113,10 +113,12 @@ export default function FriendRoutineModal({ isOpen, onClose, plan, friendName }
                 }
 
                 setWeeklySchedule(schedule);
-            } else {
-                // If no source_routine_id, it is a manually created plan.
-                // We need to fetch from workout_plan_exercises table
-                // This wasn't fully detailed in the current task context but let's implement a fallback
+            }
+
+            // If routineData lookup failed (e.g. deleted source routine) but we have a plan, 
+            // OR if we didn't have a source_routine_id to begin with, try fetching exercises directly.
+            if (!routineData) {
+                // Fetch from workout_plan_exercises table
                 const { data: exercises } = await supabase
                     .from('workout_plan_exercises')
                     .select('*, exercise:exercises(*)')
@@ -124,14 +126,18 @@ export default function FriendRoutineModal({ isOpen, onClose, plan, friendName }
                     .order('day_of_week')
                     .order('order_in_day');
 
-                if (exercises) {
+                if (exercises && exercises.length > 0) {
                     const schedule = new Array(7).fill(null);
-                    // Group by day_of_week
-                    // Assumption: Manual plan day_of_week: 1=Mon, ..., 7=Sun (Standard) or 0=Sun?
-                    // Let's assume 1=Mon based on typical Supabase/Postgres conventions often used here
 
                     exercises.forEach((ex: any) => {
-                        let arrayIndex = ex.day_of_week - 1; // 1-based to 0-based
+                        // Assumption: day_of_week in workout_plan_exercises is often 1-based (Mon=1 ... Sun=7)
+                        // But need to be careful. Let's assume standard ISO: 1=Mon, 7=Sun.
+                        // Our array is 0=Mon, 6=Sun.
+                        let arrayIndex = ex.day_of_week - 1;
+
+                        // Handle potential 0=Sun case if data is mixed
+                        if (ex.day_of_week === 0) arrayIndex = 6;
+
                         if (arrayIndex >= 0 && arrayIndex < 7) {
                             if (!schedule[arrayIndex]) {
                                 schedule[arrayIndex] = {

@@ -27,13 +27,34 @@ export async function upsertProfile(profile: Partial<UserProfile> & { user_id: s
     return !error;
 }
 
-// ============ FOODS ============
+// Category priority for search ranking (lower = higher priority)
+const CATEGORY_PRIORITY: Record<string, number> = {
+    'Fruits and Fruit Juices': 1,
+    'Vegetables and Vegetable Products': 1,
+    'Cereal Grains and Pasta': 2,
+    'Dairy and Egg Products': 2,
+    'Beef Products': 3,
+    'Pork Products': 3,
+    'Poultry Products': 3,
+    'Finfish and Shellfish Products': 3,
+    'Legumes and Legume Products': 3,
+    'Nut and Seed Products': 4,
+    'Fats and Oils': 5,
+    'Spices and Herbs': 5,
+    'Beverages': 6,
+    'Baked Products': 7,
+    'Breakfast Cereals': 7,
+    'Snacks': 8,
+    'Sweets': 9,
+    'Fast Foods': 10,
+    'Restaurant Foods': 10,
+    'Meals, Entrees, and Side Dishes': 10,
+};
 
 export async function searchFoods(query: string, limit = 50): Promise<FoodItem[]> {
     const supabase = createClient();
 
     // Split query into words for better matching
-    // "white rice" should match "Rice, white, long-grain"
     const words = query.trim().toLowerCase().split(/\s+/).filter(w => w.length > 1);
 
     if (words.length === 0) return [];
@@ -49,10 +70,30 @@ export async function searchFoods(query: string, limit = 50): Promise<FoodItem[]
         queryBuilder = queryBuilder.or(`name.ilike.%${word}%,name_es.ilike.%${word}%`);
     }
 
-    const { data, error } = await queryBuilder.limit(limit);
+    // Fetch more than limit to allow for sorting
+    const { data, error } = await queryBuilder.limit(limit * 3);
 
-    if (error) return [];
-    return data as FoodItem[];
+    if (error || !data) return [];
+
+    // Sort results: 1) Category priority, 2) Raw items first, 3) Shorter names first (simpler items)
+    const sorted = (data as FoodItem[]).sort((a, b) => {
+        // Priority by category
+        const priorityA = CATEGORY_PRIORITY[a.category || ''] || 8;
+        const priorityB = CATEGORY_PRIORITY[b.category || ''] || 8;
+        if (priorityA !== priorityB) return priorityA - priorityB;
+
+        // Raw items before cooked/processed
+        const isRawA = (a.name?.toLowerCase().includes('raw') || a.name_es?.toLowerCase().includes('crud')) ? 0 : 1;
+        const isRawB = (b.name?.toLowerCase().includes('raw') || b.name_es?.toLowerCase().includes('crud')) ? 0 : 1;
+        if (isRawA !== isRawB) return isRawA - isRawB;
+
+        // Shorter names first (simpler items tend to have shorter names)
+        const lenA = (a.name_es || a.name || '').length;
+        const lenB = (b.name_es || b.name || '').length;
+        return lenA - lenB;
+    });
+
+    return sorted.slice(0, limit);
 }
 
 export async function getFoodsByCategory(category: string, limit = 50): Promise<FoodItem[]> {

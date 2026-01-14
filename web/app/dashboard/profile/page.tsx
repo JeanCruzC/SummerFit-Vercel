@@ -18,6 +18,7 @@ const LocationPicker = dynamic(() => import('@/components/ui/LocationPicker'), {
 });
 
 import SuccessOverlay from "@/components/ui/SuccessOverlay";
+import AvatarUpload from "@/components/ui/AvatarUpload";
 
 const DIET_OPTIONS: { value: DietType; label: string }[] = [
     { value: "Estándar", label: "Estándar" },
@@ -128,9 +129,16 @@ export default function ProfilePage() {
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 max-w-3xl">
-            <div>
-                <h1 className="text-3xl font-bold">Tu Perfil</h1>
-                <p className="text-gray-500 mt-1">Configura tus datos para cálculos personalizados.</p>
+            <div className="flex flex-col md:flex-row items-center gap-6 mb-8">
+                <AvatarUpload
+                    userId={profile.user_id}
+                    url={profile.avatar_url}
+                    onUpload={(url) => handleChange("avatar_url", url)}
+                />
+                <div className="text-center md:text-left">
+                    <h1 className="text-3xl font-bold">Tu Perfil</h1>
+                    <p className="text-gray-500 mt-1">Configura tus datos para cálculos personalizados.</p>
+                </div>
             </div>
 
             <SuccessOverlay isVisible={showSuccess} message="Perfil guardado correctamente" />

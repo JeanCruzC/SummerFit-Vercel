@@ -210,9 +210,19 @@ export default function CommunityPage() {
                                 >
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-xl">
-                                                {user.gender === 'M' ? '👨' : '👩'}
-                                            </div>
+                                            {user.avatar_url ? (
+                                                <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-white dark:border-gray-700 shadow-sm relative">
+                                                    <img
+                                                        src={user.avatar_url}
+                                                        alt={user.full_name || "Usuario"}
+                                                        className="object-cover h-full w-full"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-xl shadow-sm">
+                                                    {user.gender === 'M' ? '👨' : '👩'}
+                                                </div>
+                                            )}
                                             <div>
                                                 <div className="font-semibold text-lg">
                                                     {user.full_name || "Usuario SummerFit"}

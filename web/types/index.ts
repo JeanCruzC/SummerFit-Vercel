@@ -12,6 +12,7 @@ export interface UserProfile {
     diet_type: DietType;
     language?: 'es' | 'en';
     full_name?: string;
+    avatar_url?: string;
     // Social & Location
     phone?: string;
     latitude?: number;

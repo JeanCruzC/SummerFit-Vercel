@@ -200,35 +200,57 @@ export async function getFoodsFromDB(
         }
 
         // Transform DB format to SimpleFoodItem format
-        const transformed: SimpleFoodItem[] = data.map(d => ({
-            id: String(d.id),
-            name: d.name,
-            name_es: d.name_es || d.name, // Use Spanish name if available
-            emoji: d.emoji || '🍽️',
-            category: category,
-            kcal: d.kcal_per_100g || 0,
-            protein: d.protein_g_per_100g || 0,
-            carbs: d.carbs_g_per_100g || 0,
-            fat: d.fat_g_per_100g || 0,
-            portion_g: 100, // Default portion foundation, meal generator adjusts this
-            // Smart Portions
-            serving_size: d.serving_size,
-            serving_unit: d.serving_unit,
-            // Micros
-            micros: {
-                iron_mg: d.iron_mg || 0,
-                calcium_mg: d.calcium_mg || 0,
-                magnesium_mg: d.magnesium_mg || 0,
-                zinc_mg: d.zinc_mg || 0, // Not in interface but harmless
-                potassium_mg: d.potassium_mg || 0,
-                vit_c_mg: d.vitamin_c_mg || 0, // MAPPED
-                vit_d_iu: d.vitamin_d_iu || 0,
-                vit_a_iu: d.vitamin_a_iu || 0,
-                vit_b12_mcg: d.vitamin_b12_ug || 0, // MAPPED
-                folate_mcg: d.folate_ug || 0, // MAPPED
-                fiber: d.fiber_g || 0, // MAPPED (Interface uses fiber in root or micros? Let's check root)
+        const transformed: SimpleFoodItem[] = data.map(d => {
+            // Smart Defaults for common items if DB lacks data
+            let sSize = d.serving_size;
+            let sUnit = d.serving_unit;
+
+            if (!sSize || !sUnit) {
+                const lowerName = d.name.toLowerCase();
+                const lowerNameEs = (d.name_es || '').toLowerCase();
+
+                if (lowerName.includes('egg') || lowerNameEs.includes('huevo')) { sSize = 50; sUnit = 'large egg'; }
+                else if (lowerName.includes('apple') || lowerNameEs.includes('manzana')) { sSize = 150; sUnit = 'medium'; }
+                else if (lowerName.includes('banana') || lowerNameEs.includes('plátano')) { sSize = 120; sUnit = 'medium'; }
+                else if (lowerName.includes('bread') || lowerNameEs.includes('pan')) { sSize = 28; sUnit = 'slice'; }
+                else if (lowerName.includes('rice') || lowerNameEs.includes('arroz')) { sSize = 158; sUnit = 'cup cooked'; }
+                else if (lowerName.includes('oats') || lowerNameEs.includes('avena')) { sSize = 234; sUnit = 'cup cooked'; }
+                else if (lowerName.includes('milk') || lowerNameEs.includes('leche')) { sSize = 244; sUnit = 'cup'; }
+                else if (lowerName.includes('chicken breast') || lowerNameEs.includes('pechuga')) { sSize = 120; sUnit = 'fillet'; }
+                else if (lowerName.includes('potato') || lowerNameEs.includes('papa')) { sSize = 150; sUnit = 'medium'; }
+                else if (lowerName.includes('avocado') || lowerNameEs.includes('palta') || lowerNameEs.includes('aguacate')) { sSize = 200; sUnit = 'medium'; }
             }
-        }));
+
+            return {
+                id: String(d.id),
+                name: d.name,
+                name_es: d.name_es || d.name,
+                emoji: d.emoji || '🍽️',
+                category: category,
+                kcal: d.kcal_per_100g || 0,
+                protein: d.protein_g_per_100g || 0,
+                carbs: d.carbs_g_per_100g || 0,
+                fat: d.fat_g_per_100g || 0,
+                portion_g: 100,
+                // Smart Portions
+                serving_size: sSize,
+                serving_unit: sUnit,
+                // Micros
+                micros: {
+                    iron_mg: d.iron_mg || 0,
+                    calcium_mg: d.calcium_mg || 0,
+                    magnesium_mg: d.magnesium_mg || 0,
+                    zinc_mg: d.zinc_mg || 0,
+                    potassium_mg: d.potassium_mg || 0,
+                    vit_c_mg: d.vitamin_c_mg || 0,
+                    vit_d_iu: d.vitamin_d_iu || 0,
+                    vit_a_iu: d.vitamin_a_iu || 0,
+                    vit_b12_mcg: d.vitamin_b12_ug || 0,
+                    folate_mcg: d.folate_ug || 0,
+                    fiber: d.fiber_g || 0,
+                }
+            };
+        });
 
         // Apply nutrient ranking if priorities provided (limited effect without micros in DB)
         // Respect the DB order (simple ingredients first)

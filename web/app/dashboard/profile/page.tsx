@@ -50,8 +50,21 @@ export default function ProfilePage() {
         is_public_routine: true,
         is_public_nutrition: false,
         latitude: 19.4326, // Default CDMX
-        longitude: -99.1332
+        longitude: -99.1332,
+        life_stage: "standard" // Default life stage
     });
+
+    // Add physiological state options (Clinical Nutrition)
+    const lifeStageOptions = [
+        { value: "standard", label: t('profile.lifestage.standard') || "Estándar" },
+        { value: "pregnancy_1", label: t('profile.lifestage.pregnancy1') || "Embarazo (Tri 1)" },
+        { value: "pregnancy_2", label: t('profile.lifestage.pregnancy2') || "Embarazo (Tri 2)" },
+        { value: "pregnancy_3", label: t('profile.lifestage.pregnancy3') || "Embarazo (Tri 3)" },
+        { value: "lactation_1", label: t('profile.lifestage.lactation1') || "Lactancia (0-6m)" },
+        { value: "lactation_2", label: t('profile.lifestage.lactation2') || "Lactancia (+6m)" },
+        { value: "menopause", label: t('profile.lifestage.menopause') || "Menopausia" },
+        { value: "senior", label: t('profile.lifestage.senior') || "Adulto Mayor (+60)" },
+    ];
 
     useEffect(() => {
         const load = async () => {
@@ -198,21 +211,41 @@ export default function ProfilePage() {
                         onChange={e => handleChange("gender", e.target.value)}
                     />
 
-                    <Select
-                        label={t('profile.lifestage')}
-                        options={[
-                            { value: "standard", label: t('profile.lifestages.standard') },
-                            { value: "pregnancy_1", label: t('profile.lifestages.pregnancy_1') },
-                            { value: "pregnancy_2", label: t('profile.lifestages.pregnancy_2') },
-                            { value: "pregnancy_3", label: t('profile.lifestages.pregnancy_3') },
-                            { value: "lactation_1", label: t('profile.lifestages.lactation_1') },
-                            { value: "lactation_2", label: t('profile.lifestages.lactation_2') },
-                            { value: "menopause", label: t('profile.lifestages.menopause') },
-                            { value: "senior", label: t('profile.lifestages.senior') },
-                        ]}
-                        value={profile.life_stage || 'standard'}
-                        onChange={e => handleChange("life_stage", e.target.value)}
-                    />
+                    {/* Clinical Nutrition: Physiological State Selector */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-zinc-900 dark:text-white block">
+                            {t('profile.lifestage') || "Estado Fisiológico"}
+                        </label>
+                        <select
+                            className="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border-none focus:ring-2 focus:ring-purple-500 transition-all font-medium text-zinc-900 dark:text-white appearance-none"
+                            value={profile.life_stage || 'standard'}
+                            onChange={(e) => handleChange("life_stage", e.target.value)}
+                        >
+                            <option value="standard">Estándar</option>
+
+                            {/* Female specific options */}
+                            {profile.gender === 'F' && (
+                                <>
+                                    <optgroup label="Embarazo y Lactancia">
+                                        <option value="pregnancy_1">Embarazo (Tri 1)</option>
+                                        <option value="pregnancy_2">Embarazo (Tri 2)</option>
+                                        <option value="pregnancy_3">Embarazo (Tri 3)</option>
+                                        <option value="lactation_1">Lactancia (0-6m)</option>
+                                        <option value="lactation_2">Lactancia (+6m)</option>
+                                    </optgroup>
+                                    <optgroup label="Salud Hormonal">
+                                        <option value="menopause">Menopausia</option>
+                                    </optgroup>
+                                </>
+                            )}
+
+                            {/* Senior option */}
+                            <option value="senior">Adulto Mayor (+60)</option>
+                        </select>
+                        <p className="text-xs text-zinc-500">
+                            {profile.life_stage && profile.life_stage !== 'standard' && "✅ Modo Clínico: Nutrientes optimizados."}
+                        </p>
+                    </div>
 
                     <Input
                         label={t('profile.age')}

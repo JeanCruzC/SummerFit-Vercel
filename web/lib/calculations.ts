@@ -562,3 +562,35 @@ export function calculateWaterIntake(weightKg: number, activityLevel: string): n
     const activityBonus = ACTIVITY_MULTIPLIERS[activityLevel] > 1.5 ? 0.5 : 0;
     return Math.round((baseIntake + activityBonus) * 10) / 10;
 }
+
+/**
+ * Clinical Nutrition: Get micronutrient priorities based on life stage and goal
+ * This drives the "Clinical Engine" to prioritize foods rich in specific micros.
+ */
+export function getClinicalNutrientPriorities(
+    lifeStage: string,
+    goal: string
+): string[] {
+    const priorities: string[] = [];
+
+    // 1. Life Stage Logic (Medical Guidelines)
+    if (lifeStage && lifeStage.includes('pregnancy')) {
+        // Pregnancy: Critical need for Iron (blood volume), Folate (neural tube), Calcium (skeletal)
+        priorities.push('iron_mg', 'folate_ug', 'calcium_mg');
+    }
+    else if (lifeStage && lifeStage.includes('lactation')) {
+        // Lactation: High Calcium demand, Vit A & C for milk quality
+        priorities.push('calcium_mg', 'vitamin_a_iu', 'vitamin_c_mg');
+    }
+    else if (lifeStage === 'menopause' || lifeStage === 'senior') {
+        // Aging/Menopause: Bone density (Ca + Vit D) and muscle function (Mg)
+        priorities.push('calcium_mg', 'vitamin_d_iu', 'magnesium_mg');
+    }
+
+    // 2. Goal Logic
+    if (goal === 'Volumen') {
+        priorities.push('magnesium_mg'); // Support muscle contraction/recovery
+    }
+
+    return [...new Set(priorities)]; // Dedup
+}

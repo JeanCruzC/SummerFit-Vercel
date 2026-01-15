@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Target, Utensils, ChefHat } from "lucide-react";
 import { Card, Button, Input } from "@/components/ui";
-import { calculateHealthMetrics, calculateProjectionWithExercise, calculateMacros } from "@/lib/calculations";
+import { calculateHealthMetrics, calculateProjectionWithExercise, calculateMacros, getClinicalNutrientPriorities } from "@/lib/calculations";
 import {
     generateDayMealPlan,
     generateWeeklyMealPlan,
@@ -135,15 +135,9 @@ export default function MealGeneratorPage() {
                 // Pass lifeStage as condition too
                 if (!conditions.includes(lifeStage)) conditions.push(lifeStage);
 
-                if (lifeStage.includes('pregnancy')) {
-                    nutrientPriorities.push('iron_mg', 'folate_mcg', 'calcium_mg', 'colina_mg');
-                } else if (lifeStage.includes('lactation')) {
-                    nutrientPriorities.push('calcium_mg', 'iron_mg', 'vit_d_iu', 'vit_a_iu');
-                } else if (lifeStage.includes('menopause') || (profile.age && profile.age > 50)) {
-                    nutrientPriorities.push('calcium_mg', 'vit_d_iu', 'magnesium_mg');
-                } else if (profile.goal === 'Volumen') {
-                    nutrientPriorities.push('magnesium_mg'); // Muscle function
-                }
+                // Use centralized clinical engine logic
+                const priorities = getClinicalNutrientPriorities(lifeStage, profile.goal);
+                nutrientPriorities.push(...priorities);
             }
 
             if (mode === 'daily') {

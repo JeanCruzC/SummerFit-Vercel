@@ -182,10 +182,12 @@ export default function MealGeneratorPage() {
             if (mode === 'daily' && mealPlan) {
                 // Save Single Day (Today)
                 const todayDate = getUserLocalDate();
+                console.log('handleSave: Saving daily plan for date:', todayDate);
                 addEntriesForPlan(entries, mealPlan, todayDate);
             } else if (mode === 'weekly' && weeklyPlan) {
                 // Save Week (Next 7 days starting today)
                 const today = new Date();
+                console.log('handleSave: Saving weekly plan starting:', getUserLocalDate(today));
                 weeklyPlan.days.forEach((dayPlan, index) => {
                     const dateInfo = new Date(today);
                     dateInfo.setDate(today.getDate() + index);
@@ -194,10 +196,26 @@ export default function MealGeneratorPage() {
                 });
             }
 
-            await saveMealPlan(entries);
-            router.push('/dashboard/tracking');
+            console.log('handleSave: Total entries to save:', entries.length);
+
+            if (entries.length === 0) {
+                console.error('handleSave: No entries generated from meal plan!');
+                alert('Error: No hay comidas para guardar');
+                return;
+            }
+
+            const success = await saveMealPlan(entries);
+
+            if (success) {
+                console.log('handleSave: Save successful, redirecting to tracking');
+                router.push('/dashboard/tracking');
+            } else {
+                console.error('handleSave: Save failed');
+                alert('Error al guardar el plan. Por favor intenta de nuevo.');
+            }
         } catch (e) {
-            console.error(e);
+            console.error('handleSave exception:', e);
+            alert('Error inesperado al guardar. Por favor intenta de nuevo.');
         } finally {
             setSaving(false);
         }

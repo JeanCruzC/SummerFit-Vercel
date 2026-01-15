@@ -155,12 +155,27 @@ export async function addMealEntry(entry: Omit<MealEntry, 'id' | 'created_at'>):
 }
 
 export async function saveMealPlan(entries: Omit<MealEntry, 'id' | 'created_at'>[]): Promise<boolean> {
-    const supabase = createClient();
-    const { error } = await supabase
-        .from('meal_entries')
-        .insert(entries);
+    if (!entries || entries.length === 0) {
+        console.warn('saveMealPlan: No entries to save');
+        return false;
+    }
 
-    return !error;
+    console.log('saveMealPlan: Saving', entries.length, 'entries');
+    console.log('saveMealPlan: First entry sample:', JSON.stringify(entries[0]));
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('meal_entries')
+        .insert(entries)
+        .select();
+
+    if (error) {
+        console.error('saveMealPlan ERROR:', error.message, error.details, error.hint);
+        return false;
+    }
+
+    console.log('saveMealPlan: Successfully saved', data?.length, 'entries');
+    return true;
 }
 
 export async function deleteMealEntry(id: number): Promise<boolean> {

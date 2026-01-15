@@ -179,12 +179,11 @@ export async function getFoodsFromDB(
 
         const categories = categoryMap[category] || [category];
 
-        // Build query
-        // Select ALL columns including new micros and portion data
+        // Build query - ONLY fetch simple ingredients (basic groceries)
         let query = supabase
             .from('foods')
             .select('*')
-            .order('is_simple_ingredient', { ascending: false })
+            .eq('is_simple_ingredient', true) // CRITICAL: Only simple ingredients!
             .order('priority', { ascending: true })
             .limit(limit * 2); // Fetch extra for filtering
 

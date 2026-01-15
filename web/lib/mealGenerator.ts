@@ -503,6 +503,47 @@ export function generateSimpleMeal(
         }
     }
 
+    // --- TRIM EXCESS (Anti-Overshoot) ---
+    // Recalculate after potential fat addition
+    let finalTotals = sumMacros(items.map(i => i.macros));
+    let excess = finalTotals.kcal - targetCalories;
+
+    if (excess > 50) {
+        // Identify trim candidates: carbs and protein (skip veggies/fruits mostly)
+        // Sort by total calories descending to cut from the biggest contributor first
+        const heavyItems = items.sort((a, b) => b.macros.kcal - a.macros.kcal);
+
+        for (const item of heavyItems) {
+            if (excess <= 10) break; // Good enough
+
+            // Safety check for div by zero
+            if (item.portion_g <= 0) continue;
+
+            const calPerGram = item.macros.kcal / item.portion_g;
+            if (calPerGram <= 0) continue;
+
+            // Don't reduce veggies too much
+            if (item.food.category === 'vegetable' || item.food.category === 'fruit') continue;
+
+            const gramsToCut = excess / calPerGram;
+
+            // Limit cut: Keep at least 50% of original or 30g
+            const minPortion = Math.max(30, item.portion_g * 0.5);
+            const availableCut = Math.max(0, item.portion_g - minPortion);
+
+            const actualCut = Math.min(gramsToCut, availableCut);
+
+            if (actualCut > 5) { // Only cut if significant
+                item.portion_g -= actualCut;
+                item.portion_g = Math.round(item.portion_g);
+                item.macros = calculateItemMacros(item.food, item.portion_g);
+
+                // Recalculate excess
+                excess -= (actualCut * calPerGram);
+            }
+        }
+    }
+
     return {
         id: `${type}_${Date.now()}_${Math.random()}`,
         type,

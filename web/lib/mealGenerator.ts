@@ -320,6 +320,7 @@ export function generateSimpleMeal(
     };
 
     const lookupKey = dietKeyMap[dietType] || 'Estándar';
+    // @ts-ignore - lookupKey is derived from valid keys but TS loses track
     const dietMacros = DIET_MACROS[lookupKey] || DIET_MACROS['Estándar'];
 
     let proteinRatio = dietMacros.protein_pct / 100;

@@ -150,15 +150,44 @@ EXCLUDE_PATTERNS = [
     "burrito",
     "empanada",
     "croqueta",
+    "enchilada",
+    "quesadilla",
+    "fajita",
+    "nachos",
+    "lasagna", "lasaña",
+    "pasta rellena", "stuffed pasta",
+    "ravioli",
+    "tortellini",
+    "canelones", "cannelloni",
+    "alimento para bebés", "baby food", "niños pequeños", "toddler",
+    "junior",
+    "fórmula", "formula",
+    "hidrógeno", "hydrogen",  # Bad translations
+    "hidrogenado", "hydrogenated",
+    "sustituto", "substitute",
+    "imitación", "imitation",
+    "artificial",
+    "mezcla", "mix", "blend",
+    "polvo", "powder",  # Usually processed, except spices (but we want whole foods)
+    "concentrado", "concentrate",
+    "jugo", "juice",  # Accept whole fruit, not juice for meals usually
+    "néctar", "nectar",
+    "jarabe", "syrup",
+    "dulce", "candy", "sweet", "sweetener",
+    "mermelada", "jam", "jelly",
+    "confitado", "candied",
     "tortuga",  # No turtle!
+    "reptil", "reptile",
     "cocodrilo", "alligator",
     "patas de",  # No pig feet etc
     "intestino", "intestine",
     "lengua", "tongue",
     "cerebro", "brain",
-    "hígado", "liver",  # Organ meats are not simple
+    "hígado", "liver",  # Organ meats are excluded from 'simple' for general populace
     "riñón", "kidney",
     "corazón", "heart",
+    "mollejas", "gizzards",
+    "tripas", "tripe",
 ]
 
 
@@ -180,6 +209,11 @@ def is_simple_ingredient(name: str, name_es: str) -> bool:
 
 
 def main():
+    print("🔄 Resetting ALL foods to is_simple_ingredient=false (Clean Slate)...")
+    # Reset everything first to remove false positives from previous runs
+    # We do this by updating everything that is currently True to False
+    supabase.table('foods').update({'is_simple_ingredient': False}).eq('is_simple_ingredient', True).execute()
+    
     print("🔍 Fetching all foods from database...")
     
     # Fetch all foods
@@ -216,17 +250,11 @@ def main():
             batch = simple_ids[i:i+batch_size]
             supabase.table('foods').update({
                 'is_simple_ingredient': True,
-                'priority': 1  # Also set high priority
+                'priority': 1
             }).in_('id', batch).execute()
             print(f"  Updated batch {i//batch_size + 1}/{(len(simple_ids)-1)//batch_size + 1}")
     
-    # Set non-simple to false (only if currently null)
-    print("🔄 Setting non-simple foods to is_simple_ingredient=false...")
-    supabase.table('foods').update({
-        'is_simple_ingredient': False
-    }).is_('is_simple_ingredient', 'null').execute()
-    
-    print("🎉 Done! Simple ingredients have been marked in the database.")
+    print("🎉 Done! Database refreshed.")
     
     # Show some examples
     print("\n📋 Sample of marked simple ingredients:")

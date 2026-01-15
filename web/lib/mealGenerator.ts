@@ -719,3 +719,238 @@ export function generateWeeklyMealPlan(
         week_totals: weeklyAvg
     };
 }
+
+// ============================================================
+// ASYNC VERSIONS - USE DATABASE INSTEAD OF HARDCODED FOODS
+// ============================================================
+
+// Pre-load all food categories from Supabase
+async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<SimpleFoodItem[]> {
+    const categories: Array<'protein' | 'carb' | 'vegetable' | 'fat' | 'fruit' | 'dairy'> =
+        ['protein', 'carb', 'vegetable', 'fat', 'fruit', 'dairy'];
+
+    const allFoods: SimpleFoodItem[] = [];
+
+    for (const cat of categories) {
+        const foods = await getFoodsFromDB(cat, 50, nutrientPriorities);
+        allFoods.push(...foods);
+    }
+
+    return allFoods;
+}
+
+// Generate meal using DB-loaded foods
+function generateMealFromFoods(
+    type: Meal['type'],
+    targetCalories: number,
+    foods: SimpleFoodItem[],
+    dietType: string = 'balanced',
+    conditions: string[] = [],
+    nutrientPriorities: string[] = []
+): Meal {
+    const typeNames: Record<string, string> = {
+        breakfast: 'Desayuno',
+        lunch: 'Almuerzo',
+        dinner: 'Cena',
+        snack: 'Snack',
+    };
+
+    // Apply diet filters
+    let filteredFoods = [...foods];
+
+    if (dietType === 'keto') {
+        filteredFoods = filteredFoods.filter(f =>
+            f.category !== 'carb' &&
+            !(f.category === 'fruit' && f.carbs > 10) &&
+            !(f.category === 'dairy' && f.carbs > 5)
+        );
+    }
+    if (dietType === 'vegan') {
+        filteredFoods = filteredFoods.filter(f =>
+            !['protein', 'dairy'].includes(f.category) ||
+            f.name.toLowerCase().includes('bean') ||
+            f.name.toLowerCase().includes('lentil') ||
+            f.name.toLowerCase().includes('tofu')
+        );
+    }
+    if (dietType === 'vegetarian') {
+        filteredFoods = filteredFoods.filter(f =>
+            f.category !== 'protein' ||
+            f.name.toLowerCase().includes('egg') ||
+            f.name.toLowerCase().includes('bean') ||
+            f.name.toLowerCase().includes('lentil')
+        );
+    }
+    if (dietType === 'diabetes_friendly' || conditions.includes('diabetes_type_2')) {
+        filteredFoods = filteredFoods.filter(f =>
+            !(f.category === 'carb' && f.carbs > 25 && !f.fiber)
+        );
+    }
+
+    let proteins = filteredFoods.filter(f => f.category === 'protein');
+    let carbs = filteredFoods.filter(f => f.category === 'carb');
+    let vegetables = filteredFoods.filter(f => f.category === 'vegetable');
+    let fats = filteredFoods.filter(f => f.category === 'fat');
+    let fruits = filteredFoods.filter(f => f.category === 'fruit');
+    let dairy = filteredFoods.filter(f => f.category === 'dairy');
+
+    const items: MealItem[] = [];
+
+    // Get diet macros
+    const dietKeyMap: Record<string, string> = {
+        'balanced': 'Estándar', 'keto': 'Keto', 'low_carb': 'Low-Carb',
+        'vegan': 'Vegana', 'vegetarian': 'Vegetariana', 'paleo': 'Paleo',
+        'mediterranean': 'Mediterránea', 'high_protein': 'Alta Proteína',
+        'diabetes_friendly': 'Diabéticos', 'dash': 'DASH'
+    };
+    const lookupKey = dietKeyMap[dietType] || 'Estándar';
+    // @ts-ignore
+    const dietMacros = DIET_MACROS[lookupKey] || DIET_MACROS['Estándar'];
+    const proteinRatio = dietMacros.protein_pct / 100;
+    const carbRatio = dietMacros.carbs_pct / 100;
+
+    const calcPortion = (food: SimpleFoodItem, targetAmount: number, targetType: 'kcal' | 'protein' | 'carbs' = 'kcal') => {
+        if (!food || targetAmount <= 0) return 0;
+        let per100 = targetType === 'kcal' ? food.kcal : targetType === 'protein' ? food.protein : food.carbs;
+        if (per100 <= 0) return 0;
+        return Math.round((targetAmount / per100) * 100);
+    };
+
+    const SAFETY_FACTOR = 0.85;
+    const usableCalories = targetCalories * SAFETY_FACTOR;
+
+    // Simple meal generation: protein + carb + veggie
+    if (proteins.length > 0) {
+        const protein = proteins[Math.floor(Math.random() * Math.min(proteins.length, 5))];
+        const targetProteinCal = usableCalories * proteinRatio;
+        const portion = Math.min(calcPortion(protein, targetProteinCal, 'kcal'), 250);
+        if (portion >= 30) {
+            items.push({
+                food: protein,
+                portion_g: portion,
+                cooking_state: protein.cooking_states?.[0],
+                macros: calculateItemMacros(protein, portion)
+            });
+        }
+    }
+
+    if (carbs.length > 0 && dietType !== 'keto') {
+        const carb = carbs[Math.floor(Math.random() * Math.min(carbs.length, 5))];
+        const targetCarbCal = usableCalories * carbRatio;
+        const portion = Math.min(calcPortion(carb, targetCarbCal, 'kcal'), 300);
+        if (portion >= 30) {
+            items.push({
+                food: carb,
+                portion_g: portion,
+                cooking_state: carb.cooking_states?.[0],
+                macros: calculateItemMacros(carb, portion)
+            });
+        }
+    }
+
+    if (vegetables.length > 0) {
+        const veggie = vegetables[Math.floor(Math.random() * Math.min(vegetables.length, 5))];
+        const portion = 100 + Math.floor(Math.random() * 50);
+        items.push({
+            food: veggie,
+            portion_g: portion,
+            cooking_state: veggie.cooking_states?.[0],
+            macros: calculateItemMacros(veggie, portion)
+        });
+    }
+
+    // Add fruit for breakfast
+    if (type === 'breakfast' && fruits.length > 0) {
+        const fruit = fruits[Math.floor(Math.random() * Math.min(fruits.length, 3))];
+        const portion = fruit.portion_g || 120;
+        items.push({
+            food: fruit,
+            portion_g: portion,
+            cooking_state: 'raw',
+            macros: calculateItemMacros(fruit, portion)
+        });
+    }
+
+    const totals = sumMacros(items.map(i => i.macros));
+
+    return {
+        id: `meal_${type}_${Date.now()}`,
+        type,
+        type_es: typeNames[type] || type,
+        items,
+        totals
+    };
+}
+
+// ASYNC: Generate daily meal plan from database
+export async function generateDayMealPlanFromDB(
+    targetCalories: number,
+    targetProtein: number,
+    numMeals: 3 | 4 | 5 = 4,
+    availableFoods?: string[],
+    dietType: string = 'balanced',
+    conditions: string[] = [],
+    nutrientPriorities: string[] = []
+): Promise<MealPlan> {
+    // Load foods from database
+    const dbFoods = await loadFoodsFromDB(nutrientPriorities);
+
+    const meals: Meal[] = [];
+    const distributions: Record<number, Record<string, number>> = {
+        3: { breakfast: 0.30, lunch: 0.40, dinner: 0.30 },
+        4: { breakfast: 0.25, snack1: 0.10, lunch: 0.35, dinner: 0.30 },
+        5: { breakfast: 0.20, snack1: 0.10, lunch: 0.30, snack2: 0.10, dinner: 0.30 },
+    };
+    const dist = distributions[numMeals];
+
+    if (dist.breakfast) meals.push(generateMealFromFoods('breakfast', targetCalories * dist.breakfast, dbFoods, dietType, conditions, nutrientPriorities));
+    if (dist.snack1) meals.push(generateMealFromFoods('snack', targetCalories * dist.snack1, dbFoods, dietType, conditions, nutrientPriorities));
+    if (dist.lunch) meals.push(generateMealFromFoods('lunch', targetCalories * dist.lunch, dbFoods, dietType, conditions, nutrientPriorities));
+    if (dist.snack2) meals.push(generateMealFromFoods('snack', targetCalories * dist.snack2, dbFoods, dietType, conditions, nutrientPriorities));
+    if (dist.dinner) meals.push(generateMealFromFoods('dinner', targetCalories * dist.dinner, dbFoods, dietType, conditions, nutrientPriorities));
+
+    const totals = sumMacros(meals.map(m => m.totals));
+
+    return {
+        id: `plan_${Date.now()}`,
+        name: 'Daily Meal Plan',
+        name_es: 'Plan de Comidas Diario',
+        meals,
+        totals
+    };
+}
+
+// ASYNC: Generate weekly meal plan from database
+export async function generateWeeklyMealPlanFromDB(
+    targetCalories: number,
+    targetProtein: number,
+    numMeals: 3 | 4 | 5 = 4,
+    availableFoods?: string[],
+    dietType: string = 'balanced',
+    conditions: string[] = [],
+    nutrientPriorities: string[] = []
+): Promise<WeeklyMealPlan> {
+    const days: MealPlan[] = [];
+    const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+    for (let i = 0; i < 7; i++) {
+        const plan = await generateDayMealPlanFromDB(targetCalories, targetProtein, numMeals, availableFoods, dietType, conditions, nutrientPriorities);
+        plan.id = `day_${i}_${Date.now()}_${Math.random()}`;
+        plan.name_es = `Día ${i + 1} - ${dayNames[i]}`;
+        days.push(plan);
+    }
+
+    const totalMacros = sumMacros(days.map(d => d.totals));
+    const weeklyAvg: MacroTotals = {
+        kcal: Math.round(totalMacros.kcal / 7),
+        protein: Math.round(totalMacros.protein / 7),
+        carbs: Math.round(totalMacros.carbs / 7),
+        fat: Math.round(totalMacros.fat / 7),
+    };
+
+    return {
+        id: `week_${Date.now()}`,
+        days,
+        week_totals: weeklyAvg
+    };
+}

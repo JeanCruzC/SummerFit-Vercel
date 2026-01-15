@@ -6,11 +6,10 @@ import { RefreshCw, Target, Utensils, ChefHat } from "lucide-react";
 import { Card, Button, Input } from "@/components/ui";
 import { calculateHealthMetrics, calculateProjectionWithExercise, calculateMacros, getClinicalNutrientPriorities } from "@/lib/calculations";
 import {
-    generateDayMealPlan,
-    generateWeeklyMealPlan,
+    generateDayMealPlanFromDB,
+    generateWeeklyMealPlanFromDB,
     MealPlan,
     WeeklyMealPlan,
-    SIMPLE_FOODS
 } from "@/lib/mealGenerator";
 import { getActiveWorkoutPlan } from "@/lib/supabase/exercises";
 import { createClient } from "@/lib/supabase/client";
@@ -124,9 +123,9 @@ export default function MealGeneratorPage() {
         loadProfile();
     }, []);
 
-    const handleGenerate = () => {
+    const handleGenerate = async () => {
         setGenerating(true);
-        setTimeout(() => {
+        try {
             const conditions = dietType === 'diabetes_friendly' ? ['diabetes_type_2'] : [];
             const nutrientPriorities: string[] = [];
 
@@ -141,17 +140,20 @@ export default function MealGeneratorPage() {
             }
 
             if (mode === 'daily') {
-                const plan = generateDayMealPlan(targetCalories, targetProtein, numMeals, undefined, dietType, conditions, nutrientPriorities);
+                const plan = await generateDayMealPlanFromDB(targetCalories, targetProtein, numMeals, undefined, dietType, conditions, nutrientPriorities);
                 setMealPlan(plan);
                 setWeeklyPlan(null);
             } else {
-                const plan = generateWeeklyMealPlan(targetCalories, targetProtein, numMeals, undefined, dietType, conditions, nutrientPriorities);
+                const plan = await generateWeeklyMealPlanFromDB(targetCalories, targetProtein, numMeals, undefined, dietType, conditions, nutrientPriorities);
                 setWeeklyPlan(plan);
                 setMealPlan(null);
                 setActiveDay(0);
             }
+        } catch (error) {
+            console.error('Error generating meal plan:', error);
+        } finally {
             setGenerating(false);
-        }, 500);
+        }
     };
 
     const getMealIcon = (type: string) => {

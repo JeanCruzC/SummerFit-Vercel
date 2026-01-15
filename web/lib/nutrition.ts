@@ -207,13 +207,32 @@ export function calculateMacros(
     };
 
     const proteinPerKg: Record<string, number> = {
-        // Updated to 1.2-1.6 standard range per USDA DGA 2025-2030
         perdida_peso: 1.6,
-        mantenimiento: 1.2, // Base for healthy adults
+        mantenimiento: 1.2,
         ganancia_muscular: 2.0,
     };
 
-    const calories = tdee + adjustments[goal];
+    // USDA DGA 2025: Special Lifestage Adjustments
+    let calorieOffset = adjustments[goal];
+
+    // 1. Pregnancy & Lactation (USDA)
+    // 2nd Tri: +340, 3rd Tri: +450, Lactation: +330-500
+    if (conditions.includes('pregnancy_2nd_trimester')) calorieOffset += 340;
+    if (conditions.includes('pregnancy_3rd_trimester')) calorieOffset += 450;
+    if (conditions.includes('lactation')) calorieOffset += 400; // Average
+
+    // 2. Seniors (>60y) (USDA)
+    // Need higher protein (1.0-1.2g/kg) even at maintenance to prevent sarcopenia
+    // If user age > 60 (we need age passed in, assume weight_kg is proxy for now or add age param)
+    // Note: age is not currently passed to this function, adding it would be a larger refactor of the signature.
+    // For now, we will handle it if 'senior' is passed in conditions.
+    if (conditions.includes('senior_over_60')) {
+        // Boost protein min to 1.2 if it was lower
+        proteinPerKg['mantenimiento'] = Math.max(proteinPerKg['mantenimiento'], 1.2);
+        proteinPerKg['perdida_peso'] = Math.max(proteinPerKg['perdida_peso'], 1.4); // Higher for weight loss in seniors
+    }
+
+    const calories = tdee + calorieOffset;
     let protein_g = Math.round(weight_kg * proteinPerKg[goal]);
     let protein_calories = protein_g * 4;
 
@@ -255,29 +274,68 @@ export function calculateMacros(
     return { calories, protein_g, carbs_g, fat_g };
 }
 
-export function getDailyServings(calories: number): Record<string, number> {
-    // Baseline 2000 kcal USDA MyPlate pattern
-    const baseline = {
-        calories: 2000,
-        servings: {
-            "frutas": 2, // cups
-            "verduras": 2.5, // cups
-            "granos": 6, // oz eq
-            "proteinas": 5.5, // oz eq
-            "lacteos": 3, // cups
-            "aceites": 5 // tsp (~27g)
-        }
-    };
+import { USDA_PATTERNS, DIET_PATTERN_MAP, MICRONUTRIENT_TARGETS } from './usda_data';
 
-    const ratio = calories / baseline.calories;
+export function getDailyServings(calories: number, dietType: string = 'Estándar'): Record<string, number> {
+    // 1. Find the mapped USDA pattern name
+    const patternName = DIET_PATTERN_MAP[dietType] || 'Healthy U.S.-Style';
 
-    const servings: Record<string, number> = {};
-    for (const [group, amount] of Object.entries(baseline.servings)) {
-        // Simple linear scaling for now - precise DGA tables are non-linear but this approximates well
-        servings[group] = parseFloat((amount * ratio).toFixed(1));
+    // 2. Find the pattern data
+    const pattern = USDA_PATTERNS.find(p => p.pattern_name === patternName) || USDA_PATTERNS[0];
+
+    // 3. Find the closest calorie level
+    // Available levels: 1600, 1800 ... 3200
+    // We round to nearest 200 for lookup, or clamp
+    let lookupCal = Math.round(calories / 200) * 200;
+    lookupCal = Math.max(1600, Math.min(3200, lookupCal));
+
+    const level = pattern.levels.find(l => l.calories === lookupCal);
+
+    if (!level) {
+        // Fallback to linear scaling if somehow not found (should not happen due to clamping)
+        return { "frutas": 2, "verduras": 2.5, "granos": 6, "proteinas": 5.5, "lacteos": 3 };
     }
 
-    return servings;
+    return {
+        "frutas": level.fruits_cups,
+        "verduras": level.vegetables_cups,
+        "granos": level.grains_oz,
+        "proteinas": level.protein_oz,
+        "lacteos": level.dairy_cups,
+        "aceites": level.oils_g
+    };
+}
+
+export function getMicronutrientTargets(
+    conditions: string[],
+    gender: 'M' | 'F',
+    age?: number
+): Record<string, number> {
+    // Start with general population baseline
+    let targets = { ...MICRONUTRIENT_TARGETS.general };
+    let specific: any = MICRONUTRIENT_TARGETS.general_female_19_50; // Default female baseline
+
+    // Pregnancy & Lactation Overrides
+    if (conditions.includes('pregnancy') || conditions.includes('pregnancy_2nd_trimester') || conditions.includes('pregnancy_3rd_trimester')) {
+        specific = MICRONUTRIENT_TARGETS.pregnancy;
+    } else if (conditions.includes('lactation')) {
+        specific = MICRONUTRIENT_TARGETS.lactation;
+    }
+
+    // Senior Overrides
+    if (age && age >= 70) {
+        targets = { ...targets, ...MICRONUTRIENT_TARGETS.seniors_over_70 };
+    }
+
+    // Merge specific micronutrients (Iron, Choline, Iodine, Folate)
+    return {
+        ...targets,
+        hierro_mg: specific.iron_mg,
+        colina_mg: specific.choline_mg,
+        yodo_mg: specific.iodine_mg,
+        folato_mcg: specific.folate_mcg,
+        calcio_mg: specific.calcium_mg || targets.calcium_mg
+    };
 }
 
 export function getRecommendedDiet(

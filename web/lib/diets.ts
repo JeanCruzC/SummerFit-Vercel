@@ -3,21 +3,22 @@ import { DietType, MacroDistribution } from '@/types';
 // Diet macro distributions (percentages)
 export const DIET_MACROS: Record<DietType, MacroDistribution> = {
     'Estándar': { protein_pct: 25, carbs_pct: 50, fat_pct: 25 },
-    'Keto': { protein_pct: 25, carbs_pct: 5, fat_pct: 70 },
+    'Keto': { protein_pct: 20, carbs_pct: 5, fat_pct: 75 }, // Adjusted to text: 20% Prot / 70-75% Fat
     'Low-Carb': { protein_pct: 30, carbs_pct: 25, fat_pct: 45 },
     'Vegana': { protein_pct: 20, carbs_pct: 55, fat_pct: 25 },
     'Vegetariana': { protein_pct: 20, carbs_pct: 55, fat_pct: 25 },
     'Paleo': { protein_pct: 30, carbs_pct: 35, fat_pct: 35 },
     'Mediterránea': { protein_pct: 20, carbs_pct: 50, fat_pct: 30 },
     'Alta Proteína': { protein_pct: 40, carbs_pct: 35, fat_pct: 25 },
-    'Diabéticos': { protein_pct: 30, carbs_pct: 26, fat_pct: 44 },
+    'Diabéticos': { protein_pct: 30, carbs_pct: 40, fat_pct: 30 }, // USDA File: Fat <35%, Carb ~40-45% for control
+    'DASH': { protein_pct: 20, carbs_pct: 55, fat_pct: 25 }, // Added DASH as per text
 };
 
 // Diet descriptions
 export const DIET_INFO: Record<DietType, { description: string; benefits: string[]; restrictions: string[] }> = {
     'Estándar': {
-        description: 'Dieta balanceada con distribución equilibrada de macronutrientes.',
-        benefits: ['Fácil de seguir', 'Variedad de alimentos', 'Sostenible a largo plazo'],
+        description: 'Basada en el patrón "Healthy U.S.-Style" (USDA AMDR). Balanceada en macronutrientes.',
+        benefits: ['Alineada con USDA 2025', 'Cubre micros clave (Vit D, Calcio, Fibra)', 'Sostenible para toda la familia'],
         restrictions: [],
     },
     'Keto': {
@@ -59,6 +60,11 @@ export const DIET_INFO: Record<DietType, { description: string; benefits: string
         description: 'Baja en carbohidratos simples y enfocada en el control glucémico (USDA DGA).',
         benefits: ['Control de azúcar en sangre', 'Prevención de picos de insulina', 'Pérdida de peso segura'],
         restrictions: ['Azúcares refinados', 'Bebidas azucaradas', 'Harinas blancas', 'Dulces'],
+    },
+    'DASH': {
+        description: 'Enfoque dietético para detener la hipertensión (USDA). Alta en frutas, verduras y lácteos bajos en grasa.',
+        benefits: ['Reduce presión arterial', 'Salud cardiovascular', 'Rica en nutrientes'],
+        restrictions: ['Sodio excesivo', 'Grasas saturadas', 'Dulces'],
     },
 };
 

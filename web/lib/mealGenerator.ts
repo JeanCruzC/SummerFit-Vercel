@@ -2,6 +2,7 @@
 // Uses basic groceries (chicken, rice, potato, etc.) not complex recipes
 
 import { calculateBMR, calculateTDEE, calculateMacros } from './nutrition';
+import { DIET_MACROS } from './diets';
 
 // Basic food items with nutrition per 100g
 export interface SimpleFoodItem {
@@ -15,64 +16,80 @@ export interface SimpleFoodItem {
     carbs: number;
     fat: number;
     fiber?: number;
+    // Clinical Micros (Values per 100g)
+    micros?: {
+        iron_mg?: number;    // Hierro (Pregnancy/Anemia)
+        calcium_mg?: number; // Calcio (Bones/Menopause)
+        vit_c_mg?: number;   // Vit C (Immunity/Iron Abs)
+        vit_d_iu?: number;   // Vit D (Mood/Bones)
+        folate_mcg?: number; // Folato (Pregnancy)
+        magnesium_mg?: number; // Magnesio (Sleep/Muscle)
+        omega3_g?: number;   // Omega 3 (Brain/Inflammation)
+        potassium_mg?: number; // Potasio (Blood Pressure)
+        vit_a_iu?: number;   // Vit A (Vision/Immunity)
+        vit_e_mg?: number;   // Vit E (Skin/Antioxidant)
+        vit_b12_mcg?: number; // B12 (Energy/Veganism)
+        colina_mg?: number;  // Colina (Brain/Pregnancy)
+    };
     cooking_states?: string[];
     portion_g: number; // Standard portion in grams
 }
 
 // Basic groceries database - simple foods only
+// ENRICHED WITH CLINICAL DATA (Approx USDA values)
 export const SIMPLE_FOODS: SimpleFoodItem[] = [
     // PROTEINS
-    { id: 'chicken_breast', name: 'Chicken Breast', name_es: 'Pechuga de Pollo', emoji: '🍗', category: 'protein', kcal: 165, protein: 31, carbs: 0, fat: 3.6, portion_g: 150, cooking_states: ['grilled', 'baked', 'boiled'] },
-    { id: 'chicken_thigh', name: 'Chicken Thigh', name_es: 'Muslo de Pollo', emoji: '🍗', category: 'protein', kcal: 209, protein: 26, carbs: 0, fat: 10.9, portion_g: 150, cooking_states: ['grilled', 'baked'] },
-    { id: 'beef_ground', name: 'Ground Beef (lean)', name_es: 'Carne Molida', emoji: '🥩', category: 'protein', kcal: 250, protein: 26, carbs: 0, fat: 15, portion_g: 150, cooking_states: ['cooked'] },
-    { id: 'beef_steak', name: 'Beef Steak', name_es: 'Bistec de Res', emoji: '🥩', category: 'protein', kcal: 271, protein: 26, carbs: 0, fat: 18, portion_g: 150, cooking_states: ['grilled', 'pan-fried'] },
-    { id: 'pork_loin', name: 'Pork Loin', name_es: 'Lomo de Cerdo', emoji: '🐷', category: 'protein', kcal: 143, protein: 27, carbs: 0, fat: 3.5, portion_g: 150, cooking_states: ['grilled', 'baked'] },
-    { id: 'fish_tilapia', name: 'Tilapia', name_es: 'Tilapia', emoji: '🐟', category: 'protein', kcal: 96, protein: 20, carbs: 0, fat: 1.7, portion_g: 150, cooking_states: ['grilled', 'baked', 'pan-fried'] },
-    { id: 'fish_salmon', name: 'Salmon', name_es: 'Salmón', emoji: '🐟', category: 'protein', kcal: 208, protein: 20, carbs: 0, fat: 13, portion_g: 150, cooking_states: ['grilled', 'baked'] },
-    { id: 'tuna_canned', name: 'Tuna (canned)', name_es: 'Atún en Lata', emoji: '🐟', category: 'protein', kcal: 116, protein: 26, carbs: 0, fat: 1, portion_g: 100, cooking_states: ['canned'] },
-    { id: 'eggs', name: 'Eggs', name_es: 'Huevos', emoji: '🥚', category: 'protein', kcal: 155, protein: 13, carbs: 1.1, fat: 11, portion_g: 100, cooking_states: ['boiled', 'scrambled', 'fried'] },
-    { id: 'turkey_breast', name: 'Turkey Breast', name_es: 'Pechuga de Pavo', emoji: '🦃', category: 'protein', kcal: 135, protein: 30, carbs: 0, fat: 1, portion_g: 150, cooking_states: ['grilled', 'baked'] },
+    { id: 'chicken_breast', name: 'Chicken Breast', name_es: 'Pechuga de Pollo', emoji: '🍗', category: 'protein', kcal: 165, protein: 31, carbs: 0, fat: 3.6, portion_g: 150, micros: { iron_mg: 1, magnesium_mg: 29 }, cooking_states: ['grilled', 'baked', 'boiled'] },
+    { id: 'chicken_thigh', name: 'Chicken Thigh', name_es: 'Muslo de Pollo', emoji: '🍗', category: 'protein', kcal: 209, protein: 26, carbs: 0, fat: 10.9, portion_g: 150, micros: { iron_mg: 1.3, magnesium_mg: 24 }, cooking_states: ['grilled', 'baked'] },
+    { id: 'beef_ground', name: 'Ground Beef (lean)', name_es: 'Carne Molida', emoji: '🥩', category: 'protein', kcal: 250, protein: 26, carbs: 0, fat: 15, portion_g: 150, micros: { iron_mg: 2.6, magnesium_mg: 21 }, cooking_states: ['cooked'] },
+    { id: 'beef_steak', name: 'Beef Steak', name_es: 'Bistec de Res', emoji: '🥩', category: 'protein', kcal: 271, protein: 26, carbs: 0, fat: 18, portion_g: 150, micros: { iron_mg: 2.1, magnesium_mg: 21 }, cooking_states: ['grilled', 'pan-fried'] },
+    { id: 'pork_loin', name: 'Pork Loin', name_es: 'Lomo de Cerdo', emoji: '🐷', category: 'protein', kcal: 143, protein: 27, carbs: 0, fat: 3.5, portion_g: 150, micros: { iron_mg: 0.9, magnesium_mg: 29 }, cooking_states: ['grilled', 'baked'] },
+    { id: 'fish_tilapia', name: 'Tilapia', name_es: 'Tilapia', emoji: '🐟', category: 'protein', kcal: 96, protein: 20, carbs: 0, fat: 1.7, portion_g: 150, micros: { iron_mg: 0.6, calcium_mg: 10 }, cooking_states: ['grilled', 'baked', 'pan-fried'] },
+    { id: 'fish_salmon', name: 'Salmon', name_es: 'Salmón', emoji: '🐟', category: 'protein', kcal: 208, protein: 20, carbs: 0, fat: 13, portion_g: 150, micros: { omega3_g: 2.3, vit_d_iu: 500, calcium_mg: 9 }, cooking_states: ['grilled', 'baked'] },
+    { id: 'tuna_canned', name: 'Tuna (canned)', name_es: 'Atún en Lata', emoji: '🐟', category: 'protein', kcal: 116, protein: 26, carbs: 0, fat: 1, portion_g: 100, micros: { iron_mg: 1.5, omega3_g: 0.3 }, cooking_states: ['canned'] },
+    { id: 'eggs', name: 'Eggs', name_es: 'Huevos', emoji: '🥚', category: 'protein', kcal: 155, protein: 13, carbs: 1.1, fat: 11, portion_g: 100, micros: { vit_d_iu: 87, iron_mg: 1.8, folate_mcg: 47, colina_mg: 250 }, cooking_states: ['boiled', 'scrambled', 'fried'] },
+    { id: 'turkey_breast', name: 'Turkey Breast', name_es: 'Pechuga de Pavo', emoji: '🦃', category: 'protein', kcal: 135, protein: 30, carbs: 0, fat: 1, portion_g: 150, micros: { iron_mg: 1.1, magnesium_mg: 30 }, cooking_states: ['grilled', 'baked'] },
 
     // CARBS
-    { id: 'rice_white', name: 'White Rice', name_es: 'Arroz Blanco', emoji: '🍚', category: 'carb', kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, portion_g: 150, cooking_states: ['cooked'] },
-    { id: 'rice_brown', name: 'Brown Rice', name_es: 'Arroz Integral', emoji: '🍚', category: 'carb', kcal: 111, protein: 2.6, carbs: 23, fat: 0.9, fiber: 1.8, portion_g: 150, cooking_states: ['cooked'] },
-    { id: 'potato', name: 'Potato', name_es: 'Papa', emoji: '🥔', category: 'carb', kcal: 77, protein: 2, carbs: 17, fat: 0.1, fiber: 2.2, portion_g: 200, cooking_states: ['boiled', 'baked', 'mashed'] },
-    { id: 'sweet_potato', name: 'Sweet Potato', name_es: 'Camote', emoji: '🍠', category: 'carb', kcal: 86, protein: 1.6, carbs: 20, fat: 0.1, fiber: 3, portion_g: 200, cooking_states: ['boiled', 'baked'] },
-    { id: 'pasta', name: 'Pasta', name_es: 'Pasta', emoji: '🍝', category: 'carb', kcal: 131, protein: 5, carbs: 25, fat: 1.1, portion_g: 150, cooking_states: ['cooked'] },
-    { id: 'oats', name: 'Oatmeal', name_es: 'Avena', emoji: '🌾', category: 'carb', kcal: 68, protein: 2.4, carbs: 12, fat: 1.4, fiber: 1.7, portion_g: 200, cooking_states: ['cooked'] },
-    { id: 'bread_whole', name: 'Whole Wheat Bread', name_es: 'Pan Integral', emoji: '🍞', category: 'carb', kcal: 247, protein: 13, carbs: 41, fat: 3.4, fiber: 7, portion_g: 60, cooking_states: ['toasted'] },
-    { id: 'quinoa', name: 'Quinoa', name_es: 'Quinua', emoji: '🌾', category: 'carb', kcal: 120, protein: 4.4, carbs: 21, fat: 1.9, fiber: 2.8, portion_g: 150, cooking_states: ['cooked'] },
-    { id: 'beans_black', name: 'Black Beans', name_es: 'Frijoles Negros', emoji: '🫘', category: 'carb', kcal: 132, protein: 8.9, carbs: 24, fat: 0.5, fiber: 8.7, portion_g: 150, cooking_states: ['cooked'] },
-    { id: 'lentils', name: 'Lentils', name_es: 'Lentejas', emoji: '🫘', category: 'carb', kcal: 116, protein: 9, carbs: 20, fat: 0.4, fiber: 7.9, portion_g: 150, cooking_states: ['cooked'] },
+    { id: 'rice_white', name: 'White Rice', name_es: 'Arroz Blanco', emoji: '🍚', category: 'carb', kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, portion_g: 150, micros: { iron_mg: 1.2 }, cooking_states: ['cooked'] },
+    { id: 'rice_brown', name: 'Brown Rice', name_es: 'Arroz Integral', emoji: '🍚', category: 'carb', kcal: 111, protein: 2.6, carbs: 23, fat: 0.9, fiber: 1.8, portion_g: 150, micros: { magnesium_mg: 43, iron_mg: 0.5 }, cooking_states: ['cooked'] },
+    { id: 'potato', name: 'Potato', name_es: 'Papa', emoji: '🥔', category: 'carb', kcal: 77, protein: 2, carbs: 17, fat: 0.1, fiber: 2.2, portion_g: 200, micros: { vit_c_mg: 19, potassium_mg: 421 }, cooking_states: ['boiled', 'baked', 'mashed'] },
+    { id: 'sweet_potato', name: 'Sweet Potato', name_es: 'Camote', emoji: '🍠', category: 'carb', kcal: 86, protein: 1.6, carbs: 20, fat: 0.1, fiber: 3, portion_g: 200, micros: { vit_a_iu: 14000, vit_c_mg: 2.4 }, cooking_states: ['boiled', 'baked'] },
+    { id: 'pasta', name: 'Pasta', name_es: 'Pasta', emoji: '🍝', category: 'carb', kcal: 131, protein: 5, carbs: 25, fat: 1.1, portion_g: 150, micros: { iron_mg: 1.3 }, cooking_states: ['cooked'] },
+    { id: 'oats', name: 'Oatmeal', name_es: 'Avena', emoji: '🌾', category: 'carb', kcal: 68, protein: 2.4, carbs: 12, fat: 1.4, fiber: 1.7, portion_g: 200, micros: { iron_mg: 1.0, magnesium_mg: 27 }, cooking_states: ['cooked'] },
+    { id: 'bread_whole', name: 'Whole Wheat Bread', name_es: 'Pan Integral', emoji: '🍞', category: 'carb', kcal: 247, protein: 13, carbs: 41, fat: 3.4, fiber: 7, portion_g: 60, micros: { iron_mg: 2.5, magnesium_mg: 82 }, cooking_states: ['toasted'] },
+    { id: 'quinoa', name: 'Quinoa', name_es: 'Quinua', emoji: '🌾', category: 'carb', kcal: 120, protein: 4.4, carbs: 21, fat: 1.9, fiber: 2.8, portion_g: 150, micros: { iron_mg: 1.5, magnesium_mg: 64, folate_mcg: 42 }, cooking_states: ['cooked'] },
+    { id: 'beans_black', name: 'Black Beans', name_es: 'Frijoles Negros', emoji: '🫘', category: 'carb', kcal: 132, protein: 8.9, carbs: 24, fat: 0.5, fiber: 8.7, portion_g: 150, micros: { iron_mg: 2.1, folate_mcg: 149, magnesium_mg: 70 }, cooking_states: ['cooked'] },
+    { id: 'lentils', name: 'Lentils', name_es: 'Lentejas', emoji: '🫘', category: 'carb', kcal: 116, protein: 9, carbs: 20, fat: 0.4, fiber: 7.9, portion_g: 150, micros: { iron_mg: 3.3, folate_mcg: 181, magnesium_mg: 36 }, cooking_states: ['cooked'] },
 
     // VEGETABLES
-    { id: 'broccoli', name: 'Broccoli', name_es: 'Brócoli', emoji: '🥦', category: 'vegetable', kcal: 35, protein: 2.4, carbs: 7, fat: 0.4, fiber: 3.3, portion_g: 100, cooking_states: ['steamed', 'raw', 'sautéed'] },
-    { id: 'spinach', name: 'Spinach', name_es: 'Espinaca', emoji: '🥬', category: 'vegetable', kcal: 23, protein: 2.9, carbs: 3.6, fat: 0.4, fiber: 2.2, portion_g: 100, cooking_states: ['raw', 'sautéed'] },
-    { id: 'lettuce', name: 'Lettuce', name_es: 'Lechuga', emoji: '🥬', category: 'vegetable', kcal: 15, protein: 1.4, carbs: 2.9, fat: 0.2, fiber: 1.3, portion_g: 80, cooking_states: ['raw'] },
-    { id: 'tomato', name: 'Tomato', name_es: 'Tomate', emoji: '🍅', category: 'vegetable', kcal: 18, protein: 0.9, carbs: 3.9, fat: 0.2, fiber: 1.2, portion_g: 100, cooking_states: ['raw', 'cooked'] },
-    { id: 'cucumber', name: 'Cucumber', name_es: 'Pepino', emoji: '🥒', category: 'vegetable', kcal: 16, protein: 0.7, carbs: 3.6, fat: 0.1, fiber: 0.5, portion_g: 100, cooking_states: ['raw'] },
-    { id: 'carrot', name: 'Carrot', name_es: 'Zanahoria', emoji: '🥕', category: 'vegetable', kcal: 41, protein: 0.9, carbs: 10, fat: 0.2, fiber: 2.8, portion_g: 100, cooking_states: ['raw', 'cooked'] },
-    { id: 'onion', name: 'Onion', name_es: 'Cebolla', emoji: '🧅', category: 'vegetable', kcal: 40, protein: 1.1, carbs: 9.3, fat: 0.1, fiber: 1.7, portion_g: 50, cooking_states: ['raw', 'sautéed'] },
-    { id: 'pepper_bell', name: 'Bell Pepper', name_es: 'Pimiento', emoji: '🫑', category: 'vegetable', kcal: 31, protein: 1, carbs: 6, fat: 0.3, fiber: 2.1, portion_g: 100, cooking_states: ['raw', 'sautéed'] },
-    { id: 'zucchini', name: 'Zucchini', name_es: 'Zapallo Italiano', emoji: '🥒', category: 'vegetable', kcal: 17, protein: 1.2, carbs: 3.1, fat: 0.3, fiber: 1, portion_g: 150, cooking_states: ['sautéed', 'grilled'] },
-    { id: 'green_beans', name: 'Green Beans', name_es: 'Vainitas', emoji: '🌿', category: 'vegetable', kcal: 31, protein: 1.8, carbs: 7, fat: 0.1, fiber: 3.4, portion_g: 100, cooking_states: ['steamed', 'sautéed'] },
+    { id: 'broccoli', name: 'Broccoli', name_es: 'Brócoli', emoji: '🥦', category: 'vegetable', kcal: 35, protein: 2.4, carbs: 7, fat: 0.4, fiber: 3.3, portion_g: 100, micros: { vit_c_mg: 89, calcium_mg: 47, folate_mcg: 63 }, cooking_states: ['steamed', 'raw', 'sautéed'] },
+    { id: 'spinach', name: 'Spinach', name_es: 'Espinaca', emoji: '🥬', category: 'vegetable', kcal: 23, protein: 2.9, carbs: 3.6, fat: 0.4, fiber: 2.2, portion_g: 100, micros: { iron_mg: 2.7, calcium_mg: 99, folate_mcg: 194, vit_a_iu: 9000 }, cooking_states: ['raw', 'sautéed'] },
+    { id: 'lettuce', name: 'Lettuce', name_es: 'Lechuga', emoji: '🥬', category: 'vegetable', kcal: 15, protein: 1.4, carbs: 2.9, fat: 0.2, fiber: 1.3, portion_g: 80, micros: { vit_a_iu: 7000 }, cooking_states: ['raw'] },
+    { id: 'tomato', name: 'Tomato', name_es: 'Tomate', emoji: '🍅', category: 'vegetable', kcal: 18, protein: 0.9, carbs: 3.9, fat: 0.2, fiber: 1.2, portion_g: 100, micros: { vit_c_mg: 13 }, cooking_states: ['raw', 'cooked'] },
+    { id: 'cucumber', name: 'Cucumber', name_es: 'Pepino', emoji: '🥒', category: 'vegetable', kcal: 16, protein: 0.7, carbs: 3.6, fat: 0.1, fiber: 0.5, portion_g: 100, micros: {}, cooking_states: ['raw'] },
+    { id: 'carrot', name: 'Carrot', name_es: 'Zanahoria', emoji: '🥕', category: 'vegetable', kcal: 41, protein: 0.9, carbs: 10, fat: 0.2, fiber: 2.8, portion_g: 100, micros: { vit_a_iu: 16000 }, cooking_states: ['raw', 'cooked'] },
+    { id: 'onion', name: 'Onion', name_es: 'Cebolla', emoji: '🧅', category: 'vegetable', kcal: 40, protein: 1.1, carbs: 9.3, fat: 0.1, fiber: 1.7, portion_g: 50, micros: {}, cooking_states: ['raw', 'sautéed'] },
+    { id: 'pepper_bell', name: 'Bell Pepper', name_es: 'Pimiento', emoji: '🫑', category: 'vegetable', kcal: 31, protein: 1, carbs: 6, fat: 0.3, fiber: 2.1, portion_g: 100, micros: { vit_c_mg: 127 }, cooking_states: ['raw', 'sautéed'] },
+    { id: 'zucchini', name: 'Zucchini', name_es: 'Zapallo Italiano', emoji: '🥒', category: 'vegetable', kcal: 17, protein: 1.2, carbs: 3.1, fat: 0.3, fiber: 1, portion_g: 150, micros: { potassium_mg: 261 }, cooking_states: ['sautéed', 'grilled'] },
+    { id: 'green_beans', name: 'Green Beans', name_es: 'Vainitas', emoji: '🌿', category: 'vegetable', kcal: 31, protein: 1.8, carbs: 7, fat: 0.1, fiber: 3.4, portion_g: 100, micros: { vit_c_mg: 12 }, cooking_states: ['steamed', 'sautéed'] },
 
     // FATS
-    { id: 'avocado', name: 'Avocado', name_es: 'Palta', emoji: '🥑', category: 'fat', kcal: 160, protein: 2, carbs: 9, fat: 15, fiber: 7, portion_g: 100, cooking_states: ['raw'] },
-    { id: 'olive_oil', name: 'Olive Oil', name_es: 'Aceite de Oliva', emoji: '🫒', category: 'fat', kcal: 884, protein: 0, carbs: 0, fat: 100, portion_g: 15, cooking_states: ['raw'] },
-    { id: 'almonds', name: 'Almonds', name_es: 'Almendras', emoji: '🌰', category: 'fat', kcal: 579, protein: 21, carbs: 22, fat: 50, fiber: 12, portion_g: 30, cooking_states: ['raw'] },
-    { id: 'peanut_butter', name: 'Peanut Butter', name_es: 'Mantequilla de Maní', emoji: '🥜', category: 'fat', kcal: 588, protein: 25, carbs: 20, fat: 50, fiber: 6, portion_g: 30, cooking_states: ['raw'] },
+    { id: 'avocado', name: 'Avocado', name_es: 'Palta', emoji: '🥑', category: 'fat', kcal: 160, protein: 2, carbs: 9, fat: 15, fiber: 7, portion_g: 100, micros: { potassium_mg: 485, folate_mcg: 81 }, cooking_states: ['raw'] },
+    { id: 'olive_oil', name: 'Olive Oil', name_es: 'Aceite de Oliva', emoji: '🫒', category: 'fat', kcal: 884, protein: 0, carbs: 0, fat: 100, portion_g: 15, micros: { vit_e_mg: 14 }, cooking_states: ['raw'] },
+    { id: 'almonds', name: 'Almonds', name_es: 'Almendras', emoji: '🌰', category: 'fat', kcal: 579, protein: 21, carbs: 22, fat: 50, fiber: 12, portion_g: 30, micros: { magnesium_mg: 270, calcium_mg: 269, iron_mg: 3.7 }, cooking_states: ['raw'] },
+    { id: 'peanut_butter', name: 'Peanut Butter', name_es: 'Mantequilla de Maní', emoji: '🥜', category: 'fat', kcal: 588, protein: 25, carbs: 20, fat: 50, fiber: 6, portion_g: 30, micros: { magnesium_mg: 154 }, cooking_states: ['raw'] },
 
     // FRUITS
-    { id: 'banana', name: 'Banana', name_es: 'Plátano', emoji: '🍌', category: 'fruit', kcal: 89, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6, portion_g: 120, cooking_states: ['raw'] },
-    { id: 'apple', name: 'Apple', name_es: 'Manzana', emoji: '🍎', category: 'fruit', kcal: 52, protein: 0.3, carbs: 14, fat: 0.2, fiber: 2.4, portion_g: 180, cooking_states: ['raw'] },
-    { id: 'orange', name: 'Orange', name_es: 'Naranja', emoji: '🍊', category: 'fruit', kcal: 47, protein: 0.9, carbs: 12, fat: 0.1, fiber: 2.4, portion_g: 150, cooking_states: ['raw'] },
-    { id: 'strawberries', name: 'Strawberries', name_es: 'Fresas', emoji: '🍓', category: 'fruit', kcal: 32, protein: 0.7, carbs: 8, fat: 0.3, fiber: 2, portion_g: 150, cooking_states: ['raw'] },
+    { id: 'banana', name: 'Banana', name_es: 'Plátano', emoji: '🍌', category: 'fruit', kcal: 89, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6, portion_g: 120, micros: { potassium_mg: 358 }, cooking_states: ['raw'] },
+    { id: 'apple', name: 'Apple', name_es: 'Manzana', emoji: '🍎', category: 'fruit', kcal: 52, protein: 0.3, carbs: 14, fat: 0.2, fiber: 2.4, portion_g: 180, micros: { vit_c_mg: 4.6 }, cooking_states: ['raw'] },
+    { id: 'orange', name: 'Orange', name_es: 'Naranja', emoji: '🍊', category: 'fruit', kcal: 47, protein: 0.9, carbs: 12, fat: 0.1, fiber: 2.4, portion_g: 150, micros: { vit_c_mg: 53, folate_mcg: 30 }, cooking_states: ['raw'] },
+    { id: 'strawberries', name: 'Strawberries', name_es: 'Fresas', emoji: '🍓', category: 'fruit', kcal: 32, protein: 0.7, carbs: 8, fat: 0.3, fiber: 2, portion_g: 150, micros: { vit_c_mg: 58, folate_mcg: 24 }, cooking_states: ['raw'] },
 
     // DAIRY
-    { id: 'milk', name: 'Milk (low fat)', name_es: 'Leche Descremada', emoji: '🥛', category: 'dairy', kcal: 42, protein: 3.4, carbs: 5, fat: 1, portion_g: 250, cooking_states: ['raw'] },
-    { id: 'yogurt_greek', name: 'Greek Yogurt', name_es: 'Yogurt Griego', emoji: '🥛', category: 'dairy', kcal: 59, protein: 10, carbs: 3.6, fat: 0.7, portion_g: 170, cooking_states: ['raw'] },
-    { id: 'cheese', name: 'Cheese', name_es: 'Queso', emoji: '🧀', category: 'dairy', kcal: 402, protein: 25, carbs: 1.3, fat: 33, portion_g: 30, cooking_states: ['raw'] },
+    { id: 'milk', name: 'Milk (low fat)', name_es: 'Leche Descremada', emoji: '🥛', category: 'dairy', kcal: 42, protein: 3.4, carbs: 5, fat: 1, portion_g: 250, micros: { calcium_mg: 125, vit_d_iu: 100 }, cooking_states: ['raw'] },
+    { id: 'yogurt_greek', name: 'Greek Yogurt', name_es: 'Yogurt Griego', emoji: '🥛', category: 'dairy', kcal: 59, protein: 10, carbs: 3.6, fat: 0.7, portion_g: 170, micros: { calcium_mg: 110, vit_b12_mcg: 0.75 }, cooking_states: ['raw'] },
+    { id: 'cheese', name: 'Cheese', name_es: 'Queso', emoji: '🧀', category: 'dairy', kcal: 402, protein: 25, carbs: 1.3, fat: 33, portion_g: 30, micros: { calcium_mg: 721 }, cooking_states: ['raw'] },
 ];
 
 export interface MealPlan {
@@ -134,13 +151,106 @@ export function getFoodsByCategory(category: SimpleFoodItem['category']): Simple
     return SIMPLE_FOODS.filter(f => f.category === category);
 }
 
+// Fetch foods from Supabase database with smart ordering
+// Falls back to SIMPLE_FOODS if DB unavailable
+export async function getFoodsFromDB(
+    category: 'protein' | 'carb' | 'vegetable' | 'fat' | 'fruit' | 'dairy',
+    limit: number = 10,
+    nutrientPriorities: string[] = []
+): Promise<SimpleFoodItem[]> {
+    try {
+        // Dynamic import to avoid SSR issues
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+
+        // Map category names to culinary_category in DB
+        const categoryMap: Record<string, string[]> = {
+            'protein': ['proteina', 'carne', 'pescado', 'mariscos', 'huevo'],
+            'carb': ['carbohidrato', 'grano', 'cereal', 'pan', 'pasta', 'arroz'],
+            'vegetable': ['verdura', 'vegetal', 'hortaliza'],
+            'fat': ['grasa', 'aceite', 'nuez', 'semilla'],
+            'fruit': ['fruta'],
+            'dairy': ['lacteo', 'leche', 'queso', 'yogurt']
+        };
+
+        const categories = categoryMap[category] || [category];
+
+        // Build query
+        let query = supabase
+            .from('foods')
+            .select('id, name, emoji, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, is_simple_ingredient, culinary_category')
+            .order('is_simple_ingredient', { ascending: false })
+            .order('priority', { ascending: true })
+            .limit(limit * 2); // Fetch extra for filtering
+
+        // Filter by category
+        // Using OR with ilike for flexible matching
+        const categoryConditions = categories.map(c => `culinary_category.ilike.%${c}%`).join(',');
+        query = query.or(categoryConditions);
+
+        const { data, error } = await query;
+
+        if (error || !data || data.length === 0) {
+            console.warn('DB fetch failed, using fallback SIMPLE_FOODS for category:', category);
+            return SIMPLE_FOODS.filter(f => f.category === category).slice(0, limit);
+        }
+
+        // Transform DB format to SimpleFoodItem format
+        const transformed: SimpleFoodItem[] = data.map(d => ({
+            id: String(d.id),
+            name: d.name,
+            name_es: d.name, // DB already has Spanish names
+            emoji: d.emoji || '🍽️',
+            category: category,
+            kcal: d.kcal_per_100g || 0,
+            protein: d.protein_g_per_100g || 0,
+            carbs: d.carbs_g_per_100g || 0,
+            fat: d.fat_g_per_100g || 0,
+            portion_g: 100, // Default portion
+            micros: {} // DB doesn't have micros yet in this schema
+        }));
+
+        // Apply nutrient ranking if priorities provided (limited effect without micros in DB)
+        // Respect the DB order (simple ingredients first)
+        return transformed;
+
+    } catch (err) {
+        console.warn('getFoodsFromDB error, using fallback:', err);
+        return SIMPLE_FOODS.filter(f => f.category === category).slice(0, limit);
+    }
+}
+
+// Helper to rank foods based on micronutrient priorities
+function rankFoodsByNutrients(foods: SimpleFoodItem[], priorities: string[]): SimpleFoodItem[] {
+    if (!priorities || priorities.length === 0) return foods;
+
+    // Clone to sort
+    return [...foods].sort((a, b) => {
+        let scoreA = 0;
+        let scoreB = 0;
+
+        priorities.forEach(nutrient => {
+            // @ts-ignore - access dynamic property
+            const valA = a.micros?.[nutrient] || 0;
+            // @ts-ignore
+            const valB = b.micros?.[nutrient] || 0;
+            scoreA += valA;
+            scoreB += valB;
+        });
+
+        // Add a small random jitter to avoid identical sorting for same scores
+        return (scoreB - scoreA) || (Math.random() - 0.5);
+    });
+}
+
 // Generate a simple meal with protein + carb + vegetable
 export function generateSimpleMeal(
     type: Meal['type'],
     targetCalories: number,
     availableFoods?: string[],
     dietType: string = 'balanced',
-    conditions: string[] = []
+    conditions: string[] = [],
+    nutrientPriorities: string[] = []
 ): Meal {
     const typeNames: Record<string, string> = {
         breakfast: 'Desayuno',
@@ -158,6 +268,7 @@ export function generateSimpleMeal(
     if (dietType === 'keto') {
         foods = foods.filter(f => {
             if (f.category === 'carb') return false;
+            // Allow low carb fruits
             if (f.category === 'fruit' && !['strawberries'].includes(f.id)) return false;
             if (f.category === 'dairy' && f.id === 'milk') return false;
             return true;
@@ -187,64 +298,87 @@ export function generateSimpleMeal(
     let fruits = foods.filter(f => f.category === 'fruit');
     let dairy = foods.filter(f => f.category === 'dairy');
 
+    // Vegan fallback for protein
     if ((dietType === 'vegan' || dietType === 'vegetarian') && proteins.length === 0) {
         proteins = foods.filter(f => ['beans_black', 'lentils', 'quinoa'].includes(f.id));
     }
 
     const items: MealItem[] = [];
 
-    // Macro Ratios per diet
-    let proteinRatio = 0.35;
-    let carbRatio = 0.35;
-    // fatRatio is the remainder
+    // Map internal keys to DietType keys
+    const dietKeyMap: Record<string, any> = {
+        'balanced': 'Estándar',
+        'keto': 'Keto',
+        'low_carb': 'Low-Carb',
+        'vegan': 'Vegana',
+        'vegetarian': 'Vegetariana',
+        'paleo': 'Paleo',
+        'mediterranean': 'Mediterránea',
+        'high_protein': 'Alta Proteína',
+        'diabetes_friendly': 'Diabéticos',
+        'dash': 'DASH'
+    };
 
-    if (dietType === 'keto') {
-        proteinRatio = 0.25;
-        carbRatio = 0.05;
-        // Fat ~70%
-    } else if (dietType === 'diabetes_friendly') {
-        proteinRatio = 0.40;
-        carbRatio = 0.25;
-    } else if (dietType === 'high_protein') {
-        proteinRatio = 0.45;
-        carbRatio = 0.30;
-    } else if (dietType === 'low_carb') {
-        proteinRatio = 0.40;
-        carbRatio = 0.20;
-    } else if (dietType === 'vegan') {
-        proteinRatio = 0.25; // Harder to hit high protein without meat
-        carbRatio = 0.45;
-    }
+    const lookupKey = dietKeyMap[dietType] || 'Estándar';
+    const dietMacros = DIET_MACROS[lookupKey] || DIET_MACROS['Estándar'];
 
-    // Helper to calculate portion
-    const calcPortion = (food: SimpleFoodItem, calories: number) => {
-        if (!food || calories <= 0) return 0;
-        return Math.round(calories / (food.kcal / 100));
+    let proteinRatio = dietMacros.protein_pct / 100;
+    let carbRatio = dietMacros.carbs_pct / 100;
+
+    // Helper to calculate portion based on calories or grams of a specific macro
+    const calcPortion = (food: SimpleFoodItem, targetAmount: number, targetType: 'kcal' | 'protein' | 'carbs' = 'kcal') => {
+        if (!food || targetAmount <= 0) return 0;
+        let per100 = 0;
+        if (targetType === 'kcal') per100 = food.kcal;
+        if (targetType === 'protein') per100 = food.protein;
+        if (targetType === 'carbs') per100 = food.carbs;
+
+        if (per100 <= 0) return 0;
+        return Math.round((targetAmount / per100) * 100);
     };
 
     if (type === 'breakfast') {
-        let carb = carbs.find(c => ['oats', 'bread_whole', 'quinoa'].includes(c.id)) || carbs[0];
-        let protein = proteins.find(p => p.id === 'eggs') || dairy.find(d => d.id === 'yogurt_greek') || proteins[0];
-        let fruit = fruits[Math.floor(Math.random() * fruits.length)];
+        // --- BREAKFAST LOGIC ---
+        let carbOptions = carbs.filter(c => ['oats', 'bread_whole', 'quinoa'].includes(c.id));
+        if (carbOptions.length === 0) carbOptions = carbs;
 
-        // Prioritize protein source for vegan/veg if eggs not available
+        let proteinOptions = proteins.filter(p => p.id === 'eggs');
+        if (proteinOptions.length === 0) proteinOptions = [...dairy, ...proteins];
+
+        // Apply Priority Ranking
+        if (nutrientPriorities.length > 0) {
+            proteinOptions = rankFoodsByNutrients(proteinOptions, nutrientPriorities).slice(0, 3);
+            carbOptions = rankFoodsByNutrients(carbOptions, nutrientPriorities).slice(0, 3);
+        }
+
+        let protein = proteinOptions[Math.floor(Math.random() * proteinOptions.length)];
+        let carb = carbOptions[Math.floor(Math.random() * carbOptions.length)];
+
+        let fruitOptions = fruits;
+        if (nutrientPriorities.length > 0) {
+            fruitOptions = rankFoodsByNutrients(fruitOptions, nutrientPriorities).slice(0, 3);
+        }
+        let fruit = fruitOptions[Math.floor(Math.random() * fruitOptions.length)];
+
+        // Vegan Override
         if (dietType === 'vegan') {
-            protein = proteins[0]; // Bean/Lentil/Tofu
+            protein = proteins[0];
         }
 
         // 1. Protein
         if (protein) {
-            const pCals = targetCalories * proteinRatio;
-            const portion = calcPortion(protein, pCals);
-            // Cap but higher
+            const targetProteinGrams = (targetCalories * proteinRatio) / 4;
+            // Use 'protein' mode for calc if protein source is primarily protein
+            // But usually we just allocate calories. Let's try to match grams for precision.
+            const portion = calcPortion(protein, targetProteinGrams, 'protein');
             const finalPortion = Math.min(portion, 400);
             items.push({ food: protein, portion_g: finalPortion, macros: calculateItemMacros(protein, finalPortion) });
         }
 
         // 2. Carb
         if (carb && carbRatio > 0.05) {
-            const cCals = targetCalories * carbRatio;
-            const portion = calcPortion(carb, cCals);
+            const targetCarbGrams = (targetCalories * carbRatio) / 4;
+            const portion = calcPortion(carb, targetCarbGrams, 'carbs');
             const finalPortion = Math.min(portion, 400);
             items.push({ food: carb, portion_g: finalPortion, macros: calculateItemMacros(carb, finalPortion) });
         }
@@ -255,9 +389,17 @@ export function generateSimpleMeal(
         }
 
     } else if (type === 'snack') {
-        // Simple snack logic: fruit + fat/protein
-        const fruit = fruits[Math.floor(Math.random() * fruits.length)];
-        const snackOption = [...fats, ...dairy, ...proteins][Math.floor(Math.random() * (fats.length + dairy.length + proteins.length))];
+        // --- SNACK LOGIC ---
+        let fruitOptions = fruits;
+        let snackOptions = [...fats, ...dairy, ...proteins];
+
+        if (nutrientPriorities.length > 0) {
+            fruitOptions = rankFoodsByNutrients(fruitOptions, nutrientPriorities).slice(0, 3);
+            snackOptions = rankFoodsByNutrients(snackOptions, nutrientPriorities).slice(0, 5);
+        }
+
+        const fruit = fruitOptions[Math.floor(Math.random() * fruitOptions.length)];
+        const snackOption = snackOptions[Math.floor(Math.random() * snackOptions.length)];
 
         if (fruit && dietType !== 'keto') {
             items.push({ food: fruit, portion_g: fruit.portion_g, macros: calculateItemMacros(fruit, fruit.portion_g) });
@@ -268,23 +410,32 @@ export function generateSimpleMeal(
         const remaining = targetCalories - currentCals;
 
         if (snackOption && remaining > 30) {
-            const portion = calcPortion(snackOption, remaining);
-            // Ensure portion isn't tiny or huge
+            const portion = calcPortion(snackOption, remaining, 'kcal');
             const finalPortion = Math.min(Math.max(portion, 20), 200);
             items.push({ food: snackOption, portion_g: finalPortion, macros: calculateItemMacros(snackOption, finalPortion) });
         }
 
     } else {
-        // Lunch & Dinner
-        const protein = proteins[Math.floor(Math.random() * proteins.length)];
-        const carb = carbs[Math.floor(Math.random() * carbs.length)];
-        const veg1 = vegetables[Math.floor(Math.random() * vegetables.length)];
+        // --- LUNCH & DINNER LOGIC ---
+        let proteinOptions = proteins;
+        let carbOptions = carbs;
+        let vegOptions = vegetables;
 
-        // 1. Add Protein
+        if (nutrientPriorities.length > 0) {
+            proteinOptions = rankFoodsByNutrients(proteinOptions, nutrientPriorities).slice(0, 3);
+            carbOptions = rankFoodsByNutrients(carbOptions, nutrientPriorities).slice(0, 3);
+            vegOptions = rankFoodsByNutrients(vegOptions, nutrientPriorities).slice(0, 3);
+        }
+
+        const protein = proteinOptions[Math.floor(Math.random() * proteinOptions.length)];
+        const carb = carbOptions[Math.floor(Math.random() * carbOptions.length)];
+        const veg1 = vegOptions[Math.floor(Math.random() * vegOptions.length)];
+
+        // 1. Protein
         if (protein) {
-            const pCals = targetCalories * proteinRatio;
-            const portion = calcPortion(protein, pCals);
-            const finalPortion = Math.min(portion, 600); // Increased cap significantly
+            const targetProteinGrams = (targetCalories * proteinRatio) / 4;
+            const portion = calcPortion(protein, targetProteinGrams, 'protein');
+            const finalPortion = Math.min(portion, 600);
             items.push({
                 food: protein,
                 portion_g: finalPortion,
@@ -293,10 +444,10 @@ export function generateSimpleMeal(
             });
         }
 
-        // 2. Add Carb
+        // 2. Carb
         if (carb && dietType !== 'keto') {
-            const cCals = targetCalories * carbRatio;
-            const portion = calcPortion(carb, cCals);
+            const targetCarbGrams = (targetCalories * carbRatio) / 4;
+            const portion = calcPortion(carb, targetCarbGrams, 'carbs');
             const maxCarb = (dietType === 'diabetes_friendly' || dietType === 'low_carb') ? 200 : 500;
             const finalPortion = Math.min(portion, maxCarb);
             items.push({
@@ -307,34 +458,30 @@ export function generateSimpleMeal(
             });
         }
 
-        // 3. Add Veggies (Low cal, mostly for health)
+        // 3. Veggies
         if (veg1) {
             items.push({ food: veg1, portion_g: 150, cooking_state: veg1.cooking_states?.[0], macros: calculateItemMacros(veg1, 150) });
         }
     }
 
     // --- GAP FILLER & FAT ADJUSTMENT ---
-    // Ensure we hit close to targetCalories by adding/adjusting fat
     const currentTotals = sumMacros(items.map(i => i.macros));
     const deficit = targetCalories - currentTotals.kcal;
 
-    // Tolerance: if deficit > 10% of meal target, fill it
     if (deficit > (targetCalories * 0.10)) {
-        // Pick a fat source
-        let fatSource = fats[Math.floor(Math.random() * fats.length)];
-        // Fallback to olive oil if no fat source found
+        let fatOptions = fats;
+        // Prioritize healthy fats if ranking
+        if (nutrientPriorities.length > 0) {
+            fatOptions = rankFoodsByNutrients(fatOptions, nutrientPriorities).slice(0, 3);
+        }
+
+        let fatSource = fatOptions[Math.floor(Math.random() * fatOptions.length)];
         if (!fatSource) fatSource = SIMPLE_FOODS.find(f => f.id === 'olive_oil')!;
 
-        // Check if we already have a fat source in items to just increase it?
-        // Simpler to just add/push a new item for "Cooking Oil" or "Side of Avocado"
-
         if (fatSource) {
-            const portion = calcPortion(fatSource, deficit);
-            // Cap fat portion reasonable per meal (e.g. 100g nuts is a lot, but 10g oil is fine)
-            // If it's oil, keep it under 30ml unless huge needs. If avocado, up to 200g.
+            const portion = calcPortion(fatSource, deficit, 'kcal');
             let maxFat = 100;
             if (fatSource.id === 'olive_oil') maxFat = 40;
-
             const finalPortion = Math.min(portion, maxFat);
 
             if (finalPortion > 5) {
@@ -363,7 +510,8 @@ export function generateDayMealPlan(
     numMeals: 3 | 4 | 5 = 4,
     availableFoods?: string[],
     dietType: string = 'balanced',
-    conditions: string[] = []
+    conditions: string[] = [],
+    nutrientPriorities: string[] = []
 ): MealPlan {
     const meals: Meal[] = [];
 
@@ -377,19 +525,19 @@ export function generateDayMealPlan(
     const dist = distributions[numMeals];
 
     if (dist.breakfast) {
-        meals.push(generateSimpleMeal('breakfast', targetCalories * dist.breakfast, availableFoods, dietType, conditions));
+        meals.push(generateSimpleMeal('breakfast', targetCalories * dist.breakfast, availableFoods, dietType, conditions, nutrientPriorities));
     }
     if (dist.snack1) {
-        meals.push(generateSimpleMeal('snack', targetCalories * dist.snack1, availableFoods, dietType, conditions));
+        meals.push(generateSimpleMeal('snack', targetCalories * dist.snack1, availableFoods, dietType, conditions, nutrientPriorities));
     }
     if (dist.lunch) {
-        meals.push(generateSimpleMeal('lunch', targetCalories * dist.lunch, availableFoods, dietType, conditions));
+        meals.push(generateSimpleMeal('lunch', targetCalories * dist.lunch, availableFoods, dietType, conditions, nutrientPriorities));
     }
     if (dist.snack2) {
-        meals.push(generateSimpleMeal('snack', targetCalories * dist.snack2, availableFoods, dietType, conditions));
+        meals.push(generateSimpleMeal('snack', targetCalories * dist.snack2, availableFoods, dietType, conditions, nutrientPriorities));
     }
     if (dist.dinner) {
-        meals.push(generateSimpleMeal('dinner', targetCalories * dist.dinner, availableFoods, dietType, conditions));
+        meals.push(generateSimpleMeal('dinner', targetCalories * dist.dinner, availableFoods, dietType, conditions, nutrientPriorities));
     }
 
     const totals = sumMacros(meals.map(m => m.totals));
@@ -445,7 +593,8 @@ export function generateWeeklyMealPlan(
     numMeals: 3 | 4 | 5 = 4,
     availableFoods?: string[],
     dietType: string = 'balanced',
-    conditions: string[] = []
+    conditions: string[] = [],
+    nutrientPriorities: string[] = []
 ): WeeklyMealPlan {
     const days: MealPlan[] = [];
     const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -453,7 +602,7 @@ export function generateWeeklyMealPlan(
     for (let i = 0; i < 7; i++) {
         // Add variation logic here if needed (e.g., rotate proteins)
         // For now, randomness in generateSimpleMeal provides variety
-        const plan = generateDayMealPlan(targetCalories, targetProtein, numMeals, availableFoods, dietType, conditions);
+        const plan = generateDayMealPlan(targetCalories, targetProtein, numMeals, availableFoods, dietType, conditions, nutrientPriorities);
 
         // Enhance ID to prevent collisions
         plan.id = `day_${i}_${Date.now()}_${Math.random()}`;

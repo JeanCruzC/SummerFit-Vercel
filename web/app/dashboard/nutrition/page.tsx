@@ -8,6 +8,7 @@ import { Card, Select, Alert, ProgressBar } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile, upsertProfile } from "@/lib/supabase/database";
 import { calculateHealthMetrics, calculateMacros, calculateProjectionWithExercise, calculateIdealWeightRange, calculateWaterIntake } from "@/lib/calculations";
+import { getMicronutrientTargets } from "@/lib/nutrition";
 import { DIET_MACROS, getMacroDistribution } from "@/lib/diets";
 import { UserProfile, DietType } from "@/types";
 
@@ -62,7 +63,7 @@ export default function NutritionPage() {
     const projectionDietOnly = useMemo(() => profile && metrics ? calculateProjectionWithExercise(profile.weight_kg, profile.target_weight_kg, metrics.tdee, metrics.bmr, profile.goal, mode, 0, profile.gender as 'M' | 'F') : null, [profile, metrics, mode]);
     const projection = useMemo(() => profile && metrics ? calculateProjectionWithExercise(profile.weight_kg, profile.target_weight_kg, metrics.tdee, metrics.bmr, profile.goal, mode, weeklyExerciseCalories, profile.gender as 'M' | 'F') : null, [profile, metrics, mode, weeklyExerciseCalories]);
 
-    const macros = useMemo(() => projection && profile ? calculateMacros(projection.daily_calories, profile.diet_type) : null, [projection, profile]);
+    const macros = useMemo(() => projection && profile ? calculateMacros(projection.daily_calories, profile.diet_type, profile) : null, [projection, profile]);
     const idealWeight = useMemo(() => profile ? calculateIdealWeightRange(profile.height_cm) : null, [profile]);
     const waterIntake = useMemo(() => profile ? calculateWaterIntake(profile.weight_kg, profile.activity_level) : 2.5, [profile]);
     const macroDist = useMemo(() => profile ? getMacroDistribution(profile.diet_type) : null, [profile]);
@@ -135,6 +136,83 @@ export default function NutritionPage() {
                         <div className="text-xs text-gray-400">{macroDist?.fat_pct}% de calorías</div>
                         <div className="mt-2"><ProgressBar value={macroDist?.fat_pct || 0} max={100} color="green" /></div>
                     </div>
+                </div>
+            </Card>
+
+
+
+            {/* Micronutrients (USDA Focus) */}
+            <Card>
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Info className="h-5 w-5 text-blue-500" />
+                    Micronutrientes Clave (USDA 2025)
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {(() => {
+                        const targets = profile ? getMicronutrientTargets(
+                            // We construct a mock 'conditions' array based on profile/goal if needed
+                            // In a real app we would have a 'conditions' field in profile.
+                            // For now we can infer basic ones or pass empty if unknown.
+                            // Using mode/goal as proxy or if we had a medical_conditions field.
+                            // Since we don't have explicit conditions in UserProfile yet, we pass empty
+                            // but we pass age and gender for seniors/gender specific logic.
+                            [],
+                            profile.gender as 'M' | 'F',
+                            profile.age
+                        ) : null;
+
+                        if (!targets) return null;
+
+                        // Helper to format key names for display
+                        const displayMap: Record<string, { label: string, desc: string }> = {
+                            "fibra_g_per_1000kcal": { label: "Fibra", desc: "Salud Digestiva" }, // Need to calc total
+                            "vit_d_iu": { label: "Vitamina D", desc: "Salud Ósea" },
+                            "calcio_mg": { label: "Calcio", desc: "Huesos Fuertes" },
+                            "hierro_mg": { label: "Hierro", desc: "Transporte O2" },
+                            "colina_mg": { label: "Colina", desc: "Cerebro/Hígado" },
+                            "yodo_mg": { label: "Yodo", desc: "Tiroides" },
+                            "folato_mcg": { label: "Folato", desc: "División Celular" }
+                        };
+
+                        // Select top 3 most relevant based on presence
+                        // Priority: Pregnancy specifics > Senior specifics > General
+                        const keysToShow = [];
+                        if (targets.hierro_mg !== 18 && targets.hierro_mg !== 8) keysToShow.push('hierro_mg'); // Show if different from std
+                        if (targets.colina_mg) keysToShow.push('colina_mg');
+                        if (targets.yodo_mg) keysToShow.push('yodo_mg');
+
+                        // Fill remaining slots with defaults
+                        if (keysToShow.length < 3) keysToShow.push('vit_d_iu');
+                        if (keysToShow.length < 3) keysToShow.push('calcio_mg');
+                        if (keysToShow.length < 3) keysToShow.push('fibra_g_per_1000kcal');
+
+                        return keysToShow.slice(0, 3).map(key => {
+                            const val = targets[key];
+                            const meta = displayMap[key] || { label: key, desc: 'Nutriente' };
+
+                            // Format value
+                            let displayVal = `${val}`;
+                            if (key === 'fibra_g_per_1000kcal') {
+                                // Calc total fiber based on cal target
+                                const totalFiber = Math.round((projection.daily_calories / 1000) * val);
+                                displayVal = `${totalFiber}g`;
+                            } else if (key.endsWith('mg')) {
+                                displayVal += ' mg';
+                            } else if (key.endsWith('iu')) {
+                                displayVal += ' IU';
+                            } else if (key.endsWith('mcg')) {
+                                displayVal += ' µg';
+                            }
+
+                            return (
+                                <div key={key} className="bg-gray-50 p-3 rounded-lg text-center">
+                                    <div className="text-sm text-gray-500">{meta.label}</div>
+                                    <div className="text-xl font-bold text-gray-800">{displayVal}</div>
+                                    <div className="text-xs text-gray-400">{meta.desc}</div>
+                                </div>
+                            );
+                        });
+                    })()}
                 </div>
             </Card>
 

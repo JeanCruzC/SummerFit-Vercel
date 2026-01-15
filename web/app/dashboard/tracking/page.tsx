@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserLocalDate } from "@/lib/date";
 import { createClient } from "@/lib/supabase/client";
-import { getProfile, getMealEntries, deleteMealEntry, deleteMealEntriesByType } from "@/lib/supabase/database";
+import { getProfile, getMealEntries, deleteMealEntry, deleteMealEntriesByType, addMealEntry } from "@/lib/supabase/database";
 import { calculateHealthMetrics, calculateMacros, calculateProjectionWithExercise } from "@/lib/calculations";
 import { MealEntry, UserProfile } from "@/types";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { FoodSearchInput } from "@/components/ui/FoodSearchInput";
 
 export default function TrackingPage() {
     const router = useRouter();
@@ -19,6 +20,60 @@ export default function TrackingPage() {
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState<number | null>(null);
     const [waterGlasses, setWaterGlasses] = useState(0);
+
+    // Inline Add State
+    const [addingToMeal, setAddingToMeal] = useState<string | null>(null); // "Desayuno" | "Almuerzo" etc
+    const [selectedFood, setSelectedFood] = useState<any | null>(null);
+    const [gramsInput, setGramsInput] = useState("100");
+    const [saving, setSaving] = useState(false);
+
+    const handleSelectFood = (food: any, mealType: string) => {
+        setSelectedFood(food);
+        setGramsInput(String(food.portion_g || 100));
+        setAddingToMeal(mealType);
+    };
+
+    const handleConfirmAdd = async () => {
+        if (!selectedFood || !addingToMeal) return;
+        setSaving(true);
+
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const grams = parseFloat(gramsInput) || 100;
+        const factor = grams / 100;
+
+        const entry = {
+            user_id: session.user.id,
+            log_date: selectedDate,
+            meal_type: addingToMeal as 'Desayuno' | 'Almuerzo' | 'Cena' | 'Snack',
+            food_name: selectedFood.name,
+            emoji: selectedFood.emoji || "🍽️",
+            grams: grams,
+            calories: Math.round((selectedFood.kcal_per_100g || 0) * factor),
+            protein_g: Math.round((selectedFood.protein_g_per_100g || 0) * factor * 10) / 10,
+            carbs_g: Math.round((selectedFood.carbs_g_per_100g || 0) * factor * 10) / 10,
+            fat_g: Math.round((selectedFood.fat_g_per_100g || 0) * factor * 10) / 10,
+        };
+
+        const savedEntry = await addMealEntry(entry);
+        if (savedEntry && typeof savedEntry !== 'boolean') {
+            setMeals(prev => [...prev, savedEntry as MealEntry]);
+        }
+
+        // Reset state
+        setSelectedFood(null);
+        setAddingToMeal(null);
+        setGramsInput("100");
+        setSaving(false);
+    };
+
+    const cancelAdd = () => {
+        setSelectedFood(null);
+        setAddingToMeal(null);
+        setGramsInput("100");
+    };
 
     // Week Days Logic
     const weekDays = useMemo(() => {
@@ -94,7 +149,7 @@ export default function TrackingPage() {
         profile.weight_kg, profile.target_weight_kg, metrics.tdee, metrics.bmr,
         profile.goal, profile.goal_speed || "moderado", 0, profile.gender as 'M' | 'F'
     ) : null;
-    const macroTargets = projection && profile ? calculateMacros(projection.daily_calories, profile.diet_type) : null;
+    const macroTargets = projection && profile ? calculateMacros(projection.daily_calories, profile.diet_type, profile) : null;
 
     const mealsByType = {
         Desayuno: meals.filter(m => m.meal_type === "Desayuno"),
@@ -335,14 +390,66 @@ export default function TrackingPage() {
                                         ))}
 
                                         {/* Quick Add Button at bottom of list */}
-                                        <div className="p-4">
-                                            <button
-                                                onClick={() => router.push("/dashboard/foods")}
-                                                className="w-full py-3 flex items-center justify-center gap-2 bg-primary text-white font-medium hover:bg-primary-dark transition-all rounded-xl shadow-glow-sm group"
-                                            >
-                                                <span className="material-symbols-outlined group-hover:scale-110 transition-transform">add_circle</span>
-                                                {t('nutrition.tracking.addFood')}
-                                            </button>
+                                        <div className="p-4 space-y-3">
+                                            {/* Inline Search */}
+                                            <FoodSearchInput
+                                                onSelect={(food) => handleSelectFood(food, type)}
+                                                placeholder={`${t('nutrition.tracking.searchFood')}...`}
+                                            />
+
+                                            {/* Quick Add Form (appears after selecting a food) */}
+                                            {addingToMeal === type && selectedFood && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: -10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800"
+                                                >
+                                                    <div className="flex items-center gap-3 mb-3">
+                                                        <span className="text-2xl">{selectedFood.emoji || "🍽️"}</span>
+                                                        <div className="flex-1">
+                                                            <p className="font-medium text-gray-900 dark:text-white">{selectedFood.name}</p>
+                                                            <p className="text-xs text-gray-500">{Math.round(selectedFood.kcal_per_100g)} kcal/100g</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <input
+                                                            type="number"
+                                                            value={gramsInput}
+                                                            onChange={(e) => setGramsInput(e.target.value)}
+                                                            className="w-24 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-center font-medium"
+                                                            min="1"
+                                                        />
+                                                        <span className="text-gray-500">gramos</span>
+                                                        <div className="flex-1 text-right text-sm font-medium text-emerald-600">
+                                                            ≈ {Math.round((selectedFood.kcal_per_100g || 0) * (parseFloat(gramsInput) || 100) / 100)} kcal
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={cancelAdd}
+                                                            className="flex-1 py-2 px-4 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                                        >
+                                                            Cancelar
+                                                        </button>
+                                                        <button
+                                                            onClick={handleConfirmAdd}
+                                                            disabled={saving}
+                                                            className="flex-1 py-2 px-4 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+                                                        >
+                                                            {saving ? (
+                                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                            ) : (
+                                                                <>
+                                                                    <span className="material-symbols-outlined text-[18px]">add</span>
+                                                                    Agregar
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </motion.div>
+                                            )}
                                         </div>
                                     </div>
                                 )}

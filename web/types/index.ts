@@ -10,6 +10,7 @@ export interface UserProfile {
     activity_level: 'Sedentario' | 'Ligero' | 'Moderado' | 'Activo' | 'Muy activo';
     goal_speed?: 'conservador' | 'moderado' | 'acelerado'; // New field for progress speed preference
     diet_type: DietType;
+    life_stage?: LifeStage; // Physiological stage
     language?: 'es' | 'en';
     full_name?: string;
     avatar_url?: string;
@@ -29,6 +30,17 @@ export interface UserProfile {
     updated_at?: string;
 }
 
+// Life stages (USDA 2025)
+export type LifeStage =
+    | 'standard'
+    | 'pregnancy_1' // 1st Trimester
+    | 'pregnancy_2' // 2nd Trimester
+    | 'pregnancy_3' // 3rd Trimester
+    | 'lactation_1' // 0-6 months
+    | 'lactation_2' // 7-12 months
+    | 'menopause'
+    | 'senior'; // 60+
+
 // Diet types
 export type DietType =
     | 'Estándar'
@@ -39,7 +51,8 @@ export type DietType =
     | 'Paleo'
     | 'Mediterránea'
     | 'Alta Proteína'
-    | 'Diabéticos';
+    | 'Diabéticos'
+    | 'DASH';
 
 // Macro distribution
 export interface MacroDistribution {

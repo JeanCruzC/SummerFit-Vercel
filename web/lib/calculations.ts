@@ -85,7 +85,8 @@ export function calculateTargetCalories(
     tdee: number,
     goal: 'Definir' | 'Mantener' | 'Volumen',
     mode: 'conservador' | 'moderado' | 'acelerado' = 'moderado',
-    gender: 'M' | 'F' = 'M'
+    gender: 'M' | 'F' = 'M',
+    lifeStage: string = 'standard' // New param
 ): number {
     // Percentage-based deficits (validated by PONSSALA 2017 + ACSM guidelines)
     const deficitPct = {
@@ -105,7 +106,14 @@ export function calculateTargetCalories(
 
     switch (goal) {
         case 'Definir':
-            targetCalories = Math.round(tdee * (1 - deficitPct[mode]));
+            // If pregnant/lactating, we force CONSERVATIVE or MAINTENANCE to prevent nutrient deficiency
+            if (lifeStage.includes('pregnancy') || lifeStage.includes('lactation')) {
+                // Guidelines suggest NOT intentionally restricting calories during pregnancy unless obesity monitoring under medical supervision
+                // We default to TDEE (Maintenance) + Offset for safety in this app
+                targetCalories = tdee;
+            } else {
+                targetCalories = Math.round(tdee * (1 - deficitPct[mode]));
+            }
             break;
         case 'Volumen':
             targetCalories = Math.round(tdee * (1 + surplusPct[mode]));
@@ -114,8 +122,20 @@ export function calculateTargetCalories(
             targetCalories = tdee;
     }
 
+    // USDA 2025 Pregnancy & Lactation Offsets
+    // These are added ON TOP of the base need (usually TDEE)
+    let offset = 0;
+    if (lifeStage === 'pregnancy_2') offset = 340;
+    if (lifeStage === 'pregnancy_3') offset = 452;
+    if (lifeStage === 'lactation_1') offset = 330; // 0-6 months
+    if (lifeStage === 'lactation_2') offset = 400; // 7-12 months
+
+    targetCalories += offset;
+
     // Gender-specific safety floors (NIH/WebMD guidelines)
-    const calorieFloor = gender === 'F' ? 1200 : 1500;
+    // Pregnant floor is higher (approx 1800)
+    let calorieFloor = gender === 'F' ? 1200 : 1500;
+    if (lifeStage.includes('pregnancy')) calorieFloor = 1800;
 
     return Math.max(targetCalories, calorieFloor);
 }
@@ -170,13 +190,63 @@ export function getDeficitWarnings(
  */
 export function calculateMacros(
     targetCalories: number,
-    dietType: DietType
+    dietType: DietType,
+    profile?: UserProfile
 ): MacroGrams {
     const distribution = getMacroDistribution(dietType);
 
-    const proteinCals = targetCalories * (distribution.protein_pct / 100);
-    const carbsCals = targetCalories * (distribution.carbs_pct / 100);
-    const fatCals = targetCalories * (distribution.fat_pct / 100);
+    // Initial calculation based on percentages
+    let proteinCals = targetCalories * (distribution.protein_pct / 100);
+    let carbsCals = targetCalories * (distribution.carbs_pct / 100);
+    let fatCals = targetCalories * (distribution.fat_pct / 100);
+
+    // --- ADVANCED SCIENTIFIC OVERRIDES ---
+    if (profile) {
+        const bmi = calculateBMI(profile.weight_kg, profile.height_cm);
+
+        // 1. OBESITY LOGIC (BMI > 30) - Protein Sparing
+        // Avoid calculating protein on total weight (too high). Use Ideal Body Weight (IBW).
+        if (bmi >= 30 && profile.goal !== 'Volumen') {
+            const heightM = profile.height_cm / 100;
+            const ibw = 22 * (heightM * heightM); // IBW at BMI 22
+
+            // Target: 2.0g/kg of IBW (Aggressive retention) or 1.5g/kg of IBW (Moderate)
+            // We use 2.0g/kg IBW as a safe, effective baseline for obese cutting
+            const targetProteinG = Math.round(ibw * 2.0);
+            const targetProteinCals = targetProteinG * 4;
+
+            // Use this protein amount, distribute rest
+            proteinCals = targetProteinCals;
+
+            // Recalculate remaining for Carbs/Fat preserving diet ratio
+            const remainingCals = Math.max(0, targetCalories - proteinCals);
+            const totalRatio = distribution.carbs_pct + distribution.fat_pct;
+
+            if (totalRatio > 0) {
+                carbsCals = remainingCals * (distribution.carbs_pct / totalRatio);
+                fatCals = remainingCals * (distribution.fat_pct / totalRatio);
+            }
+        }
+
+        // 2. MUSCLE MAINTENANCE OPTIMIZATION (Hypertrophy support at maintenance)
+        // If goal is Maintenance/Definir but diet implies high protein or user wants optimization
+        else if (profile.goal === 'Mantener' || profile.goal === 'Definir') {
+            // Ensure minimum protein of 1.6g/kg (Scientific floor for hypertrophy retention)
+            const minProteinG = Math.round(profile.weight_kg * 1.6);
+            const minProteinCals = minProteinG * 4;
+
+            if (minProteinCals > proteinCals) {
+                proteinCals = minProteinCals;
+                // Redistribute rest
+                const remainingCals = Math.max(0, targetCalories - proteinCals);
+                const totalRatio = distribution.carbs_pct + distribution.fat_pct;
+                if (totalRatio > 0) {
+                    carbsCals = remainingCals * (distribution.carbs_pct / totalRatio);
+                    fatCals = remainingCals * (distribution.fat_pct / totalRatio);
+                }
+            }
+        }
+    }
 
     return {
         protein_g: Math.round(proteinCals / CALORIES_PER_GRAM.protein),
@@ -198,9 +268,11 @@ export function calculateProjection(
     targetWeight: number,
     tdee: number,
     goal: 'Definir' | 'Mantener' | 'Volumen',
-    mode: 'conservador' | 'moderado' | 'acelerado' = 'moderado'
+    mode: 'conservador' | 'moderado' | 'acelerado' = 'moderado',
+    gender: 'M' | 'F' = 'M', // Add gender default
+    lifeStage: string = 'standard' // Add lifeStage default
 ): GoalProjection {
-    const targetCalories = calculateTargetCalories(tdee, goal, mode);
+    const targetCalories = calculateTargetCalories(tdee, goal, mode, gender, lifeStage);
     const isLosing = targetWeight < currentWeight;
 
     // Scientific constants
@@ -297,7 +369,8 @@ export function calculateProjectionWithExercise(
     goal: 'Definir' | 'Mantener' | 'Volumen',
     mode: 'conservador' | 'moderado' | 'acelerado' = 'moderado',
     weeklyExerciseCalories: number = 0,
-    gender: 'M' | 'F' = 'M'  // Add gender for correct calorie floor
+    gender: 'M' | 'F' = 'M',  // Add gender for correct calorie floor
+    lifeStage: string = 'standard' // Add lifeStage default
 ): GoalProjection & { exercise_boost: number; total_deficit: number; effectiveTDEE: number } {
 
     // Calculate effective TDEE including exercise
@@ -312,7 +385,7 @@ export function calculateProjectionWithExercise(
 
     // Target calories based on lifestyle TDEE (diet stays stable)
     // IMPORTANT: Pass gender to use correct calorie floor (1200F, 1500M)
-    const targetCalories = calculateTargetCalories(tdee, goal, mode, gender);
+    const targetCalories = calculateTargetCalories(tdee, goal, mode, gender, lifeStage);
     const isLosing = targetWeight < currentWeight;
 
     // Scientific constants
@@ -411,7 +484,9 @@ export function calculateHealthMetrics(
         profile.target_weight_kg,
         tdee,
         profile.goal,
-        mode
+        mode,
+        profile.gender,
+        (profile.life_stage as string) || 'standard'
     );
 
     const targetDate = new Date();

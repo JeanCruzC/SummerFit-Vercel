@@ -93,7 +93,7 @@ export default function MealGeneratorPage() {
                         setTargetCalories(metrics.target_calories);
 
                         // 4. Calculate Macros for the UI inputs based on the target
-                        const macros = calculateMacros(metrics.target_calories, userProfile.diet_type || 'Estándar');
+                        const macros = calculateMacros(metrics.target_calories, userProfile.diet_type || 'Estándar', userProfile);
                         setTargetProtein(macros.protein_g);
 
                         // Set Diet Type from Profile (Source of Truth)
@@ -128,13 +128,30 @@ export default function MealGeneratorPage() {
         setGenerating(true);
         setTimeout(() => {
             const conditions = dietType === 'diabetes_friendly' ? ['diabetes_type_2'] : [];
+            const nutrientPriorities: string[] = [];
+
+            if (profile) {
+                const lifeStage = profile.life_stage || 'standard';
+                // Pass lifeStage as condition too
+                if (!conditions.includes(lifeStage)) conditions.push(lifeStage);
+
+                if (lifeStage.includes('pregnancy')) {
+                    nutrientPriorities.push('iron_mg', 'folate_mcg', 'calcium_mg', 'colina_mg');
+                } else if (lifeStage.includes('lactation')) {
+                    nutrientPriorities.push('calcium_mg', 'iron_mg', 'vit_d_iu', 'vit_a_iu');
+                } else if (lifeStage.includes('menopause') || (profile.age && profile.age > 50)) {
+                    nutrientPriorities.push('calcium_mg', 'vit_d_iu', 'magnesium_mg');
+                } else if (profile.goal === 'Volumen') {
+                    nutrientPriorities.push('magnesium_mg'); // Muscle function
+                }
+            }
 
             if (mode === 'daily') {
-                const plan = generateDayMealPlan(targetCalories, targetProtein, numMeals, undefined, dietType, conditions);
+                const plan = generateDayMealPlan(targetCalories, targetProtein, numMeals, undefined, dietType, conditions, nutrientPriorities);
                 setMealPlan(plan);
                 setWeeklyPlan(null);
             } else {
-                const plan = generateWeeklyMealPlan(targetCalories, targetProtein, numMeals, undefined, dietType, conditions);
+                const plan = generateWeeklyMealPlan(targetCalories, targetProtein, numMeals, undefined, dietType, conditions, nutrientPriorities);
                 setWeeklyPlan(plan);
                 setMealPlan(null);
                 setActiveDay(0);

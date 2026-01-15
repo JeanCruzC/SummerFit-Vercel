@@ -60,40 +60,25 @@ export async function searchFoods(query: string, limit = 50): Promise<FoodItem[]
     if (words.length === 0) return [];
 
     // Build query - search in BOTH name (EN) and name_es (ES) fields
+    // Order by simple ingredients first, then by priority
     let queryBuilder = supabase
         .from('foods')
         .select('*')
-        .like('data_source', 'usda%');
+        .like('data_source', 'usda%')
+        .order('is_simple_ingredient', { ascending: false, nullsFirst: false })
+        .order('priority', { ascending: true, nullsFirst: true })
+        .order('name', { ascending: true });
 
     // Add OR filter for each word to match in either name OR name_es
     for (const word of words) {
         queryBuilder = queryBuilder.or(`name.ilike.%${word}%,name_es.ilike.%${word}%`);
     }
 
-    // Fetch more than limit to allow for sorting
-    const { data, error } = await queryBuilder.limit(limit * 3);
+    const { data, error } = await queryBuilder.limit(limit);
 
     if (error || !data) return [];
 
-    // Sort results: 1) Category priority, 2) Raw items first, 3) Shorter names first (simpler items)
-    const sorted = (data as FoodItem[]).sort((a, b) => {
-        // Priority by category
-        const priorityA = CATEGORY_PRIORITY[a.category || ''] || 8;
-        const priorityB = CATEGORY_PRIORITY[b.category || ''] || 8;
-        if (priorityA !== priorityB) return priorityA - priorityB;
-
-        // Raw items before cooked/processed
-        const isRawA = (a.name?.toLowerCase().includes('raw') || a.name_es?.toLowerCase().includes('crud')) ? 0 : 1;
-        const isRawB = (b.name?.toLowerCase().includes('raw') || b.name_es?.toLowerCase().includes('crud')) ? 0 : 1;
-        if (isRawA !== isRawB) return isRawA - isRawB;
-
-        // Shorter names first (simpler items tend to have shorter names)
-        const lenA = (a.name_es || a.name || '').length;
-        const lenB = (b.name_es || b.name || '').length;
-        return lenA - lenB;
-    });
-
-    return sorted.slice(0, limit);
+    return data as FoodItem[];
 }
 
 export async function getFoodsByCategory(category: string, limit = 50): Promise<FoodItem[]> {
@@ -124,22 +109,15 @@ export async function getFoodCategories(): Promise<string[]> {
 
 export async function getRandomFoods(limit = 20): Promise<FoodItem[]> {
     const supabase = createClient();
-    // Get only USDA foods for initial display
-    const { count } = await supabase
-        .from('foods')
-        .select('*', { count: 'exact', head: true })
-        .like('data_source', 'usda%');
 
-    if (!count) return [];
-
-    // Get random offset
-    const offset = Math.floor(Math.random() * Math.max(0, count - limit));
-
+    // Get simple ingredients first, then other foods
     const { data, error } = await supabase
         .from('foods')
         .select('*')
         .like('data_source', 'usda%')
-        .range(offset, offset + limit - 1);
+        .eq('is_simple_ingredient', true)
+        .order('priority', { ascending: true })
+        .limit(limit);
 
     if (error) return [];
     return data as FoodItem[];

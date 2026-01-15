@@ -186,7 +186,7 @@ export default function DashboardPage() {
 
     const macros = useMemo(() => {
         if (!projection || !profile) return null;
-        return calculateMacros(projection.daily_calories, profile.diet_type);
+        return calculateMacros(projection.daily_calories, profile.diet_type, profile);
     }, [projection, profile]);
 
     const todayTotals = useMemo(() => {

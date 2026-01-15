@@ -144,6 +144,17 @@
         "language": "Idioma",
         "spanish": "Español",
         "english": "Inglés",
+        "lifestage": "Estado Fisiológico",
+        "lifestages": {
+            "standard": "Estándar",
+            "pregnancy_1": "Embarazo (1er Trimestre)",
+            "pregnancy_2": "Embarazo (2do Trimestre)",
+            "pregnancy_3": "Embarazo (3er Trimestre)",
+            "lactation_1": "Lactancia (0-6 meses)",
+            "lactation_2": "Lactancia (7-12 meses)",
+            "menopause": "Menopausia",
+            "senior": "Adulto Mayor (60+)"
+        },
         "basicInfo": "Información básica",
         "currentBMI": "Tu IMC actual",
         "idealWeight": "Peso ideal para tu altura",

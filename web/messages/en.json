@@ -144,6 +144,17 @@
         "language": "Language",
         "spanish": "Spanish",
         "english": "English",
+        "lifestage": "Physiological Stage",
+        "lifestages": {
+            "standard": "Standard",
+            "pregnancy_1": "Pregnancy (1st Trimester)",
+            "pregnancy_2": "Pregnancy (2nd Trimester)",
+            "pregnancy_3": "Pregnancy (3rd Trimester)",
+            "lactation_1": "Lactation (0-6 months)",
+            "lactation_2": "Lactation (7-12 months)",
+            "menopause": "Menopause",
+            "senior": "Senior (60+)"
+        },
         "basicInfo": "Basic Information",
         "currentBMI": "Your current BMI",
         "idealWeight": "Ideal weight for your height",

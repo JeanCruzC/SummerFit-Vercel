@@ -197,6 +197,23 @@ export default function ProfilePage() {
                         value={profile.gender}
                         onChange={e => handleChange("gender", e.target.value)}
                     />
+
+                    <Select
+                        label={t('profile.lifestage')}
+                        options={[
+                            { value: "standard", label: t('profile.lifestages.standard') },
+                            { value: "pregnancy_1", label: t('profile.lifestages.pregnancy_1') },
+                            { value: "pregnancy_2", label: t('profile.lifestages.pregnancy_2') },
+                            { value: "pregnancy_3", label: t('profile.lifestages.pregnancy_3') },
+                            { value: "lactation_1", label: t('profile.lifestages.lactation_1') },
+                            { value: "lactation_2", label: t('profile.lifestages.lactation_2') },
+                            { value: "menopause", label: t('profile.lifestages.menopause') },
+                            { value: "senior", label: t('profile.lifestages.senior') },
+                        ]}
+                        value={profile.life_stage || 'standard'}
+                        onChange={e => handleChange("life_stage", e.target.value)}
+                    />
+
                     <Input
                         label={t('profile.age')}
                         type="number"

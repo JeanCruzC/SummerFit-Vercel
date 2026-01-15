@@ -366,11 +366,14 @@ export function generateSimpleMeal(
             protein = proteins[0];
         }
 
+        // Reserve calories for fruit/veggies and incidental fats
+        const SAFETY_FACTOR = 0.85;
+        const FRUIT_BUFFER = 100; // Average fruit portion calories
+        const usableCalories = Math.max(targetCalories - FRUIT_BUFFER, targetCalories * 0.7);
+
         // 1. Protein
         if (protein) {
-            const targetProteinGrams = (targetCalories * proteinRatio) / 4;
-            // Use 'protein' mode for calc if protein source is primarily protein
-            // But usually we just allocate calories. Let's try to match grams for precision.
+            const targetProteinGrams = (usableCalories * proteinRatio) / 4 * SAFETY_FACTOR;
             const portion = calcPortion(protein, targetProteinGrams, 'protein');
             const finalPortion = Math.min(portion, 400);
             items.push({ food: protein, portion_g: finalPortion, macros: calculateItemMacros(protein, finalPortion) });
@@ -378,7 +381,7 @@ export function generateSimpleMeal(
 
         // 2. Carb
         if (carb && carbRatio > 0.05) {
-            const targetCarbGrams = (targetCalories * carbRatio) / 4;
+            const targetCarbGrams = (usableCalories * carbRatio) / 4 * SAFETY_FACTOR;
             const portion = calcPortion(carb, targetCarbGrams, 'carbs');
             const finalPortion = Math.min(portion, 400);
             items.push({ food: carb, portion_g: finalPortion, macros: calculateItemMacros(carb, finalPortion) });
@@ -428,13 +431,18 @@ export function generateSimpleMeal(
             vegOptions = rankFoodsByNutrients(vegOptions, nutrientPriorities).slice(0, 3);
         }
 
+        // Reserve calories for veggies/oils and incidental macros
+        const SAFETY_FACTOR = 0.85;
+        const VEG_BUFFER = 50;
+        const usableCalories = Math.max(targetCalories - VEG_BUFFER, targetCalories * 0.7);
+
         const protein = proteinOptions[Math.floor(Math.random() * proteinOptions.length)];
         const carb = carbOptions[Math.floor(Math.random() * carbOptions.length)];
         const veg1 = vegOptions[Math.floor(Math.random() * vegOptions.length)];
 
         // 1. Protein
         if (protein) {
-            const targetProteinGrams = (targetCalories * proteinRatio) / 4;
+            const targetProteinGrams = (usableCalories * proteinRatio) / 4 * SAFETY_FACTOR;
             const portion = calcPortion(protein, targetProteinGrams, 'protein');
             const finalPortion = Math.min(portion, 600);
             items.push({
@@ -447,7 +455,7 @@ export function generateSimpleMeal(
 
         // 2. Carb
         if (carb && dietType !== 'keto') {
-            const targetCarbGrams = (targetCalories * carbRatio) / 4;
+            const targetCarbGrams = (usableCalories * carbRatio) / 4 * SAFETY_FACTOR;
             const portion = calcPortion(carb, targetCarbGrams, 'carbs');
             const maxCarb = (dietType === 'diabetes_friendly' || dietType === 'low_carb') ? 200 : 500;
             const finalPortion = Math.min(portion, maxCarb);

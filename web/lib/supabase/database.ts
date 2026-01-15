@@ -60,25 +60,38 @@ export async function searchFoods(query: string, limit = 50): Promise<FoodItem[]
     if (words.length === 0) return [];
 
     // Build query - search in BOTH name (EN) and name_es (ES) fields
-    // Order by simple ingredients first, then by priority
+    // Fetch more than needed so we can properly sort
     let queryBuilder = supabase
         .from('foods')
         .select('*')
-        .like('data_source', 'usda%')
-        .order('is_simple_ingredient', { ascending: false, nullsFirst: false })
-        .order('priority', { ascending: true, nullsFirst: true })
-        .order('name', { ascending: true });
+        .like('data_source', 'usda%');
 
     // Add OR filter for each word to match in either name OR name_es
     for (const word of words) {
         queryBuilder = queryBuilder.or(`name.ilike.%${word}%,name_es.ilike.%${word}%`);
     }
 
-    const { data, error } = await queryBuilder.limit(limit);
+    const { data, error } = await queryBuilder.limit(limit * 3); // Fetch more for proper sorting
 
     if (error || !data) return [];
 
-    return data as FoodItem[];
+    // Sort results: is_simple_ingredient=true FIRST, then by priority, then by name
+    const sorted = [...data].sort((a, b) => {
+        // 1. Simple ingredients first (true > null/false)
+        const aSimple = a.is_simple_ingredient === true ? 1 : 0;
+        const bSimple = b.is_simple_ingredient === true ? 1 : 0;
+        if (bSimple !== aSimple) return bSimple - aSimple;
+
+        // 2. Then by priority (lower is better)
+        const aPriority = a.priority ?? 999;
+        const bPriority = b.priority ?? 999;
+        if (aPriority !== bPriority) return aPriority - bPriority;
+
+        // 3. Then by name
+        return (a.name || '').localeCompare(b.name || '');
+    });
+
+    return sorted.slice(0, limit) as FoodItem[];
 }
 
 export async function getFoodsByCategory(category: string, limit = 50): Promise<FoodItem[]> {

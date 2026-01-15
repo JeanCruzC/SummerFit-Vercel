@@ -501,7 +501,16 @@ export default function MealGeneratorPage() {
                                                                 {item.food.name_es}
                                                             </div>
                                                             <div className="text-xs text-gray-500">
-                                                                {item.portion_g}g
+                                                                {(() => {
+                                                                    // @ts-ignore
+                                                                    if (item.food.serving_size && item.food.serving_unit && item.food.serving_size > 0) {
+                                                                        // @ts-ignore
+                                                                        const units = (item.portion_g / item.food.serving_size).toFixed(1).replace('.0', '');
+                                                                        // @ts-ignore
+                                                                        return <span className="font-medium text-orange-600 dark:text-orange-400">{units} {item.food.serving_unit} <span className="text-gray-400 font-normal">({Math.round(item.portion_g)}g)</span></span>;
+                                                                    }
+                                                                    return `${Math.round(item.portion_g)}g`;
+                                                                })()}
                                                                 {item.cooking_state && ` • ${item.cooking_state}`}
                                                             </div>
                                                         </div>

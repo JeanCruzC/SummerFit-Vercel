@@ -523,17 +523,36 @@ export default function MealGeneratorPage() {
                             <Card className="p-4 bg-gray-50 dark:bg-gray-800/50">
                                 <h4 className="text-sm font-medium text-gray-500 mb-2">🛒 Lista de compras ({(mode === 'weekly' ? 'Semana' : 'Día')})</h4>
                                 <div className="flex flex-wrap gap-2">
-                                    {Array.from(new Set(
-                                        (mode === 'daily' ? mealPlan!.meals : weeklyPlan!.days.flatMap(d => d.meals))
-                                            .flatMap(m => m.items.map(i => i.food))
-                                    )).map((food, idx) => (
-                                        <span
-                                            key={idx}
-                                            className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-xs"
-                                        >
-                                            {food.emoji} {food.name_es}
-                                        </span>
-                                    ))}
+                                    {(() => {
+                                        const allItems = (mode === 'daily' ? mealPlan!.meals : weeklyPlan!.days.flatMap(d => d.meals))
+                                            .flatMap(m => m.items);
+
+                                        const totals: Record<string, { food: any, grams: number }> = {};
+                                        allItems.forEach(item => {
+                                            if (!totals[item.food.id]) totals[item.food.id] = { food: item.food, grams: 0 };
+                                            totals[item.food.id].grams += item.portion_g;
+                                        });
+
+                                        return Object.values(totals).map(({ food, grams }, idx) => {
+                                            let qtyDisplay = `${Math.round(grams)}g`;
+                                            // Smart Units from USDA
+                                            if (food.serving_size && food.serving_unit && food.serving_size > 0) {
+                                                const units = (grams / food.serving_size).toFixed(1).replace('.0', '');
+                                                qtyDisplay = `${units} ${food.serving_unit}`;
+                                            }
+
+                                            return (
+                                                <span
+                                                    key={idx}
+                                                    className="inline-flex items-center gap-1 px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs border border-gray-200 dark:border-gray-600"
+                                                >
+                                                    <span>{food.emoji}</span>
+                                                    <span className="font-semibold text-orange-600 dark:text-orange-400">{qtyDisplay}</span>
+                                                    <span>{food.name_es}</span>
+                                                </span>
+                                            );
+                                        });
+                                    })()}
                                 </div>
                             </Card>
                         </motion.div>

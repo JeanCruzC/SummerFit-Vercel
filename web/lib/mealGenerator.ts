@@ -179,12 +179,13 @@ export async function getFoodsFromDB(
 
         const categories = categoryMap[category] || [category];
 
-        // Build query - ONLY fetch simple ingredients (basic groceries)
+        // Build query - prioritize simple ingredients but include all
+        // Changed from .eq to .order because many foods don't have is_simple_ingredient set
         let query = supabase
             .from('foods')
             .select('*')
-            .eq('is_simple_ingredient', true) // CRITICAL: Only simple ingredients!
-            .order('priority', { ascending: true })
+            .order('is_simple_ingredient', { ascending: false, nullsFirst: false }) // Simple first
+            .order('priority', { ascending: true, nullsFirst: true })
             .limit(limit * 2); // Fetch extra for filtering
 
         // Filter by category

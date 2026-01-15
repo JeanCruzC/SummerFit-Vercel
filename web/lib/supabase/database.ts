@@ -142,20 +142,17 @@ export async function getMealEntries(userId: string, date: string): Promise<Meal
     const supabase = createClient();
     const { data, error } = await supabase
         .from('meal_entries')
-        .select('*, foods : food_id (emoji)')
+        .select('*') // Simple select - no JOIN since food_id doesn't exist
         .eq('user_id', userId)
         .eq('log_date', date)
         .order('created_at', { ascending: true });
 
-    if (error) return [];
+    if (error) {
+        console.error('getMealEntries error:', error.message);
+        return [];
+    }
 
-    // Flatten the emoji from the joined relation if present
-    const flattened = (data as any[]).map((entry: any) => ({
-        ...entry,
-        emoji: entry.foods?.emoji
-    }));
-
-    return flattened as MealEntry[];
+    return (data || []) as MealEntry[];
 }
 
 export async function addMealEntry(entry: Omit<MealEntry, 'id' | 'created_at'>): Promise<boolean> {

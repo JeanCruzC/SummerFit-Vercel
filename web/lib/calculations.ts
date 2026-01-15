@@ -569,7 +569,8 @@ export function calculateWaterIntake(weightKg: number, activityLevel: string): n
  */
 export function getClinicalNutrientPriorities(
     lifeStage: string,
-    goal: string
+    goal: string,
+    dietType: string = 'Standard'
 ): string[] {
     const priorities: string[] = [];
 
@@ -587,7 +588,13 @@ export function getClinicalNutrientPriorities(
         priorities.push('calcium_mg', 'vitamin_d_iu', 'magnesium_mg');
     }
 
-    // 2. Goal Logic
+    // 2. Clinical Conditions (Diet Type based)
+    if (dietType === 'Diabéticos' || dietType === 'diabetes_friendly') {
+        // Diabetes: Magnesium improves insulin sensitivity, Fiber buffers glucose spikes
+        priorities.push('magnesium_mg', 'fiber_g');
+    }
+
+    // 3. Goal Logic
     if (goal === 'Volumen') {
         priorities.push('magnesium_mg'); // Support muscle contraction/recovery
     }

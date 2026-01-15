@@ -136,7 +136,7 @@ export default function MealGeneratorPage() {
                 if (!conditions.includes(lifeStage)) conditions.push(lifeStage);
 
                 // Use centralized clinical engine logic
-                const priorities = getClinicalNutrientPriorities(lifeStage, profile.goal);
+                const priorities = getClinicalNutrientPriorities(lifeStage, profile.goal, profile.diet_type);
                 nutrientPriorities.push(...priorities);
             }
 

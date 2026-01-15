@@ -29,6 +29,7 @@ ts-debug.log*
 .vercel
 musclewiki_complete_data/
 data/usda/
+USDA/
 
 # Python
 venv/

@@ -33,6 +33,9 @@ export interface SimpleFoodItem {
     };
     cooking_states?: string[];
     portion_g: number; // Standard portion in grams
+    // Smart Portions
+    serving_size?: number;
+    serving_unit?: string;
 }
 
 // Basic groceries database - simple foods only
@@ -176,9 +179,10 @@ export async function getFoodsFromDB(
         const categories = categoryMap[category] || [category];
 
         // Build query
+        // Select ALL columns including new micros and portion data
         let query = supabase
             .from('foods')
-            .select('id, name, emoji, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, is_simple_ingredient, culinary_category')
+            .select('*')
             .order('is_simple_ingredient', { ascending: false })
             .order('priority', { ascending: true })
             .limit(limit * 2); // Fetch extra for filtering
@@ -199,15 +203,31 @@ export async function getFoodsFromDB(
         const transformed: SimpleFoodItem[] = data.map(d => ({
             id: String(d.id),
             name: d.name,
-            name_es: d.name, // DB already has Spanish names
+            name_es: d.name_es || d.name, // Use Spanish name if available
             emoji: d.emoji || '🍽️',
             category: category,
             kcal: d.kcal_per_100g || 0,
             protein: d.protein_g_per_100g || 0,
             carbs: d.carbs_g_per_100g || 0,
             fat: d.fat_g_per_100g || 0,
-            portion_g: 100, // Default portion
-            micros: {} // DB doesn't have micros yet in this schema
+            portion_g: 100, // Default portion foundation, meal generator adjusts this
+            // Smart Portions
+            serving_size: d.serving_size,
+            serving_unit: d.serving_unit,
+            // Micros
+            micros: {
+                iron_mg: d.iron_mg || 0,
+                calcium_mg: d.calcium_mg || 0,
+                magnesium_mg: d.magnesium_mg || 0,
+                zinc_mg: d.zinc_mg || 0, // Not in interface but harmless
+                potassium_mg: d.potassium_mg || 0,
+                vit_c_mg: d.vitamin_c_mg || 0, // MAPPED
+                vit_d_iu: d.vitamin_d_iu || 0,
+                vit_a_iu: d.vitamin_a_iu || 0,
+                vit_b12_mcg: d.vitamin_b12_ug || 0, // MAPPED
+                folate_mcg: d.folate_ug || 0, // MAPPED
+                fiber: d.fiber_g || 0, // MAPPED (Interface uses fiber in root or micros? Let's check root)
+            }
         }));
 
         // Apply nutrient ranking if priorities provided (limited effect without micros in DB)

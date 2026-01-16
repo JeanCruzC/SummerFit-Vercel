@@ -315,13 +315,22 @@ function rankFoodsByNutrients(foods: SimpleFoodItem[], priorities: string[]): Si
     });
 }
 
-// Variety Manager - Prevents food repetition
-// Note: This is a simplified version. PortionVarietyManager from portionRules.ts is the production version
+// Variety Manager - Prevents food repetition by ID AND by ROLE
+// Now tracks both individual foods AND nutritional roles to prevent same-category repetition
 class VarietyManager {
     private usedFoods: Map<string, Date> = new Map();
+    private usedRoles: Map<string, Date> = new Map(); // KEY: "mealType_role" (e.g., "lunch_primaryProtein")
 
-    markUsed(foodId: string): void {
+    markUsed(foodId: string, mealType?: string, assignedRole?: string): void {
+        // Track by food ID
         this.usedFoods.set(foodId, new Date());
+        
+        // Also track by ROLE within this meal type to prevent same role in same meal
+        if (assignedRole && mealType) {
+            const roleKey = `${mealType}_${assignedRole}`;
+            this.usedRoles.set(roleKey, new Date());
+            console.log(`[VARIETY] Marked role used: ${roleKey} for food ${foodId}`);
+        }
     }
 
     shouldSkip(foodId: string, cooldownHours: number = 12): boolean {
@@ -332,12 +341,37 @@ class VarietyManager {
         return hoursSince < cooldownHours;
     }
 
+    // NEW: Check if a role has been used recently in this meal type
+    shouldSkipByRole(mealType: string, role: string, cooldownHours: number = 0): boolean {
+        const roleKey = `${mealType}_${role}`;
+        const lastUsed = this.usedRoles.get(roleKey);
+        if (!lastUsed) return false;
+
+        const hoursSince = (Date.now() - lastUsed.getTime()) / (1000 * 60 * 60);
+        const shouldSkip = hoursSince < cooldownHours;
+        
+        if (shouldSkip) {
+            console.log(`[VARIETY] Skipping role ${roleKey} - used ${hoursSince.toFixed(1)}h ago`);
+        }
+        return shouldSkip;
+    }
+
     getAvailableFoods(foods: SimpleFoodItem[], cooldownHours: number = 12): SimpleFoodItem[] {
         return foods.filter(f => !this.shouldSkip(f.id, cooldownHours));
     }
 
+    getRoleStatus(mealType: string, role: string): string {
+        const roleKey = `${mealType}_${role}`;
+        const lastUsed = this.usedRoles.get(roleKey);
+        if (!lastUsed) return 'AVAILABLE';
+        
+        const hoursSince = (Date.now() - lastUsed.getTime()) / (1000 * 60 * 60);
+        return `USED ${hoursSince.toFixed(1)}h ago`;
+    }
+
     reset(): void {
         this.usedFoods.clear();
+        this.usedRoles.clear();
     }
 }
 
@@ -624,8 +658,10 @@ function generateMealFromFoods(
         const proteinCandidates = proteins.slice(0, Math.min(5, proteins.length));
         const selectedProtein = proteinCandidates[Math.floor(Math.random() * proteinCandidates.length)];
 
-        // Check duplication
-        if (preventRoleDuplication(items, selectedProtein)) {
+        // Check if this role was already used in this meal type
+        if (varietyManager && varietyManager.shouldSkipByRole(type, 'primaryProtein', 0)) {
+            console.log(`  ❌ Skipping protein: ${selectedProtein.name_es} - protein role already used in ${type}`);
+        } else if (preventRoleDuplication(items, selectedProtein)) {
             // Calculate optimal portion
             const portionResult = calculateOptimalPortion(
                 selectedProtein,
@@ -641,7 +677,7 @@ function generateMealFromFoods(
                     macros: calculateItemMacros(selectedProtein, portionResult.finalPortion)
                 });
 
-                if (varietyManager) varietyManager.markUsed(selectedProtein.id);
+                if (varietyManager) varietyManager.markUsed(selectedProtein.id, type, 'primaryProtein');
                 console.log(`  ✅ Added protein: ${selectedProtein.name_es} ${portionResult.finalPortion}g`);
                 logPortionCalculation(selectedProtein, portionResult);
             } else {
@@ -657,7 +693,10 @@ function generateMealFromFoods(
         const carbCandidates = carbs.slice(0, Math.min(5, carbs.length));
         const selectedCarb = carbCandidates[Math.floor(Math.random() * carbCandidates.length)];
 
-        if (preventRoleDuplication(items, selectedCarb)) {
+        // Check if carb role was already used in this meal type
+        if (varietyManager && varietyManager.shouldSkipByRole(type, 'primaryCarb', 0)) {
+            console.log(`  ❌ Skipping carb: ${selectedCarb.name_es} - carb role already used in ${type}`);
+        } else if (preventRoleDuplication(items, selectedCarb)) {
             const portionResult = calculateOptimalPortion(
                 selectedCarb,
                 { carbs: mealCarbTarget * 0.85 },
@@ -672,7 +711,7 @@ function generateMealFromFoods(
                     macros: calculateItemMacros(selectedCarb, portionResult.finalPortion)
                 });
 
-                if (varietyManager) varietyManager.markUsed(selectedCarb.id);
+                if (varietyManager) varietyManager.markUsed(selectedCarb.id, type, 'primaryCarb');
                 console.log(`  ✅ Added carb: ${selectedCarb.name_es} ${portionResult.finalPortion}g`);
                 logPortionCalculation(selectedCarb, portionResult);
             }
@@ -702,7 +741,7 @@ function generateMealFromFoods(
                         macros: calculateItemMacros(selectedVeggie, portionResult.finalPortion)
                     });
 
-                    if (varietyManager) varietyManager.markUsed(selectedVeggie.id);
+                    if (varietyManager) varietyManager.markUsed(selectedVeggie.id, type, 'vegetable');
                     console.log(`  ✅ Added vegetable: ${selectedVeggie.name_es} ${portionResult.finalPortion}g`);
                 }
             }
@@ -729,7 +768,7 @@ function generateMealFromFoods(
                     macros: calculateItemMacros(selectedFruit, portionResult.finalPortion)
                 });
 
-                if (varietyManager) varietyManager.markUsed(selectedFruit.id);
+                if (varietyManager) varietyManager.markUsed(selectedFruit.id, type, 'fruit');
                 console.log(`  ✅ Added fruit: ${selectedFruit.name_es} ${portionResult.finalPortion}g`);
             }
         }
@@ -743,7 +782,10 @@ function generateMealFromFoods(
         const fatCandidates = fats.slice(0, Math.min(3, fats.length));
         const selectedFat = fatCandidates[Math.floor(Math.random() * fatCandidates.length)];
 
-        if (preventRoleDuplication(items, selectedFat)) {
+        // Check if fat role was already used in this meal type
+        if (varietyManager && varietyManager.shouldSkipByRole(type, 'healthyFat', 0)) {
+            console.log(`  ❌ Skipping fat: ${selectedFat.name_es} - fat role already used in ${type}`);
+        } else if (preventRoleDuplication(items, selectedFat)) {
             const portionResult = calculateOptimalPortion(
                 selectedFat,
                 { fat: fatDeficit * 0.8 },
@@ -758,7 +800,7 @@ function generateMealFromFoods(
                     macros: calculateItemMacros(selectedFat, portionResult.finalPortion)
                 });
 
-                if (varietyManager) varietyManager.markUsed(selectedFat.id);
+                if (varietyManager) varietyManager.markUsed(selectedFat.id, type, 'healthyFat');
                 console.log(`  ✅ Added fat: ${selectedFat.name_es} ${portionResult.finalPortion}g`);
             }
         }

@@ -1,0 +1,9 @@
+food_id,name,confidence,reasoning
+15856,Cabeza de Águila Fresca,0.4,Cabeza de águila, no común ni simple
+14266,Carne de Búho Cruda (Población Indígena de Alaska),0.4,Carne de caza no común en mercados
+15634,Aceite, beluga, ballena (Native de Alaska),0.4,Ingrediente exótico y no común
+16446,Carne de Oso Negro (Alaska Native),0.5,Carne de caza exótica
+16449,Ojos de Ballena Beluga (Alaska Native),0.5,Alimento exótico y no común
+16463,Hígado de Lingcod (Alaska Native),0.5,Carne de caza exótica
+16476,Agutuk, Pescado con Grasa (Helado Alaskano) (Alaska Native),0.5,Alimento exótico y no común
+15631,Ascidias (tunughnak) (Alimento Indígena de Alaska),0.4,Ingrediente exótico no común en mercados

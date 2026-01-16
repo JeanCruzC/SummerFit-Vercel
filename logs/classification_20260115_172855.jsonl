@@ -1,0 +1,352 @@
+{"timestamp": "2026-01-15T17:29:43.820198", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:30:00.395608", "type": "batch_complete", "data": {"batch": 1, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.886, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:30:42.105825", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:30:59.278459", "type": "batch_complete", "data": {"batch": 2, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.957, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:31:44.472605", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:32:01.649946", "type": "batch_complete", "data": {"batch": 3, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:32:41.024114", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:32:57.846360", "type": "batch_complete", "data": {"batch": 4, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:33:41.040391", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:33:59.655981", "type": "batch_complete", "data": {"batch": 5, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.94, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:34:44.468341", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:35:01.807080", "type": "batch_complete", "data": {"batch": 6, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:35:48.209730", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:36:05.158796", "type": "batch_complete", "data": {"batch": 7, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:36:48.822236", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 49}}
+{"timestamp": "2026-01-15T17:37:05.678574", "type": "batch_complete", "data": {"batch": 8, "total": 50, "success": 49, "failed": 1, "avg_confidence": 0.94, "success_rate": 98.0}}
+{"timestamp": "2026-01-15T17:37:45.183525", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:38:02.346760", "type": "batch_complete", "data": {"batch": 9, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.948, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:38:43.933968", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:39:00.877893", "type": "batch_complete", "data": {"batch": 10, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.948, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:39:41.987550", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:39:58.638874", "type": "batch_complete", "data": {"batch": 11, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:40:40.389645", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:40:54.436807", "type": "batch_complete", "data": {"batch": 12, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:41:34.658947", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:41:52.817361", "type": "batch_complete", "data": {"batch": 13, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.808, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:42:29.540479", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 46}}
+{"timestamp": "2026-01-15T17:42:45.023009", "type": "batch_complete", "data": {"batch": 14, "total": 50, "success": 46, "failed": 4, "avg_confidence": 0.896, "success_rate": 92.0}}
+{"timestamp": "2026-01-15T17:43:27.619275", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:43:45.951776", "type": "batch_complete", "data": {"batch": 15, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.931, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:44:30.371708", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:44:47.890703", "type": "batch_complete", "data": {"batch": 16, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.948, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:45:34.408851", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:45:52.248112", "type": "batch_complete", "data": {"batch": 17, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.946, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:46:36.365042", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:46:50.087257", "type": "batch_complete", "data": {"batch": 18, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.831, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:47:31.603130", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:47:48.503498", "type": "batch_complete", "data": {"batch": 19, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:48:37.311652", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:48:54.362616", "type": "batch_complete", "data": {"batch": 20, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:49:38.380738", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:49:55.811954", "type": "batch_complete", "data": {"batch": 21, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.948, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:50:47.566666", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:51:01.190910", "type": "batch_complete", "data": {"batch": 22, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:51:49.915445", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:52:06.969304", "type": "batch_complete", "data": {"batch": 23, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.946, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:52:55.660743", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:53:12.714928", "type": "batch_complete", "data": {"batch": 24, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.894, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:53:56.474426", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:54:11.722876", "type": "batch_complete", "data": {"batch": 25, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.946, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:54:54.850885", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:55:12.561776", "type": "batch_complete", "data": {"batch": 26, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.932, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:55:55.777386", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:56:12.627159", "type": "batch_complete", "data": {"batch": 27, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.898, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:56:56.397435", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:57:13.692041", "type": "batch_complete", "data": {"batch": 28, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.906, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:57:58.236984", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:58:15.090005", "type": "batch_complete", "data": {"batch": 29, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.931, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:58:59.656343", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T17:59:17.020382", "type": "batch_complete", "data": {"batch": 30, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.936, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T17:59:58.787469", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:00:12.606877", "type": "batch_complete", "data": {"batch": 31, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.898, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:00:57.681172", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:01:15.820890", "type": "batch_complete", "data": {"batch": 32, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.94, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:02:04.805851", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:02:18.557225", "type": "batch_complete", "data": {"batch": 33, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.934, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:02:59.755620", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:03:13.617804", "type": "batch_complete", "data": {"batch": 34, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.878, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:03:56.422843", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:04:13.495394", "type": "batch_complete", "data": {"batch": 35, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.948, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:04:58.333676", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:05:15.993909", "type": "batch_complete", "data": {"batch": 36, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.926, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:06:00.929578", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:06:17.825294", "type": "batch_complete", "data": {"batch": 37, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.923, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:07:02.487557", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:07:19.596147", "type": "batch_complete", "data": {"batch": 38, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.944, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:08:04.304626", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:08:21.033156", "type": "batch_complete", "data": {"batch": 39, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.91, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:09:03.313749", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:09:20.792763", "type": "batch_complete", "data": {"batch": 40, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.926, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:10:10.389149", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:10:27.519079", "type": "batch_complete", "data": {"batch": 41, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:11:13.115286", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:11:30.090921", "type": "batch_complete", "data": {"batch": 42, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:12:25.754846", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:12:42.666133", "type": "batch_complete", "data": {"batch": 43, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.944, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:13:44.064946", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:14:01.646135", "type": "batch_complete", "data": {"batch": 44, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.911, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:15:19.905561", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:15:37.149138", "type": "batch_complete", "data": {"batch": 45, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.894, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:16:21.382273", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:16:34.700540", "type": "batch_complete", "data": {"batch": 46, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.948, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:17:25.045307", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:17:42.085014", "type": "batch_complete", "data": {"batch": 47, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:18:41.919727", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:18:58.874836", "type": "batch_complete", "data": {"batch": 48, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.939, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:20:22.038985", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:20:38.011739", "type": "batch_complete", "data": {"batch": 49, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.866, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:22:02.903469", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:22:20.415523", "type": "batch_complete", "data": {"batch": 50, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.852, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:23:28.343899", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:23:45.484348", "type": "batch_complete", "data": {"batch": 51, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.936, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:24:52.092446", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:25:09.424313", "type": "batch_complete", "data": {"batch": 52, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.911, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:26:11.968323", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:26:25.448779", "type": "batch_complete", "data": {"batch": 53, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:27:30.068983", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:27:32.805277", "type": "validation_error", "data": {"food_id": 21585, "error": "Validation failed", "data": {"id": 21585, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Mezcla seca para pastel, procesada"}}}
+{"timestamp": "2026-01-15T18:27:33.449664", "type": "validation_error", "data": {"food_id": 21589, "error": "Validation failed", "data": {"id": 21589, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Pastel de cremas con frosting, procesado"}}}
+{"timestamp": "2026-01-15T18:27:33.450092", "type": "validation_error", "data": {"food_id": 21590, "error": "Validation failed", "data": {"id": 21590, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Pastel de frutas, procesado"}}}
+{"timestamp": "2026-01-15T18:27:33.450427", "type": "validation_error", "data": {"food_id": 21593, "error": "Validation failed", "data": {"id": 21593, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Pastel comercialmente preparado"}}}
+{"timestamp": "2026-01-15T18:27:33.450724", "type": "validation_error", "data": {"food_id": 21594, "error": "Validation failed", "data": {"id": 21594, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Pastel de shortcake, procesado"}}}
+{"timestamp": "2026-01-15T18:27:33.450992", "type": "validation_error", "data": {"food_id": 21596, "error": "Validation failed", "data": {"id": 21596, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Pasteles de cremas, procesados"}}}
+{"timestamp": "2026-01-15T18:27:33.451256", "type": "validation_error", "data": {"food_id": 21598, "error": "Validation failed", "data": {"id": 21598, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Pastel comercialmente preparado"}}}
+{"timestamp": "2026-01-15T18:27:33.451506", "type": "validation_error", "data": {"food_id": 21599, "error": "Validation failed", "data": {"id": 21599, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Mezcla seca para pastel, procesada"}}}
+{"timestamp": "2026-01-15T18:27:33.451741", "type": "validation_error", "data": {"food_id": 21601, "error": "Validation failed", "data": {"id": 21601, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Brownies, mezcla seca, procesada"}}}
+{"timestamp": "2026-01-15T18:27:37.771718", "type": "validation_error", "data": {"food_id": 21639, "error": "Validation failed", "data": {"id": 21639, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Cáscara de puff hecha en casa, procesada"}}}
+{"timestamp": "2026-01-15T18:27:38.416966", "type": "validation_error", "data": {"food_id": 21664, "error": "Validation failed", "data": {"id": 21664, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Tarta de manzana comercial, procesada"}}}
+{"timestamp": "2026-01-15T18:27:38.417417", "type": "validation_error", "data": {"food_id": 21673, "error": "Validation failed", "data": {"id": 21673, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Tarta de melocotón, procesada"}}}
+{"timestamp": "2026-01-15T18:27:41.351844", "type": "validation_error", "data": {"food_id": 21669, "error": "Validation failed", "data": {"id": 21669, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Tarta de cremas de coco comercial, procesada"}}}
+{"timestamp": "2026-01-15T18:27:41.352520", "type": "validation_error", "data": {"food_id": 21670, "error": "Validation failed", "data": {"id": 21670, "is_simple_ingredient": true, "is_common_staple": true, "meal_times": ["dessert"], "confidence": 0.95, "reasoning": "Cremas de coco hechas en casa, básicas"}}}
+{"timestamp": "2026-01-15T18:27:41.352964", "type": "validation_error", "data": {"food_id": 21671, "error": "Validation failed", "data": {"id": 21671, "is_simple_ingredient": true, "is_common_staple": true, "meal_times": ["dessert"], "confidence": 0.95, "reasoning": "Tarta de meringue de limón hecha en casa, básica"}}}
+{"timestamp": "2026-01-15T18:27:41.353421", "type": "validation_error", "data": {"food_id": 21674, "error": "Validation failed", "data": {"id": 21674, "is_simple_ingredient": false, "is_common_staple": false, "meal_times": ["dessert"], "confidence": 0.85, "reasoning": "Tarta de pecán comercial, procesada"}}}
+{"timestamp": "2026-01-15T18:27:41.708502", "type": "batch_complete", "data": {"batch": 54, "total": 50, "success": 34, "failed": 16, "avg_confidence": 0.897, "success_rate": 68.0}}
+{"timestamp": "2026-01-15T18:28:35.329751", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 49}}
+{"timestamp": "2026-01-15T18:28:52.016984", "type": "batch_complete", "data": {"batch": 55, "total": 50, "success": 49, "failed": 1, "avg_confidence": 0.895, "success_rate": 98.0}}
+{"timestamp": "2026-01-15T18:29:49.941137", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:30:07.083040", "type": "batch_complete", "data": {"batch": 56, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.938, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:31:09.402852", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:31:26.612530", "type": "batch_complete", "data": {"batch": 57, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:32:22.908380", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:32:40.121076", "type": "batch_complete", "data": {"batch": 58, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.942, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:33:35.477888", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:33:52.560048", "type": "batch_complete", "data": {"batch": 59, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.902, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:34:48.682527", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:35:06.632822", "type": "batch_complete", "data": {"batch": 60, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.938, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:36:01.580814", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:36:18.642943", "type": "batch_complete", "data": {"batch": 61, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.944, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:37:14.808203", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:37:28.710150", "type": "batch_complete", "data": {"batch": 62, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.944, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:38:22.241605", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:38:39.695511", "type": "batch_complete", "data": {"batch": 63, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:39:34.797748", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:39:48.441396", "type": "batch_complete", "data": {"batch": 64, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:40:45.648649", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 49}}
+{"timestamp": "2026-01-15T18:40:59.403693", "type": "batch_complete", "data": {"batch": 65, "total": 50, "success": 49, "failed": 1, "avg_confidence": 0.91, "success_rate": 98.0}}
+{"timestamp": "2026-01-15T18:41:57.326191", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:42:16.683591", "type": "batch_complete", "data": {"batch": 66, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.931, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:43:08.680699", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:43:25.971510", "type": "batch_complete", "data": {"batch": 67, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.912, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:44:20.255945", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:44:36.065480", "type": "batch_complete", "data": {"batch": 68, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.946, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:45:26.812531", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:45:40.526457", "type": "batch_complete", "data": {"batch": 69, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.882, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:46:31.565957", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:46:46.082432", "type": "batch_complete", "data": {"batch": 70, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.939, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:47:49.896362", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:48:07.419930", "type": "batch_complete", "data": {"batch": 71, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.934, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:48:58.361424", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 48}}
+{"timestamp": "2026-01-15T18:49:15.249478", "type": "batch_complete", "data": {"batch": 72, "total": 50, "success": 48, "failed": 2, "avg_confidence": 0.915, "success_rate": 96.0}}
+{"timestamp": "2026-01-15T18:50:11.316964", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:50:28.780534", "type": "batch_complete", "data": {"batch": 73, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.932, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:51:21.533938", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:51:39.737914", "type": "batch_complete", "data": {"batch": 74, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.931, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:52:29.260811", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:52:46.392621", "type": "batch_complete", "data": {"batch": 75, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.914, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:53:32.196634", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:53:32.197106", "type": "validation_error", "data": {"food_id": 16531, "error": "Validation failed", "data": {"id": 16531, "is_simple_ingredient": false, "is_common_staple": true, "meal_times": ["snack", "dessert"], "confidence": 0.95, "reasoning": "Edulcorante procesado, no es ingrediente básico"}}}
+{"timestamp": "2026-01-15T18:53:33.843352", "type": "validation_error", "data": {"food_id": 16549, "error": "Validation failed", "data": {"id": 16549, "is_simple_ingredient": false, "is_common_staple": true, "meal_times": ["snack", "dessert"], "confidence": 0.95, "reasoning": "Edulcorante procesado, no es ingrediente básico"}}}
+{"timestamp": "2026-01-15T18:53:33.843752", "type": "validation_error", "data": {"food_id": 16553, "error": "Validation failed", "data": {"id": 16553, "is_simple_ingredient": false, "is_common_staple": true, "meal_times": ["dessert"], "confidence": 0.95, "reasoning": "Helado preenvasado, ultra-procesado"}}}
+{"timestamp": "2026-01-15T18:53:35.522801", "type": "validation_error", "data": {"food_id": 17518, "error": "Validation failed", "data": {"id": 17518, "is_simple_ingredient": false, "is_common_staple": true, "meal_times": ["snack", "dessert"], "confidence": 0.95, "reasoning": "Topping dulce en polvo, procesado"}}}
+{"timestamp": "2026-01-15T18:53:35.523277", "type": "validation_error", "data": {"food_id": 17520, "error": "Validation failed", "data": {"id": 17520, "is_simple_ingredient": false, "is_common_staple": true, "meal_times": ["snack", "dessert"], "confidence": 0.95, "reasoning": "Topping dulce en envase presurizado, procesado"}}}
+{"timestamp": "2026-01-15T18:53:39.207863", "type": "validation_error", "data": {"food_id": 17564, "error": "Validation failed", "data": {"id": 17564, "is_simple_ingredient": false, "is_common_staple": true, "meal_times": ["dessert"], "confidence": 0.95, "reasoning": "Helado con ingredientes procesados"}}}
+{"timestamp": "2026-01-15T18:53:41.315125", "type": "validation_error", "data": {"food_id": 17947, "error": "Validation failed", "data": {"id": 17947, "is_simple_ingredient": false, "is_common_staple": true, "meal_times": ["dessert"], "confidence": 0.95, "reasoning": "Barra de helado, ultra-procesada"}}}
+{"timestamp": "2026-01-15T18:53:41.315721", "type": "validation_error", "data": {"food_id": 17935, "error": "Validation failed", "data": {"id": 17935, "is_simple_ingredient": false, "is_common_staple": true, "meal_times": ["dessert"], "confidence": 0.95, "reasoning": "Suero dulce, producto procesado"}}}
+{"timestamp": "2026-01-15T18:53:41.973702", "type": "validation_error", "data": {"food_id": 16248, "error": "Validation failed", "data": {"id": 16248, "is_simple_ingredient": false, "is_common_staple": true, "meal_times": ["dessert"], "confidence": 0.95, "reasoning": "Custard preparado, procesado"}}}
+{"timestamp": "2026-01-15T18:53:44.390233", "type": "validation_error", "data": {"food_id": 17959, "error": "Validation failed", "data": {"id": 17959, "is_simple_ingredient": false, "is_common_staple": true, "meal_times": ["dessert"], "confidence": 0.95, "reasoning": "Cono de helado, producto procesado"}}}
+{"timestamp": "2026-01-15T18:53:45.373418", "type": "validation_error", "data": {"food_id": 16275, "error": "Validation failed", "data": {"id": 16275, "is_simple_ingredient": false, "is_common_staple": true, "meal_times": ["snack", "dessert"], "confidence": 0.95, "reasoning": "Chocolates con almendras, procesados"}}}
+{"timestamp": "2026-01-15T18:53:45.373852", "type": "validation_error", "data": {"food_id": 18866, "error": "Validation failed", "data": {"id": 18866, "is_simple_ingredient": false, "is_common_staple": true, "meal_times": ["dessert"], "confidence": 0.95, "reasoning": "Topping batido, producto procesado"}}}
+{"timestamp": "2026-01-15T18:53:45.374143", "type": "batch_complete", "data": {"batch": 76, "total": 50, "success": 38, "failed": 12, "avg_confidence": 0.934, "success_rate": 76.0}}
+{"timestamp": "2026-01-15T18:54:24.676599", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:54:42.727580", "type": "batch_complete", "data": {"batch": 77, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:55:22.170781", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:55:36.778519", "type": "batch_complete", "data": {"batch": 78, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.948, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:56:18.909337", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:56:36.244133", "type": "batch_complete", "data": {"batch": 79, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.94, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:57:15.803407", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:57:33.044433", "type": "batch_complete", "data": {"batch": 80, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:58:09.460425", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:58:27.068661", "type": "batch_complete", "data": {"batch": 81, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.919, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:59:02.785077", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T18:59:19.932120", "type": "batch_complete", "data": {"batch": 82, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.92, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T18:59:55.448741", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:00:12.508740", "type": "batch_complete", "data": {"batch": 83, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.946, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:00:47.525483", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:01:04.773714", "type": "batch_complete", "data": {"batch": 84, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.893, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:01:43.278530", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:02:01.784630", "type": "batch_complete", "data": {"batch": 85, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:02:39.253778", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:02:56.890608", "type": "batch_complete", "data": {"batch": 86, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:03:37.966468", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:03:55.680830", "type": "batch_complete", "data": {"batch": 87, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.932, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:04:36.111807", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:04:51.870716", "type": "batch_complete", "data": {"batch": 88, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.912, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:05:36.031578", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:05:37.872124", "type": "validation_error", "data": {"food_id": 14240, "error": "Validation failed", "data": {"id": 14240, "is_simple_ingredient": false, "is_common_staple": true, "meal_times": ["snack", "dessert"], "confidence": 0.95, "reasoning": "Chocolate dulce, procesado y no básico"}}}
+{"timestamp": "2026-01-15T19:05:52.999741", "type": "batch_complete", "data": {"batch": 89, "total": 50, "success": 49, "failed": 1, "avg_confidence": 0.941, "success_rate": 98.0}}
+{"timestamp": "2026-01-15T19:06:39.676589", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:06:58.677007", "type": "batch_complete", "data": {"batch": 90, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.886, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:07:37.752557", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:07:55.308560", "type": "batch_complete", "data": {"batch": 91, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.948, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:08:34.967499", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:08:52.331465", "type": "batch_complete", "data": {"batch": 92, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.91, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:09:30.859228", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 49}}
+{"timestamp": "2026-01-15T19:09:48.290899", "type": "batch_complete", "data": {"batch": 93, "total": 50, "success": 49, "failed": 1, "avg_confidence": 0.934, "success_rate": 98.0}}
+{"timestamp": "2026-01-15T19:10:29.433486", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:10:43.191766", "type": "batch_complete", "data": {"batch": 94, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.938, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:11:19.234431", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:11:33.728617", "type": "batch_complete", "data": {"batch": 95, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.928, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:12:09.458223", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 46}}
+{"timestamp": "2026-01-15T19:12:25.901255", "type": "batch_complete", "data": {"batch": 96, "total": 50, "success": 46, "failed": 4, "avg_confidence": 0.95, "success_rate": 92.0}}
+{"timestamp": "2026-01-15T19:13:02.560034", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:13:20.083461", "type": "batch_complete", "data": {"batch": 97, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.926, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:13:59.085580", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:14:12.526800", "type": "batch_complete", "data": {"batch": 98, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.937, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:14:55.427243", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:15:13.014294", "type": "batch_complete", "data": {"batch": 99, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.914, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:15:56.109107", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:16:14.536099", "type": "batch_complete", "data": {"batch": 100, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.922, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:17:00.136796", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:17:13.713002", "type": "batch_complete", "data": {"batch": 101, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.924, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:18:04.559483", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:18:21.814741", "type": "batch_complete", "data": {"batch": 102, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.93, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:19:12.540551", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 49}}
+{"timestamp": "2026-01-15T19:19:29.717104", "type": "batch_complete", "data": {"batch": 103, "total": 50, "success": 49, "failed": 1, "avg_confidence": 0.891, "success_rate": 98.0}}
+{"timestamp": "2026-01-15T19:20:15.048750", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:20:32.507996", "type": "batch_complete", "data": {"batch": 104, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:21:20.545720", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:21:37.867542", "type": "batch_complete", "data": {"batch": 105, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.906, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:22:26.995139", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:22:44.380151", "type": "batch_complete", "data": {"batch": 106, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.957, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:23:32.593207", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:23:49.782792", "type": "batch_complete", "data": {"batch": 107, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:24:35.693202", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:24:54.087834", "type": "batch_complete", "data": {"batch": 108, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:25:41.362492", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:25:59.339829", "type": "batch_complete", "data": {"batch": 109, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.941, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:26:46.926631", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:27:00.615112", "type": "batch_complete", "data": {"batch": 110, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:27:50.149623", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:28:07.498223", "type": "batch_complete", "data": {"batch": 111, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.903, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:29:00.552220", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:29:17.899826", "type": "batch_complete", "data": {"batch": 112, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:30:06.965747", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:30:21.596348", "type": "batch_complete", "data": {"batch": 113, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.904, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:31:10.320463", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:31:27.312945", "type": "batch_complete", "data": {"batch": 114, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:32:20.184701", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:32:33.696221", "type": "batch_complete", "data": {"batch": 115, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.916, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:33:28.418392", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:33:42.550624", "type": "batch_complete", "data": {"batch": 116, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:34:33.318073", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:34:50.506147", "type": "batch_complete", "data": {"batch": 117, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.942, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:35:38.277424", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:35:55.559393", "type": "batch_complete", "data": {"batch": 118, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.925, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:36:44.523983", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:36:58.508456", "type": "batch_complete", "data": {"batch": 119, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:37:47.125501", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:38:05.220728", "type": "batch_complete", "data": {"batch": 120, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.923, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:38:54.250699", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:39:11.617294", "type": "batch_complete", "data": {"batch": 121, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.891, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:40:02.686765", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:40:20.350860", "type": "batch_complete", "data": {"batch": 122, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.882, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:41:15.444548", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:41:32.498608", "type": "batch_complete", "data": {"batch": 123, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.878, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:42:15.532261", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:42:30.306157", "type": "batch_complete", "data": {"batch": 124, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:43:18.199045", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:43:32.619215", "type": "batch_complete", "data": {"batch": 125, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.91, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:44:15.764879", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:44:33.193059", "type": "batch_complete", "data": {"batch": 126, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.905, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:45:15.472077", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:45:32.704786", "type": "batch_complete", "data": {"batch": 127, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.88, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:46:15.806302", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:46:33.267197", "type": "batch_complete", "data": {"batch": 128, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.874, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:47:18.516073", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:47:35.850707", "type": "batch_complete", "data": {"batch": 129, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:48:24.665622", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:48:38.259806", "type": "batch_complete", "data": {"batch": 130, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:49:26.008020", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:49:43.336952", "type": "batch_complete", "data": {"batch": 131, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:50:27.271800", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:50:44.836592", "type": "batch_complete", "data": {"batch": 132, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.882, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:51:29.540989", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:51:46.688525", "type": "batch_complete", "data": {"batch": 133, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.899, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:52:33.181896", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T19:52:50.389649", "type": "batch_complete", "data": {"batch": 134, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.948, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T19:56:18.852140", "type": "json_parse_error", "data": {"attempt": 1, "error": "Expecting property name enclosed in double quotes: line 1795 column 6 (char 49993)", "content_preview": "{\n  \"results\": [\n    {\n      \"id\": 20342,\n      \"is_simple_ingredient\": true,\n      \"is_common_staple\": true,\n      \"meal_times\": [\"lunch\", \"dinner\"],\n      \"confidence\": 0.95,\n      \"reasoning\": \"Pes"}}
+{"timestamp": "2026-01-15T19:59:55.278708", "type": "json_parse_error", "data": {"attempt": 2, "error": "Expecting ',' delimiter: line 1748 column 17 (char 49961)", "content_preview": "{\n  \"results\": [\n    {\n      \"id\": 20342,\n      \"is_simple_ingredient\": true,\n      \"is_common_staple\": true,\n      \"meal_times\": [\"lunch\", \"dinner\"],\n      \"confidence\": 0.95,\n      \"reasoning\": \"Pes"}}
+{"timestamp": "2026-01-15T20:03:42.531550", "type": "json_parse_error", "data": {"attempt": 3, "error": "Expecting value: line 1797 column 30 (char 49980)", "content_preview": "{\n  \"results\": [\n    {\n      \"id\": 20342,\n      \"is_simple_ingredient\": true,\n      \"is_common_staple\": true,\n      \"meal_times\": [\"lunch\", \"dinner\"],\n      \"confidence\": 0.95,\n      \"reasoning\": \"Pes"}}
+{"timestamp": "2026-01-15T20:04:28.436453", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:04:46.797854", "type": "batch_complete", "data": {"batch": 136, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.942, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:05:32.926322", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:05:50.708600", "type": "batch_complete", "data": {"batch": 137, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.936, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:06:35.521543", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:06:52.991595", "type": "batch_complete", "data": {"batch": 138, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.942, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:07:41.827620", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:07:59.287666", "type": "batch_complete", "data": {"batch": 139, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.934, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:08:42.642708", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:08:59.904600", "type": "batch_complete", "data": {"batch": 140, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.939, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:09:42.591195", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 49}}
+{"timestamp": "2026-01-15T20:09:55.827542", "type": "batch_complete", "data": {"batch": 141, "total": 50, "success": 49, "failed": 1, "avg_confidence": 0.95, "success_rate": 98.0}}
+{"timestamp": "2026-01-15T20:10:39.964592", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:10:53.484129", "type": "batch_complete", "data": {"batch": 142, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.934, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:11:37.585611", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:11:52.666110", "type": "batch_complete", "data": {"batch": 143, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.932, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:12:38.056598", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:12:55.874077", "type": "batch_complete", "data": {"batch": 144, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.934, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:13:38.680276", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:13:55.936449", "type": "batch_complete", "data": {"batch": 145, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.934, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:14:46.929976", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 49}}
+{"timestamp": "2026-01-15T20:15:03.821920", "type": "batch_complete", "data": {"batch": 146, "total": 50, "success": 49, "failed": 1, "avg_confidence": 0.932, "success_rate": 98.0}}
+{"timestamp": "2026-01-15T20:15:56.686589", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:16:25.375706", "type": "batch_complete", "data": {"batch": 147, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.94, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:17:13.589045", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:17:30.712857", "type": "batch_complete", "data": {"batch": 148, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.937, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:18:15.989783", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:18:29.590556", "type": "batch_complete", "data": {"batch": 149, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.928, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:19:14.717444", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:19:27.985936", "type": "batch_complete", "data": {"batch": 150, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:20:20.113767", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 49}}
+{"timestamp": "2026-01-15T20:20:38.025427", "type": "batch_complete", "data": {"batch": 151, "total": 50, "success": 49, "failed": 1, "avg_confidence": 0.921, "success_rate": 98.0}}
+{"timestamp": "2026-01-15T20:21:24.742873", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:21:41.995803", "type": "batch_complete", "data": {"batch": 152, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.926, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:22:26.633167", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:22:41.378878", "type": "batch_complete", "data": {"batch": 153, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.926, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:23:27.167647", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:23:44.928944", "type": "batch_complete", "data": {"batch": 154, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.928, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:24:30.144530", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:24:44.272952", "type": "batch_complete", "data": {"batch": 155, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.909, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:25:29.242039", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 49}}
+{"timestamp": "2026-01-15T20:25:42.588650", "type": "batch_complete", "data": {"batch": 156, "total": 50, "success": 49, "failed": 1, "avg_confidence": 0.926, "success_rate": 98.0}}
+{"timestamp": "2026-01-15T20:26:28.725706", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:26:46.410271", "type": "batch_complete", "data": {"batch": 157, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.924, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:27:34.441604", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:27:47.670802", "type": "batch_complete", "data": {"batch": 158, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.93, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:28:31.692664", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:28:48.665133", "type": "batch_complete", "data": {"batch": 159, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.958, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:29:38.233706", "type": "api_success", "data": {"batch_size": 50, "attempt": 1, "results_count": 50}}
+{"timestamp": "2026-01-15T20:29:55.619435", "type": "batch_complete", "data": {"batch": 160, "total": 50, "success": 50, "failed": 0, "avg_confidence": 0.927, "success_rate": 100.0}}
+{"timestamp": "2026-01-15T20:30:05.016479", "type": "api_success", "data": {"batch_size": 9, "attempt": 1, "results_count": 9}}
+{"timestamp": "2026-01-15T20:30:08.363865", "type": "batch_complete", "data": {"batch": 161, "total": 9, "success": 9, "failed": 0, "avg_confidence": 0.95, "success_rate": 100.0}}

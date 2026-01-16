@@ -672,7 +672,7 @@ export function isNutritionallyViable(food: SimpleFoodItem): boolean {
     food.kcal >= 20;
 
   if (!hasSignificantMacro) {
-    console.warn(`[portionRules] Food ${food.id} has insufficient macros`);
+    console.warn(`[portionRules] Food ${food.id} (${food.name_es}) has insufficient macros: Kcal:${food.kcal} P:${food.protein} C:${food.carbs} F:${food.fat}`);
     return false;
   }
 

@@ -3,6 +3,7 @@
 
 import { calculateBMR, calculateTDEE, calculateMacros } from './nutrition';
 import { DIET_MACROS } from './diets';
+import { foodCache } from './foodCache';
 
 // Basic food items with nutrition per 100g
 export interface SimpleFoodItem {
@@ -166,6 +167,14 @@ export async function getFoodsFromDB(
     nutrientPriorities: string[] = [],
     mealContext: 'breakfast' | 'lunch' | 'dinner' | 'snack' | null = null
 ): Promise<SimpleFoodItem[]> {
+    // Check cache first
+    const cacheKey = `${category}_${mealContext || 'all'}`;
+    const cached = foodCache.get(cacheKey);
+    if (cached) {
+        console.log(`✅ Cache hit: ${cacheKey}`);
+        return cached.slice(0, limit);
+    }
+
     try {
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
@@ -257,6 +266,10 @@ export async function getFoodsFromDB(
             };
         });
 
+        // Cache the results
+        foodCache.set(cacheKey, transformed);
+        console.log(`💾 Cached: ${cacheKey} (${transformed.length} items)`);
+
         return transformed;
 
     } catch (err) {
@@ -286,6 +299,31 @@ function rankFoodsByNutrients(foods: SimpleFoodItem[], priorities: string[]): Si
         // Add a small random jitter to avoid identical sorting for same scores
         return (scoreB - scoreA) || (Math.random() - 0.5);
     });
+}
+
+// Variety Manager - Prevents food repetition
+class VarietyManager {
+    private usedFoods: Map<string, Date> = new Map();
+    
+    markUsed(foodId: string): void {
+        this.usedFoods.set(foodId, new Date());
+    }
+    
+    shouldSkip(foodId: string, cooldownHours: number = 12): boolean {
+        const lastUsed = this.usedFoods.get(foodId);
+        if (!lastUsed) return false;
+        
+        const hoursSince = (Date.now() - lastUsed.getTime()) / (1000 * 60 * 60);
+        return hoursSince < cooldownHours;
+    }
+    
+    getAvailableFoods(foods: SimpleFoodItem[], cooldownHours: number = 12): SimpleFoodItem[] {
+        return foods.filter(f => !this.shouldSkip(f.id, cooldownHours));
+    }
+    
+    reset(): void {
+        this.usedFoods.clear();
+    }
 }
 
 // Generate a simple meal with protein + carb + vegetable
@@ -548,65 +586,86 @@ export function generateSimpleMeal(
         }
     }
 
-    // --- SMART SCALING (New) ---
-    // If we are under target, scale everything up to hit the goal.
-    // User Request: "Filling the gap"
+    // --- SMART GAP FILLING v2 ---
     let finalTotals = sumMacros(items.map(i => i.macros));
-    const coverage = finalTotals.kcal / targetCalories;
+    const deficit = targetCalories - finalTotals.kcal;
 
-    if (coverage < 0.95 && coverage > 0.5) { // Only scale if we have a decent base (avoid scaling 100kcal to 500kcal)
-        const scaleFactor = targetCalories / finalTotals.kcal;
-
-        // Cap scaling to avoid absurd portions (max 1.5x)
-        const safeFactor = Math.min(scaleFactor, 1.5);
-
-        items.forEach(item => {
-            // Don't scale oils/fats too aggressively
-            if (item.food.category === 'fat' && safeFactor > 1.2) return;
-
-            // Round to nearest 5g
-            let newPortion = Math.round((item.portion_g * safeFactor) / 5) * 5;
-            item.portion_g = newPortion;
-            item.macros = calculateItemMacros(item.food, newPortion);
-        });
-
-        // Recalculate totals
-        finalTotals = sumMacros(items.map(i => i.macros));
-    }
-
-    // --- TRIM EXCESS (Anti-Overshoot) ---
-    // (Only if we successfully overshot, or if scaling wasn't needed)
-    let excess = finalTotals.kcal - targetCalories;
-    if (excess > 50) {
-        // Sort by total calories descending
-        const heavyItems = items.sort((a, b) => b.macros.kcal - a.macros.kcal);
-
-        for (const item of heavyItems) {
-            if (excess <= 10) break;
-            if (item.portion_g <= 0) continue;
-
-            const calPerGram = item.macros.kcal / item.portion_g;
-            if (calPerGram <= 0) continue;
-
-            // Protect veggies/fruits from cutting
-            if (item.food.category === 'vegetable' || item.food.category === 'fruit') continue;
-
-            const gramsToCut = excess / calPerGram;
-            const minPortion = Math.max(30, item.portion_g * 0.6); // Don't cut more than 40%
-            const availableCut = Math.max(0, item.portion_g - minPortion);
-            const actualCut = Math.min(gramsToCut, availableCut);
-
-            if (actualCut > 5) {
-                // Round cut to nearest 5
-                const cleanCut = Math.floor(actualCut / 5) * 5;
-                if (cleanCut > 0) {
-                    item.portion_g -= cleanCut;
-                    item.macros = calculateItemMacros(item.food, item.portion_g);
-                    excess -= (cleanCut * calPerGram);
+    if (deficit > 50) {
+        // Strategy 1: Missing protein? Add egg/tuna
+        const proteinDeficit = (targetCalories * proteinRatio / 4) - finalTotals.protein;
+        
+        if (proteinDeficit > 10 && proteins.length > 0) {
+            const proteinFiller = proteins.find(p => ['eggs', 'tuna_canned'].includes(p.id)) || proteins[0];
+            const portion = Math.min(calcPortion(proteinFiller, proteinDeficit, 'protein'), 100);
+            if (portion >= 30) {
+                items.push({
+                    food: proteinFiller,
+                    portion_g: portion,
+                    macros: calculateItemMacros(proteinFiller, portion)
+                });
+                finalTotals = sumMacros(items.map(i => i.macros));
+            }
+        }
+        
+        // Strategy 2: Missing carbs? Add fruit/bread
+        const remainingDeficit = targetCalories - finalTotals.kcal;
+        const carbDeficit = (targetCalories * carbRatio / 4) - finalTotals.carbs;
+        
+        if (remainingDeficit > 50 && carbDeficit > 15 && dietType !== 'keto') {
+            const carbFiller = fruits.length > 0 ? fruits[0] : carbs.find(c => ['bread_whole', 'oats'].includes(c.id));
+            if (carbFiller) {
+                const portion = Math.min(calcPortion(carbFiller, remainingDeficit, 'kcal'), 150);
+                if (portion >= 30) {
+                    items.push({
+                        food: carbFiller,
+                        portion_g: portion,
+                        macros: calculateItemMacros(carbFiller, portion)
+                    });
+                    finalTotals = sumMacros(items.map(i => i.macros));
                 }
             }
         }
+        
+        // Strategy 3: Still missing calories? Add healthy fat
+        const finalDeficit = targetCalories - finalTotals.kcal;
+        if (finalDeficit > 50 && fats.length > 0) {
+            const fatFiller = fats.find(f => ['avocado', 'almonds', 'olive_oil'].includes(f.id)) || fats[0];
+            const portion = Math.min(calcPortion(fatFiller, finalDeficit, 'kcal'), 50);
+            if (portion >= 10) {
+                items.push({
+                    food: fatFiller,
+                    portion_g: portion,
+                    macros: calculateItemMacros(fatFiller, portion)
+                });
+                finalTotals = sumMacros(items.map(i => i.macros));
+            }
+        }
+    } else if (deficit < -50) {
+        // Strategy 4: Excess calories? Reduce large portions
+        const sortedBySize = [...items].sort((a, b) => b.macros.kcal - a.macros.kcal);
+        let excess = -deficit;
+        
+        for (const item of sortedBySize) {
+            if (excess <= 10) break;
+            if (item.food.category === 'vegetable' || item.food.category === 'fruit') continue;
+            
+            const maxCut = item.portion_g * 0.3;
+            const calPerGram = item.macros.kcal / item.portion_g;
+            if (calPerGram <= 0) continue;
+            
+            const gramsToCut = Math.min(excess / calPerGram, maxCut);
+            
+            if (gramsToCut >= 10) {
+                const cleanCut = Math.floor(gramsToCut / 5) * 5;
+                item.portion_g -= cleanCut;
+                item.macros = calculateItemMacros(item.food, item.portion_g);
+                excess -= cleanCut * calPerGram;
+            }
+        }
     }
+
+    // Recalculate final totals
+    finalTotals = sumMacros(items.map(i => i.macros));
 
     return {
         id: `${type}_${Date.now()}_${Math.random()}`,
@@ -745,20 +804,102 @@ export function generateWeeklyMealPlan(
 // ASYNC VERSIONS - USE DATABASE INSTEAD OF HARDCODED FOODS
 // ============================================================
 
-// Pre-load all food categories from Supabase
+// UNIFIED QUERY: Pre-load ALL food categories from Supabase in 1 single query
 async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<SimpleFoodItem[]> {
-    const categories: Array<'protein' | 'carb' | 'vegetable' | 'fat' | 'fruit' | 'dairy'> =
-        ['protein', 'carb', 'vegetable', 'fat', 'fruit', 'dairy'];
+    try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
 
-    const allFoods: SimpleFoodItem[] = [];
+        // ✅ UNIFIED QUERY: Load ALL foods in 1 call (instead of 6 separate queries)
+        const { data, error } = await supabase
+            .from('foods')
+            .select('*')
+            .eq('is_simple_ingredient', true)
+            .eq('is_common_staple', true)
+            .order('priority', { ascending: true, nullsFirst: true })
+            .limit(500); // Enough to cover all categories with variety
 
-    for (const cat of categories) {
-        // Increased limit to 60 to ensure enough variety after "Meal Time" filtering
-        const foods = await getFoodsFromDB(cat, 60, nutrientPriorities);
-        allFoods.push(...foods);
+        if (error || !data || data.length === 0) {
+            console.warn('Unified food fetch failed, using fallback');
+            return SIMPLE_FOODS;
+        }
+
+        console.log(`✅ Loaded ${data.length} foods in 1 unified query (vs 6 separate)`);
+
+        // Transform raw DB data to SimpleFoodItem format
+        const transformed: SimpleFoodItem[] = data.map(d => {
+            // Detect category based on culinary_category field
+            let category: SimpleFoodItem['category'] = 'protein';
+            const cat = (d.culinary_category || '').toLowerCase();
+
+            if (cat.includes('proteina') || cat.includes('carne') || cat.includes('pescado') || cat.includes('mariscos') || cat.includes('huevo')) {
+                category = 'protein';
+            } else if (cat.includes('carbohidrato') || cat.includes('grano') || cat.includes('cereal') || cat.includes('pan') || cat.includes('pasta') || cat.includes('arroz')) {
+                category = 'carb';
+            } else if (cat.includes('verdura') || cat.includes('vegetal') || cat.includes('hortaliza')) {
+                category = 'vegetable';
+            } else if (cat.includes('grasa') || cat.includes('aceite') || cat.includes('nuez') || cat.includes('semilla')) {
+                category = 'fat';
+            } else if (cat.includes('fruta')) {
+                category = 'fruit';
+            } else if (cat.includes('lacteo') || cat.includes('leche') || cat.includes('queso') || cat.includes('yogurt')) {
+                category = 'dairy';
+            }
+
+            // Clean up name (remove USDA clutter)
+            let cleanName = d.name_es || d.name;
+            cleanName = cleanName.split(',')[0]; // Take first part
+            if (cleanName.length > 30) cleanName = cleanName.substring(0, 30) + '...';
+
+            // Smart defaults for serving size
+            let sSize = d.serving_size || 100;
+            let sUnit = d.serving_unit || 'g';
+
+            return {
+                id: String(d.id),
+                name: d.name,
+                name_es: cleanName,
+                emoji: d.emoji || '🍽️',
+                category,
+                kcal: d.kcal_per_100g || 0,
+                protein: d.protein_g_per_100g || 0,
+                carbs: d.carbs_g_per_100g || 0,
+                fat: d.fat_g_per_100g || 0,
+                portion_g: 100,
+                serving_size: sSize,
+                serving_unit: sUnit,
+                meal_times: d.meal_times || [],
+                is_common_staple: d.is_common_staple || false,
+                cooking_states: d.cooking_states || [],
+                micros: {
+                    iron_mg: d.iron_mg || 0,
+                    calcium_mg: d.calcium_mg || 0,
+                    magnesium_mg: d.magnesium_mg || 0,
+                    zinc_mg: d.zinc_mg || 0,
+                    potassium_mg: d.potassium_mg || 0,
+                    vit_c_mg: d.vitamin_c_mg || 0,
+                    vit_d_iu: d.vitamin_d_iu || 0,
+                    vit_a_iu: d.vitamin_a_iu || 0,
+                    vit_b12_mcg: d.vitamin_b12_ug || 0,
+                    folate_mcg: d.folate_ug || 0,
+                    fiber: d.fiber_g || 0,
+                    omega3_g: d.omega3_g || 0,
+                    colina_mg: d.colina_mg || 0,
+                }
+            };
+        });
+
+        // Cache the entire result for future use
+        const cacheKey = 'all_foods_unified';
+        foodCache.set(cacheKey, transformed);
+        console.log(`💾 Cached: ${cacheKey} (${transformed.length} total items across all categories)`);
+
+        return transformed;
+
+    } catch (err) {
+        console.warn('loadFoodsFromDB crash:', err);
+        return SIMPLE_FOODS;
     }
-
-    return allFoods;
 }
 
 // Generate meal using DB-loaded foods
@@ -768,7 +909,9 @@ function generateMealFromFoods(
     foods: SimpleFoodItem[],
     dietType: string = 'balanced',
     conditions: string[] = [],
-    nutrientPriorities: string[] = []
+    nutrientPriorities: string[] = [],
+    targetProteinGrams?: number,
+    varietyManager?: VarietyManager
 ): Meal {
     const typeNames: Record<string, string> = {
         breakfast: 'Desayuno',
@@ -829,6 +972,15 @@ function generateMealFromFoods(
     let fruits = filteredFoods.filter(f => f.category === 'fruit');
     let dairy = filteredFoods.filter(f => f.category === 'dairy');
 
+    // Apply variety filtering
+    if (varietyManager) {
+        proteins = varietyManager.getAvailableFoods(proteins, 6);  // 6h cooldown
+        carbs = varietyManager.getAvailableFoods(carbs, 12);       // 12h cooldown
+        vegetables = varietyManager.getAvailableFoods(vegetables, 8);
+        fats = varietyManager.getAvailableFoods(fats, 12);
+        fruits = varietyManager.getAvailableFoods(fruits, 12);
+    }
+
     const items: MealItem[] = [];
 
     // Get diet macros
@@ -851,21 +1003,40 @@ function generateMealFromFoods(
         return Math.round((targetAmount / per100) * 100);
     };
 
-    const SAFETY_FACTOR = 0.85;
+    const SAFETY_FACTOR = 0.90; // Increased utilization
     const usableCalories = targetCalories * SAFETY_FACTOR;
+
+    // Determine Protein Target for this meal
+    // If explicit target is passed, use it. Otherwise fallback to ratio.
+    let mealProteinTarget = targetProteinGrams || (usableCalories * proteinRatio) / 4;
 
     // Simple meal generation: protein + carb + veggie
     if (proteins.length > 0) {
         const protein = proteins[Math.floor(Math.random() * Math.min(proteins.length, 5))];
-        const targetProteinCal = usableCalories * proteinRatio;
-        const portion = Math.min(calcPortion(protein, targetProteinCal, 'kcal'), 250);
-        if (portion >= 30) {
+
+        // Calculate portion based on PROTEIN GRAMS, not calories
+        const portion = Math.min(calcPortion(protein, mealProteinTarget, 'protein'), 350);
+
+        // Ensure minimum viable portion for meat (e.g. 80g)
+        const minPortion = protein.category === 'protein' ? 80 : 30;
+
+        if (portion >= minPortion) {
             items.push({
                 food: protein,
                 portion_g: portion,
                 cooking_state: protein.cooking_states?.[0],
                 macros: calculateItemMacros(protein, portion)
             });
+        } else {
+            // Force minimum if it fits loosely in calories
+            if ((protein.kcal * minPortion / 100) < usableCalories * 0.6) {
+                items.push({
+                    food: protein,
+                    portion_g: minPortion,
+                    cooking_state: protein.cooking_states?.[0],
+                    macros: calculateItemMacros(protein, minPortion)
+                });
+            }
         }
     }
 
@@ -908,6 +1079,11 @@ function generateMealFromFoods(
 
     const totals = sumMacros(items.map(i => i.macros));
 
+    // Mark foods as used
+    if (varietyManager) {
+        items.forEach(item => varietyManager.markUsed(item.food.id));
+    }
+
     return {
         id: `meal_${type}_${Date.now()}`,
         type,
@@ -929,6 +1105,9 @@ export async function generateDayMealPlanFromDB(
 ): Promise<MealPlan> {
     // Load foods from database
     const dbFoods = await loadFoodsFromDB(nutrientPriorities);
+    
+    // Create variety manager for this day
+    const varietyManager = new VarietyManager();
 
     const meals: Meal[] = [];
     const distributions: Record<number, Record<string, number>> = {
@@ -938,11 +1117,11 @@ export async function generateDayMealPlanFromDB(
     };
     const dist = distributions[numMeals];
 
-    if (dist.breakfast) meals.push(generateMealFromFoods('breakfast', targetCalories * dist.breakfast, dbFoods, dietType, conditions, nutrientPriorities));
-    if (dist.snack1) meals.push(generateMealFromFoods('snack', targetCalories * dist.snack1, dbFoods, dietType, conditions, nutrientPriorities));
-    if (dist.lunch) meals.push(generateMealFromFoods('lunch', targetCalories * dist.lunch, dbFoods, dietType, conditions, nutrientPriorities));
-    if (dist.snack2) meals.push(generateMealFromFoods('snack', targetCalories * dist.snack2, dbFoods, dietType, conditions, nutrientPriorities));
-    if (dist.dinner) meals.push(generateMealFromFoods('dinner', targetCalories * dist.dinner, dbFoods, dietType, conditions, nutrientPriorities));
+    if (dist.breakfast) meals.push(generateMealFromFoods('breakfast', targetCalories * dist.breakfast, dbFoods, dietType, conditions, nutrientPriorities, targetProtein * dist.breakfast, varietyManager));
+    if (dist.snack1) meals.push(generateMealFromFoods('snack', targetCalories * dist.snack1, dbFoods, dietType, conditions, nutrientPriorities, targetProtein * dist.snack1, varietyManager));
+    if (dist.lunch) meals.push(generateMealFromFoods('lunch', targetCalories * dist.lunch, dbFoods, dietType, conditions, nutrientPriorities, targetProtein * dist.lunch, varietyManager));
+    if (dist.snack2) meals.push(generateMealFromFoods('snack', targetCalories * dist.snack2, dbFoods, dietType, conditions, nutrientPriorities, targetProtein * dist.snack2, varietyManager));
+    if (dist.dinner) meals.push(generateMealFromFoods('dinner', targetCalories * dist.dinner, dbFoods, dietType, conditions, nutrientPriorities, targetProtein * dist.dinner, varietyManager));
 
     const totals = sumMacros(meals.map(m => m.totals));
 

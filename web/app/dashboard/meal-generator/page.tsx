@@ -11,6 +11,8 @@ import {
     MealPlan,
     WeeklyMealPlan,
 } from "@/lib/mealGenerator";
+import { validateMealPlan, validateWeeklyPlan, PlanValidation } from "@/lib/mealValidation";
+import { foodCache } from "@/lib/foodCache";
 import { getActiveWorkoutPlan } from "@/lib/supabase/exercises";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile, saveMealPlan } from "@/lib/supabase/database";
@@ -39,6 +41,8 @@ export default function MealGeneratorPage() {
     const [weeklyPlan, setWeeklyPlan] = useState<WeeklyMealPlan | null>(null);
     const [mode, setMode] = useState<'daily' | 'weekly'>('daily');
     const [activeDay, setActiveDay] = useState(0);
+    const [validation, setValidation] = useState<PlanValidation | null>(null);
+    const [previousDietType, setPreviousDietType] = useState<string>('balanced');
 
     // Profile state for accurate projection
     const [goalSpeed, setGoalSpeed] = useState<'conservador' | 'moderado' | 'acelerado'>('moderado');
@@ -124,7 +128,15 @@ export default function MealGeneratorPage() {
     }, []);
 
     const handleGenerate = async () => {
+        if (generating) return; // Prevent race condition
         setGenerating(true);
+        
+        // Clear cache if diet changed
+        if (dietType !== previousDietType) {
+            foodCache.clear();
+            setPreviousDietType(dietType);
+        }
+        
         try {
             const conditions = dietType === 'diabetes_friendly' ? ['diabetes_type_2'] : [];
             const nutrientPriorities: string[] = [];
@@ -143,11 +155,27 @@ export default function MealGeneratorPage() {
                 const plan = await generateDayMealPlanFromDB(targetCalories, targetProtein, numMeals, undefined, dietType, conditions, nutrientPriorities);
                 setMealPlan(plan);
                 setWeeklyPlan(null);
+                
+                // Validate plan
+                const val = validateMealPlan(plan, targetCalories, targetProtein);
+                setValidation(val);
+                
+                if (!val.isValid) {
+                    console.warn('⚠️ Plan generado con problemas:', val.issues);
+                }
             } else {
                 const plan = await generateWeeklyMealPlanFromDB(targetCalories, targetProtein, numMeals, undefined, dietType, conditions, nutrientPriorities);
                 setWeeklyPlan(plan);
                 setMealPlan(null);
                 setActiveDay(0);
+                
+                // Validate weekly plan
+                const val = validateWeeklyPlan(plan, targetCalories, targetProtein);
+                setValidation(val);
+                
+                if (!val.isValid) {
+                    console.warn('⚠️ Plan semanal con problemas:', val.issues);
+                }
             }
         } catch (error) {
             console.error('Error generating meal plan:', error);
@@ -485,6 +513,47 @@ export default function MealGeneratorPage() {
                                 )}
                             </Card>
 
+                            {/* Validation Alerts */}
+                            {validation && !validation.isValid && (
+                                <Card className="p-4 mb-4 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+                                    <div className="flex items-start gap-3">
+                                        <div className="text-red-500 text-xl">⚠️</div>
+                                        <div className="flex-1">
+                                            <h4 className="font-semibold text-red-900 dark:text-red-100 mb-2">
+                                                Plan con problemas detectados
+                                            </h4>
+                                            <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
+                                                {validation.issues.map((issue, idx) => (
+                                                    <li key={idx}>• {issue}</li>
+                                                ))}
+                                            </ul>
+                                            <button
+                                                onClick={handleGenerate}
+                                                disabled={generating}
+                                                className="mt-3 text-sm text-red-600 hover:text-red-800 font-medium disabled:opacity-50"
+                                            >
+                                                Regenerar plan →
+                                            </button>
+                                        </div>
+                                    </div>
+                                </Card>
+                            )}
+
+                            {validation && validation.warnings.length > 0 && (
+                                <Card className="p-3 mb-4 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200">
+                                    <details className="text-sm">
+                                        <summary className="cursor-pointer font-medium text-yellow-800 dark:text-yellow-200">
+                                            ⚡ {validation.warnings.length} advertencias menores
+                                        </summary>
+                                        <ul className="mt-2 text-yellow-700 dark:text-yellow-300 space-y-1 ml-4">
+                                            {validation.warnings.map((w, idx) => (
+                                                <li key={idx}>• {w}</li>
+                                            ))}
+                                        </ul>
+                                    </details>
+                                </Card>
+                            )}
+
                             {/* Render Daily Meals or Active Day of Week */}
                             {(mode === 'daily' ? mealPlan!.meals : weeklyPlan!.days[activeDay].meals).map((meal, idx) => (
                                 <motion.div
@@ -522,14 +591,28 @@ export default function MealGeneratorPage() {
                                                             </div>
                                                             <div className="text-xs text-gray-500">
                                                                 {(() => {
+                                                                    const grams = Math.round(item.portion_g);
+                                                                    // Only show complex units if they are clean (e.g. 2 eggs, not 1.3 eggs)
                                                                     // @ts-ignore
-                                                                    if (item.food.serving_size && item.food.serving_unit && item.food.serving_size > 0) {
+                                                                    if (item.food.serving_unit && item.food.serving_size && item.food.serving_size > 0) {
                                                                         // @ts-ignore
-                                                                        const units = (item.portion_g / item.food.serving_size).toFixed(1).replace('.0', '');
+                                                                        const rawUnits = item.portion_g / item.food.serving_size;
+
+                                                                        // If it's close to whole number (e.g. 1.05 eggs), show units
+                                                                        if (Math.abs(Math.round(rawUnits) - rawUnits) < 0.1) {
+                                                                            // @ts-ignore
+                                                                            return <span className="font-medium text-orange-600 dark:text-orange-400">{Math.round(rawUnits)} {item.food.serving_unit} <span className="text-gray-400 font-normal">({grams}g)</span></span>;
+                                                                        }
+
+                                                                        // If it's ounces (special case where unit=oz usually means serving_size=28.35)
                                                                         // @ts-ignore
-                                                                        return <span className="font-medium text-orange-600 dark:text-orange-400">{units} {item.food.serving_unit} <span className="text-gray-400 font-normal">({Math.round(item.portion_g)}g)</span></span>;
+                                                                        if (item.food.serving_unit.includes('oz')) {
+                                                                            const oz = (grams / 28.35).toFixed(1);
+                                                                            return <span className="font-medium text-orange-600 dark:text-orange-400">{grams}g <span className="text-gray-400 font-normal">({oz} oz)</span></span>;
+                                                                        }
                                                                     }
-                                                                    return `${Math.round(item.portion_g)}g`;
+                                                                    // Default to clear grams
+                                                                    return <span className="font-medium text-gray-700 dark:text-gray-300">{grams}g</span>;
                                                                 })()}
                                                                 {item.cooking_state && ` • ${item.cooking_state}`}
                                                             </div>
@@ -556,18 +639,29 @@ export default function MealGeneratorPage() {
                                         const allItems = (mode === 'daily' ? mealPlan!.meals : weeklyPlan!.days.flatMap(d => d.meals))
                                             .flatMap(m => m.items);
 
-                                        const totals: Record<string, { food: any, grams: number }> = {};
+                                        const totals: Record<string, { food: any, grams: number, cooking_state?: string }> = {};
                                         allItems.forEach(item => {
-                                            if (!totals[item.food.id]) totals[item.food.id] = { food: item.food, grams: 0 };
-                                            totals[item.food.id].grams += item.portion_g;
+                                            const key = `${item.food.id}_${item.cooking_state || 'raw'}`;
+                                            if (!totals[key]) {
+                                                totals[key] = { 
+                                                    food: item.food, 
+                                                    grams: 0,
+                                                    cooking_state: item.cooking_state 
+                                                };
+                                            }
+                                            totals[key].grams += item.portion_g;
                                         });
 
-                                        return Object.values(totals).map(({ food, grams }, idx) => {
+                                        return Object.values(totals).map(({ food, grams, cooking_state }, idx) => {
                                             let qtyDisplay = `${Math.round(grams)}g`;
-                                            // Smart Units from USDA
                                             if (food.serving_size && food.serving_unit && food.serving_size > 0) {
                                                 const units = (grams / food.serving_size).toFixed(1).replace('.0', '');
                                                 qtyDisplay = `${units} ${food.serving_unit}`;
+                                            }
+                                            
+                                            let displayName = food.name_es;
+                                            if (cooking_state && cooking_state !== 'raw') {
+                                                displayName += ` (${cooking_state})`;
                                             }
 
                                             return (
@@ -577,7 +671,7 @@ export default function MealGeneratorPage() {
                                                 >
                                                     <span>{food.emoji}</span>
                                                     <span className="font-semibold text-orange-600 dark:text-orange-400">{qtyDisplay}</span>
-                                                    <span>{food.name_es}</span>
+                                                    <span>{displayName}</span>
                                                 </span>
                                             );
                                         });

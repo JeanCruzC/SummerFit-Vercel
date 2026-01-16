@@ -10,6 +10,7 @@ import { calculateHealthMetrics, calculateMacros, calculateProjectionWithExercis
 import { MealEntry, UserProfile } from "@/types";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FoodSearchInput } from "@/components/ui/FoodSearchInput";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 export default function TrackingPage() {
     const router = useRouter();
@@ -20,6 +21,8 @@ export default function TrackingPage() {
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState<number | null>(null);
     const [waterGlasses, setWaterGlasses] = useState(0);
+    const [confirmClearType, setConfirmClearType] = useState<string | null>(null);
+    const [clearing, setClearing] = useState(false);
 
     // Inline Add State
     const [addingToMeal, setAddingToMeal] = useState<string | null>(null); // "Desayuno" | "Almuerzo" etc
@@ -128,13 +131,24 @@ export default function TrackingPage() {
         setDeleting(null);
     };
 
-    const handleClearSection = async (type: string) => {
-        if (!confirm(t('nutrition.tracking.confirmClear'))) return; // Simple confirmation
-        const { data: { session } } = await createClient().auth.getSession();
-        if (!session) return;
+    const handleClearSection = (type: string) => {
+        setConfirmClearType(type);
+    };
 
-        await deleteMealEntriesByType(session.user.id, selectedDate, type);
-        setMeals(m => m.filter(e => e.meal_type !== type));
+    const confirmClear = async () => {
+        if (!confirmClearType) return;
+        setClearing(true);
+
+        try {
+            const { data: { session } } = await createClient().auth.getSession();
+            if (session) {
+                await deleteMealEntriesByType(session.user.id, selectedDate, confirmClearType);
+                setMeals(m => m.filter(e => e.meal_type !== confirmClearType));
+            }
+        } finally {
+            setClearing(false);
+            setConfirmClearType(null);
+        }
     };
 
     const totals = meals.reduce((acc, m) => ({
@@ -490,6 +504,19 @@ export default function TrackingPage() {
                 </div>
 
             </main>
+
+            {/* Confirmation Modal */}
+            <ConfirmDialog
+                isOpen={!!confirmClearType}
+                onClose={() => setConfirmClearType(null)}
+                onConfirm={confirmClear}
+                title={t('nutrition.tracking.clearSection')}
+                description={t('nutrition.tracking.confirmClear')}
+                confirmText={t('common.delete')}
+                cancelText={t('common.cancel')}
+                isDestructive={true}
+                isLoading={clearing}
+            />
         </div>
     );
 }

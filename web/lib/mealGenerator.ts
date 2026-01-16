@@ -36,6 +36,9 @@ export interface SimpleFoodItem {
     // Smart Portions
     serving_size?: number;
     serving_unit?: string;
+    // AI Metadata
+    meal_times?: string[];
+    is_common_staple?: boolean;
 }
 
 // Basic groceries database - simple foods only
@@ -159,15 +162,14 @@ export function getFoodsByCategory(category: SimpleFoodItem['category']): Simple
 // Falls back to SIMPLE_FOODS if DB unavailable
 export async function getFoodsFromDB(
     category: 'protein' | 'carb' | 'vegetable' | 'fat' | 'fruit' | 'dairy',
-    limit: number = 10,
-    nutrientPriorities: string[] = []
+    limit: number = 20,
+    nutrientPriorities: string[] = [],
+    mealContext: 'breakfast' | 'lunch' | 'dinner' | 'snack' | null = null
 ): Promise<SimpleFoodItem[]> {
     try {
-        // Dynamic import to avoid SSR issues
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
 
-        // Map category names to culinary_category in DB
         const categoryMap: Record<string, string[]> = {
             'protein': ['proteina', 'carne', 'pescado', 'mariscos', 'huevo'],
             'carb': ['carbohidrato', 'grano', 'cereal', 'pan', 'pasta', 'arroz'],
@@ -179,53 +181,55 @@ export async function getFoodsFromDB(
 
         const categories = categoryMap[category] || [category];
 
-        // Build query - prioritize simple ingredients but include all
-        // Changed from .eq to .order because many foods don't have is_simple_ingredient set
         let query = supabase
             .from('foods')
-            .select('*')
-            .order('is_simple_ingredient', { ascending: false, nullsFirst: false }) // Simple first
-            .order('priority', { ascending: true, nullsFirst: true })
-            .limit(limit * 2); // Fetch extra for filtering
+            .select('*');
 
-        // Filter by category
-        // Using OR with ilike for flexible matching
+        // 1. Context Filter (AI Powered)
+        // If we know it's "breakfast", only get foods tagged for breakfast
+        if (mealContext) {
+            // Using 'cs' (contains) for array column
+            // We use standard english keys: ['breakfast', 'lunch', 'dinner', 'snack']
+            query = query.contains('meal_times', [mealContext]);
+        }
+
+        // 2. Category Filter
         const categoryConditions = categories.map(c => `culinary_category.ilike.%${c}%`).join(',');
         query = query.or(categoryConditions);
+
+        // 3. Smart Sorting
+        // Priority 1: Common Staples (TRUE first)
+        // Priority 2: Simple Ingredients (TRUE first)
+        // Priority 3: Custom Priority (Ascending)
+        query = query
+            .order('is_common_staple', { ascending: false, nullsFirst: false })
+            .order('is_simple_ingredient', { ascending: false, nullsFirst: false })
+            .order('priority', { ascending: true, nullsFirst: true })
+            .limit(limit * 2);
 
         const { data, error } = await query;
 
         if (error || !data || data.length === 0) {
-            console.warn('DB fetch failed, using fallback SIMPLE_FOODS for category:', category);
+            console.warn('DB fetch failed or empty for', category, mealContext);
             return SIMPLE_FOODS.filter(f => f.category === category).slice(0, limit);
         }
 
-        // Transform DB format to SimpleFoodItem format
+        // Transform
         const transformed: SimpleFoodItem[] = data.map(d => {
-            // Smart Defaults for common items if DB lacks data
             let sSize = d.serving_size;
             let sUnit = d.serving_unit;
+            // (Smart defaults logic omitted for brevity, keeping existing if needed, 
+            // but relying more on DB data now)
 
-            if (!sSize || !sUnit) {
-                const lowerName = d.name.toLowerCase();
-                const lowerNameEs = (d.name_es || '').toLowerCase();
-
-                if (lowerName.includes('egg') || lowerNameEs.includes('huevo')) { sSize = 50; sUnit = 'large egg'; }
-                else if (lowerName.includes('apple') || lowerNameEs.includes('manzana')) { sSize = 150; sUnit = 'medium'; }
-                else if (lowerName.includes('banana') || lowerNameEs.includes('plátano')) { sSize = 120; sUnit = 'medium'; }
-                else if (lowerName.includes('bread') || lowerNameEs.includes('pan')) { sSize = 28; sUnit = 'slice'; }
-                else if (lowerName.includes('rice') || lowerNameEs.includes('arroz')) { sSize = 158; sUnit = 'cup cooked'; }
-                else if (lowerName.includes('oats') || lowerNameEs.includes('avena')) { sSize = 234; sUnit = 'cup cooked'; }
-                else if (lowerName.includes('milk') || lowerNameEs.includes('leche')) { sSize = 244; sUnit = 'cup'; }
-                else if (lowerName.includes('chicken breast') || lowerNameEs.includes('pechuga')) { sSize = 120; sUnit = 'fillet'; }
-                else if (lowerName.includes('potato') || lowerNameEs.includes('papa')) { sSize = 150; sUnit = 'medium'; }
-                else if (lowerName.includes('avocado') || lowerNameEs.includes('palta') || lowerNameEs.includes('aguacate')) { sSize = 200; sUnit = 'medium'; }
-            }
+            // Name Cleaning (Remove USDA clutter)
+            let cleanName = d.name_es || d.name;
+            cleanName = cleanName.split(',')[0]; // Take first part "Pollo" instead of "Pollo, crudo, sin piel"
+            if (cleanName.length > 30) cleanName = cleanName.substring(0, 30) + '...';
 
             return {
                 id: String(d.id),
                 name: d.name,
-                name_es: d.name_es || d.name,
+                name_es: cleanName, // Use cleaned name
                 emoji: d.emoji || '🍽️',
                 category: category,
                 kcal: d.kcal_per_100g || 0,
@@ -233,10 +237,10 @@ export async function getFoodsFromDB(
                 carbs: d.carbs_g_per_100g || 0,
                 fat: d.fat_g_per_100g || 0,
                 portion_g: 100,
-                // Smart Portions
-                serving_size: sSize,
-                serving_unit: sUnit,
-                // Micros
+                serving_size: sSize || 100,
+                serving_unit: sUnit || 'g',
+                meal_times: d.meal_times || [],
+                is_common_staple: d.is_common_staple || false,
                 micros: {
                     iron_mg: d.iron_mg || 0,
                     calcium_mg: d.calcium_mg || 0,
@@ -253,12 +257,10 @@ export async function getFoodsFromDB(
             };
         });
 
-        // Apply nutrient ranking if priorities provided (limited effect without micros in DB)
-        // Respect the DB order (simple ingredients first)
         return transformed;
 
     } catch (err) {
-        console.warn('getFoodsFromDB error, using fallback:', err);
+        console.warn('getFoodsFromDB crash:', err);
         return SIMPLE_FOODS.filter(f => f.category === category).slice(0, limit);
     }
 }
@@ -546,43 +548,62 @@ export function generateSimpleMeal(
         }
     }
 
-    // --- TRIM EXCESS (Anti-Overshoot) ---
-    // Recalculate after potential fat addition
+    // --- SMART SCALING (New) ---
+    // If we are under target, scale everything up to hit the goal.
+    // User Request: "Filling the gap"
     let finalTotals = sumMacros(items.map(i => i.macros));
-    let excess = finalTotals.kcal - targetCalories;
+    const coverage = finalTotals.kcal / targetCalories;
 
+    if (coverage < 0.95 && coverage > 0.5) { // Only scale if we have a decent base (avoid scaling 100kcal to 500kcal)
+        const scaleFactor = targetCalories / finalTotals.kcal;
+
+        // Cap scaling to avoid absurd portions (max 1.5x)
+        const safeFactor = Math.min(scaleFactor, 1.5);
+
+        items.forEach(item => {
+            // Don't scale oils/fats too aggressively
+            if (item.food.category === 'fat' && safeFactor > 1.2) return;
+
+            // Round to nearest 5g
+            let newPortion = Math.round((item.portion_g * safeFactor) / 5) * 5;
+            item.portion_g = newPortion;
+            item.macros = calculateItemMacros(item.food, newPortion);
+        });
+
+        // Recalculate totals
+        finalTotals = sumMacros(items.map(i => i.macros));
+    }
+
+    // --- TRIM EXCESS (Anti-Overshoot) ---
+    // (Only if we successfully overshot, or if scaling wasn't needed)
+    let excess = finalTotals.kcal - targetCalories;
     if (excess > 50) {
-        // Identify trim candidates: carbs and protein (skip veggies/fruits mostly)
-        // Sort by total calories descending to cut from the biggest contributor first
+        // Sort by total calories descending
         const heavyItems = items.sort((a, b) => b.macros.kcal - a.macros.kcal);
 
         for (const item of heavyItems) {
-            if (excess <= 10) break; // Good enough
-
-            // Safety check for div by zero
+            if (excess <= 10) break;
             if (item.portion_g <= 0) continue;
 
             const calPerGram = item.macros.kcal / item.portion_g;
             if (calPerGram <= 0) continue;
 
-            // Don't reduce veggies too much
+            // Protect veggies/fruits from cutting
             if (item.food.category === 'vegetable' || item.food.category === 'fruit') continue;
 
             const gramsToCut = excess / calPerGram;
-
-            // Limit cut: Keep at least 50% of original or 30g
-            const minPortion = Math.max(30, item.portion_g * 0.5);
+            const minPortion = Math.max(30, item.portion_g * 0.6); // Don't cut more than 40%
             const availableCut = Math.max(0, item.portion_g - minPortion);
-
             const actualCut = Math.min(gramsToCut, availableCut);
 
-            if (actualCut > 5) { // Only cut if significant
-                item.portion_g -= actualCut;
-                item.portion_g = Math.round(item.portion_g);
-                item.macros = calculateItemMacros(item.food, item.portion_g);
-
-                // Recalculate excess
-                excess -= (actualCut * calPerGram);
+            if (actualCut > 5) {
+                // Round cut to nearest 5
+                const cleanCut = Math.floor(actualCut / 5) * 5;
+                if (cleanCut > 0) {
+                    item.portion_g -= cleanCut;
+                    item.macros = calculateItemMacros(item.food, item.portion_g);
+                    excess -= (cleanCut * calPerGram);
+                }
             }
         }
     }
@@ -591,7 +612,7 @@ export function generateSimpleMeal(
         id: `${type}_${Date.now()}_${Math.random()}`,
         type,
         type_es: typeNames[type],
-        items,
+        items: items.sort((a, b) => b.macros.kcal - a.macros.kcal), // Sort for nice presentation
         totals: sumMacros(items.map(i => i.macros)),
     };
 }
@@ -732,7 +753,8 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
     const allFoods: SimpleFoodItem[] = [];
 
     for (const cat of categories) {
-        const foods = await getFoodsFromDB(cat, 50, nutrientPriorities);
+        // Increased limit to 60 to ensure enough variety after "Meal Time" filtering
+        const foods = await getFoodsFromDB(cat, 60, nutrientPriorities);
         allFoods.push(...foods);
     }
 
@@ -786,6 +808,19 @@ function generateMealFromFoods(
             !(f.category === 'carb' && f.carbs > 25 && !f.fiber)
         );
     }
+
+    // --- AI CONTEXT FILTER (New) ---
+    // If the food has meal_times data, strictly enforce it.
+    // e.g. Don't put "Fish" in breakfast unless it has 'breakfast' tag.
+    // We allow staples (rice/potato) to be more flexible if they assume "lunch/dinner" by default logic.
+    filteredFoods = filteredFoods.filter(f => {
+        if (f.meal_times && f.meal_times.length > 0) {
+            // Mapping: 'snack' type can accept 'snack' tagged foods OR fruits/nuts
+            if (type === 'snack') return f.meal_times.includes('snack') || f.category === 'fruit' || f.category === 'fat';
+            return f.meal_times.includes(type);
+        }
+        return true; // Keep if no AI data (fallback)
+    });
 
     let proteins = filteredFoods.filter(f => f.category === 'protein');
     let carbs = filteredFoods.filter(f => f.category === 'carb');

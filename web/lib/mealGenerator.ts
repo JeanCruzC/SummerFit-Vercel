@@ -304,23 +304,23 @@ function rankFoodsByNutrients(foods: SimpleFoodItem[], priorities: string[]): Si
 // Variety Manager - Prevents food repetition
 class VarietyManager {
     private usedFoods: Map<string, Date> = new Map();
-    
+
     markUsed(foodId: string): void {
         this.usedFoods.set(foodId, new Date());
     }
-    
+
     shouldSkip(foodId: string, cooldownHours: number = 12): boolean {
         const lastUsed = this.usedFoods.get(foodId);
         if (!lastUsed) return false;
-        
+
         const hoursSince = (Date.now() - lastUsed.getTime()) / (1000 * 60 * 60);
         return hoursSince < cooldownHours;
     }
-    
+
     getAvailableFoods(foods: SimpleFoodItem[], cooldownHours: number = 12): SimpleFoodItem[] {
         return foods.filter(f => !this.shouldSkip(f.id, cooldownHours));
     }
-    
+
     reset(): void {
         this.usedFoods.clear();
     }
@@ -557,34 +557,7 @@ export function generateSimpleMeal(
     }
 
     // --- GAP FILLER & FAT ADJUSTMENT ---
-    const currentTotals = sumMacros(items.map(i => i.macros));
-    const deficit = targetCalories - currentTotals.kcal;
 
-    if (deficit > (targetCalories * 0.10)) {
-        let fatOptions = fats;
-        // Prioritize healthy fats if ranking
-        if (nutrientPriorities.length > 0) {
-            fatOptions = rankFoodsByNutrients(fatOptions, nutrientPriorities).slice(0, 3);
-        }
-
-        let fatSource = fatOptions[Math.floor(Math.random() * fatOptions.length)];
-        if (!fatSource) fatSource = SIMPLE_FOODS.find(f => f.id === 'olive_oil')!;
-
-        if (fatSource) {
-            const portion = calcPortion(fatSource, deficit, 'kcal');
-            let maxFat = 100;
-            if (fatSource.id === 'olive_oil') maxFat = 40;
-            const finalPortion = Math.min(portion, maxFat);
-
-            if (finalPortion > 5) {
-                items.push({
-                    food: fatSource,
-                    portion_g: finalPortion,
-                    macros: calculateItemMacros(fatSource, finalPortion)
-                });
-            }
-        }
-    }
 
     // --- SMART GAP FILLING v2 ---
     let finalTotals = sumMacros(items.map(i => i.macros));
@@ -593,7 +566,7 @@ export function generateSimpleMeal(
     if (deficit > 50) {
         // Strategy 1: Missing protein? Add egg/tuna
         const proteinDeficit = (targetCalories * proteinRatio / 4) - finalTotals.protein;
-        
+
         if (proteinDeficit > 10 && proteins.length > 0) {
             const proteinFiller = proteins.find(p => ['eggs', 'tuna_canned'].includes(p.id)) || proteins[0];
             const portion = Math.min(calcPortion(proteinFiller, proteinDeficit, 'protein'), 100);
@@ -606,11 +579,11 @@ export function generateSimpleMeal(
                 finalTotals = sumMacros(items.map(i => i.macros));
             }
         }
-        
+
         // Strategy 2: Missing carbs? Add fruit/bread
         const remainingDeficit = targetCalories - finalTotals.kcal;
         const carbDeficit = (targetCalories * carbRatio / 4) - finalTotals.carbs;
-        
+
         if (remainingDeficit > 50 && carbDeficit > 15 && dietType !== 'keto') {
             const carbFiller = fruits.length > 0 ? fruits[0] : carbs.find(c => ['bread_whole', 'oats'].includes(c.id));
             if (carbFiller) {
@@ -625,7 +598,7 @@ export function generateSimpleMeal(
                 }
             }
         }
-        
+
         // Strategy 3: Still missing calories? Add healthy fat
         const finalDeficit = targetCalories - finalTotals.kcal;
         if (finalDeficit > 50 && fats.length > 0) {
@@ -644,17 +617,17 @@ export function generateSimpleMeal(
         // Strategy 4: Excess calories? Reduce large portions
         const sortedBySize = [...items].sort((a, b) => b.macros.kcal - a.macros.kcal);
         let excess = -deficit;
-        
+
         for (const item of sortedBySize) {
             if (excess <= 10) break;
             if (item.food.category === 'vegetable' || item.food.category === 'fruit') continue;
-            
+
             const maxCut = item.portion_g * 0.3;
             const calPerGram = item.macros.kcal / item.portion_g;
             if (calPerGram <= 0) continue;
-            
+
             const gramsToCut = Math.min(excess / calPerGram, maxCut);
-            
+
             if (gramsToCut >= 10) {
                 const cleanCut = Math.floor(gramsToCut / 5) * 5;
                 item.portion_g -= cleanCut;
@@ -1105,7 +1078,7 @@ export async function generateDayMealPlanFromDB(
 ): Promise<MealPlan> {
     // Load foods from database
     const dbFoods = await loadFoodsFromDB(nutrientPriorities);
-    
+
     // Create variety manager for this day
     const varietyManager = new VarietyManager();
 

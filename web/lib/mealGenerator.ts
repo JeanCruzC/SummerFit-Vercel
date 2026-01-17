@@ -100,10 +100,10 @@ export const SIMPLE_FOODS: SimpleFoodItem[] = [
     { id: 'green_beans', name: 'Green Beans', name_es: 'Vainitas', emoji: '🌿', category: 'vegetable', kcal: 31, protein: 1.8, carbs: 7, fat: 0.1, fiber: 3.4, portion_g: 100, serving_size: 100, serving_unit: 'cup', micros: { vit_c_mg: 12 }, cooking_states: ['steamed', 'sautéed'] },
 
     // FATS
-    { id: 'avocado', name: 'Avocado', name_es: 'Palta', emoji: '🥑', category: 'fat', kcal: 160, protein: 2, carbs: 9, fat: 15, fiber: 7, portion_g: 100, serving_size: 201, serving_unit: 'whole', micros: { potassium_mg: 485, folate_mcg: 81 }, cooking_states: ['raw'] },
-    { id: 'olive_oil', name: 'Olive Oil', name_es: 'Aceite de Oliva', emoji: '🫒', category: 'fat', kcal: 884, protein: 0, carbs: 0, fat: 100, portion_g: 15, serving_size: 14, serving_unit: 'tbsp', micros: { vit_e_mg: 14 }, cooking_states: ['raw'] },
-    { id: 'almonds', name: 'Almonds', name_es: 'Almendras', emoji: '🌰', category: 'fat', kcal: 579, protein: 21, carbs: 22, fat: 50, fiber: 12, portion_g: 30, serving_size: 28, serving_unit: 'oz (23 almonds)', micros: { magnesium_mg: 270, calcium_mg: 269, iron_mg: 3.7 }, cooking_states: ['raw'] },
-    { id: 'peanut_butter', name: 'Peanut Butter', name_es: 'Mantequilla de Maní', emoji: '🥜', category: 'fat', kcal: 588, protein: 25, carbs: 20, fat: 50, fiber: 6, portion_g: 30, serving_size: 32, serving_unit: 'tbsp (2)', micros: { magnesium_mg: 154 }, cooking_states: ['raw'] },
+    { id: 'avocado', name: 'Avocado', name_es: 'Palta', emoji: '🥑', category: 'fat', kcal: 160, protein: 2, carbs: 9, fat: 15, fiber: 7, sodium_mg: 7, sugar_g: 0.7, sat_fat_g: 2.1, portion_g: 100, serving_size: 201, serving_unit: 'whole', micros: { potassium_mg: 485, folate_mcg: 81 }, cooking_states: ['raw'] },
+    { id: 'olive_oil', name: 'Olive Oil', name_es: 'Aceite de Oliva', emoji: '🫒', category: 'fat', kcal: 884, protein: 0, carbs: 0, fat: 100, sodium_mg: 2, sugar_g: 0, sat_fat_g: 14, portion_g: 15, serving_size: 14, serving_unit: 'tbsp', micros: { vit_e_mg: 14 }, cooking_states: ['raw'] },
+    { id: 'almonds', name: 'Almonds', name_es: 'Almendras', emoji: '🌰', category: 'fat', kcal: 579, protein: 21, carbs: 22, fat: 50, fiber: 12, sodium_mg: 1, sugar_g: 4, sat_fat_g: 4, portion_g: 30, serving_size: 28, serving_unit: 'oz (23 almonds)', micros: { magnesium_mg: 270, calcium_mg: 269, iron_mg: 3.7 }, cooking_states: ['raw'] },
+    { id: 'peanut_butter', name: 'Peanut Butter', name_es: 'Mantequilla de Maní', emoji: '🥜', category: 'fat', kcal: 588, protein: 25, carbs: 20, fat: 50, fiber: 6, sodium_mg: 400, sugar_g: 9, sat_fat_g: 10, portion_g: 30, serving_size: 32, serving_unit: 'tbsp (2)', micros: { magnesium_mg: 154 }, cooking_states: ['raw'] },
 
     // FRUITS
     { id: 'banana', name: 'Banana', name_es: 'Plátano', emoji: '🍌', category: 'fruit', kcal: 89, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6, portion_g: 120, serving_size: 118, serving_unit: 'medium', micros: { potassium_mg: 358 }, cooking_states: ['raw'] },
@@ -112,9 +112,9 @@ export const SIMPLE_FOODS: SimpleFoodItem[] = [
     { id: 'strawberries', name: 'Strawberries', name_es: 'Fresas', emoji: '🍓', category: 'fruit', kcal: 32, protein: 0.7, carbs: 8, fat: 0.3, fiber: 2, portion_g: 150, serving_size: 152, serving_unit: 'cup', micros: { vit_c_mg: 58, folate_mcg: 24 }, cooking_states: ['raw'] },
 
     // DAIRY
-    { id: 'milk', name: 'Milk (low fat)', name_es: 'Leche Descremada', emoji: '🥛', category: 'dairy', kcal: 42, protein: 3.4, carbs: 5, fat: 1, portion_g: 250, serving_size: 244, serving_unit: 'cup', micros: { calcium_mg: 125, vit_d_iu: 100 }, cooking_states: ['raw'] },
-    { id: 'yogurt_greek', name: 'Greek Yogurt', name_es: 'Yogurt Griego', emoji: '🥛', category: 'dairy', kcal: 59, protein: 10, carbs: 3.6, fat: 0.7, portion_g: 170, serving_size: 170, serving_unit: 'container', micros: { calcium_mg: 110, vit_b12_mcg: 0.75 }, cooking_states: ['raw'] },
-    { id: 'cheese', name: 'Cheese', name_es: 'Queso', emoji: '🧀', category: 'dairy', kcal: 402, protein: 25, carbs: 1.3, fat: 33, portion_g: 30, serving_size: 28, serving_unit: 'slice (1 oz)', micros: { calcium_mg: 721 }, cooking_states: ['raw'] },
+    { id: 'milk', name: 'Milk (low fat)', name_es: 'Leche Descremada', emoji: '🥛', category: 'dairy', kcal: 42, protein: 3.4, carbs: 5, fat: 1, sodium_mg: 50, sugar_g: 5, sat_fat_g: 0.6, portion_g: 250, serving_size: 244, serving_unit: 'cup', micros: { calcium_mg: 125, vit_d_iu: 100 }, cooking_states: ['raw'] },
+    { id: 'yogurt_greek', name: 'Greek Yogurt', name_es: 'Yogurt Griego', emoji: '🥛', category: 'dairy', kcal: 59, protein: 10, carbs: 3.6, fat: 0.7, sodium_mg: 36, sugar_g: 3, sat_fat_g: 0.2, portion_g: 170, serving_size: 170, serving_unit: 'container', micros: { calcium_mg: 110, vit_b12_mcg: 0.75 }, cooking_states: ['raw'] },
+    { id: 'cheese', name: 'Cheese', name_es: 'Queso', emoji: '🧀', category: 'dairy', kcal: 402, protein: 25, carbs: 1.3, fat: 33, sodium_mg: 621, sugar_g: 0.5, sat_fat_g: 19, portion_g: 30, serving_size: 28, serving_unit: 'slice (1 oz)', micros: { calcium_mg: 721 }, cooking_states: ['raw'] },
 ];
 
 
@@ -124,6 +124,7 @@ export interface MealPlan {
     name_es: string;
     meals: Meal[];
     totals: MacroTotals;
+    deviations?: string[];
 }
 
 export interface Meal {
@@ -147,6 +148,9 @@ export interface MacroTotals {
     carbs: number;
     fat: number;
     fiber?: number;
+    sodium_mg?: number;
+    sugar_g?: number;
+    sat_fat_g?: number;
 }
 
 // Calculate macros for a portion
@@ -158,6 +162,9 @@ function calculateItemMacros(food: SimpleFoodItem, portion_g: number): MacroTota
         carbs: Math.round(food.carbs * factor * 10) / 10,
         fat: Math.round(food.fat * factor * 10) / 10,
         fiber: food.fiber ? Math.round(food.fiber * factor * 10) / 10 : 0,
+        sodium_mg: food.sodium_mg ? Math.round(food.sodium_mg * factor) : 0,
+        sugar_g: food.sugar_g ? Math.round(food.sugar_g * factor * 10) / 10 : 0,
+        sat_fat_g: food.sat_fat_g ? Math.round(food.sat_fat_g * factor * 10) / 10 : 0,
     };
 }
 
@@ -169,7 +176,10 @@ function sumMacros(items: MacroTotals[]): MacroTotals {
         carbs: acc.carbs + item.carbs,
         fat: acc.fat + item.fat,
         fiber: (acc.fiber || 0) + (item.fiber || 0),
-    }), { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
+        sodium_mg: (acc.sodium_mg || 0) + (item.sodium_mg || 0),
+        sugar_g: (acc.sugar_g || 0) + (item.sugar_g || 0),
+        sat_fat_g: (acc.sat_fat_g || 0) + (item.sat_fat_g || 0),
+    }), { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sodium_mg: 0, sugar_g: 0, sat_fat_g: 0 });
 }
 
 // Get foods by category
@@ -917,6 +927,39 @@ function generateMealFromFoods(
     };
 }
 
+// USDA Post-Validation Guardrails
+function validateUSDA(plan: MealPlan, targetCalories: number): string[] {
+    const issues: string[] = [];
+    const totals = plan.totals;
+
+    // 1. Added Sugars (<10% of kcal)
+    // 1g Sugar = 4 kcal
+    const sugarKcal = (totals.sugar_g || 0) * 4; // Using Total Sugar as proxy if added not separated, but strictly USDA says Added.
+    // NOTE: DB has 'sugar_g' which is likely Total. 'added_sugars_g' might be 0 if not mapped.
+    // We will use a loose check on Total Sugar for now, or Added if available.
+    // Ideally we want Added. Let's assume we map 'sugar_g' as Total for fruit/dairy context awareness?
+    // Actually, simple food DBs don't always distinguish.
+    // Let's check: If Sugar > 50g (approx 200kcal) AND it's not mostly fruit...
+    const sugarPct = (sugarKcal / totals.kcal) * 100;
+    if (sugarPct > 15) { // Looser 15% for Total Sugar (Fruit included)
+        issues.push(`⚠️ High Sugar: ${sugarPct.toFixed(1)}% of kcal (Limit 15% Total / 10% Added)`);
+    }
+
+    // 2. Sodium (<2300mg)
+    if ((totals.sodium_mg || 0) > 2300) {
+        issues.push(`⚠️ High Sodium: ${totals.sodium_mg}mg (Limit 2300mg)`);
+    }
+
+    // 3. Saturated Fat (<10% of kcal)
+    const satFatKcal = (totals.sat_fat_g || 0) * 9;
+    const satFatPct = (satFatKcal / totals.kcal) * 100;
+    if (satFatPct > 10) {
+        issues.push(`⚠️ High Saturated Fat: ${satFatPct.toFixed(1)}% (Limit 10%)`);
+    }
+
+    return issues;
+}
+
 // ASYNC: Generate daily meal plan from database with VALIDATION
 export async function generateDayMealPlanFromDB(
     targetCalories: number,
@@ -1013,18 +1056,45 @@ export async function generateDayMealPlanFromDB(
         ));
     }
 
-    const totals = sumMacros(meals.map(m => m.totals));
+    // Final Aggregation
+    const finalTotals = {
+        kcal: meals.reduce((sum, m) => sum + m.totals.kcal, 0),
+        protein: meals.reduce((sum, m) => sum + m.totals.protein, 0),
+        carbs: meals.reduce((sum, m) => sum + m.totals.carbs, 0),
+        fat: meals.reduce((sum, m) => sum + m.totals.fat, 0),
+        fiber: meals.reduce((sum, m) => sum + (m.totals.fiber || 0), 0),
+        sodium_mg: meals.reduce((sum, m) => sum + (m.totals.sodium_mg || 0), 0),
+        sugar_g: meals.reduce((sum, m) => sum + (m.totals.sugar_g || 0), 0),
+        sat_fat_g: meals.reduce((sum, m) => sum + (m.totals.sat_fat_g || 0), 0),
+    };
+
+    const deviations = [];
+    const calorieDiff = ((finalTotals.kcal - targetCalories) / targetCalories) * 100;
+    const proteinDiff = ((finalTotals.protein - targetProtein) / targetProtein) * 100;
+
+    if (Math.abs(calorieDiff) > 10) deviations.push(`Calories ${calorieDiff > 0 ? '+' : ''}${calorieDiff.toFixed(1)}%`);
+    if (Math.abs(proteinDiff) > 10) deviations.push(`Protein ${proteinDiff > 0 ? '+' : ''}${proteinDiff.toFixed(1)}%`);
+
+    // USDA GUARDRAILS
+    const usdaIssues = validateUSDA({ id: 'day', name: 'Day', name_es: 'Día', meals: [], totals: finalTotals }, targetCalories);
+
+    if (usdaIssues.length > 0) {
+        console.warn('⚠️ USDA Guardrails triggered:', usdaIssues);
+        deviations.push(...usdaIssues);
+    }
 
     console.log(`\n🎉 [DAY PLAN COMPLETE]`);
-    console.log(`  Total: ${totals.kcal} kcal, ${totals.protein}g P, ${totals.carbs}g C, ${totals.fat}g F`);
-    console.log(`  Deviation: ${((totals.kcal - targetCalories) / targetCalories * 100).toFixed(1)}% kcal, ${((totals.protein - targetProtein) / targetProtein * 100).toFixed(1)}% protein`);
+    console.log(`  Total: ${finalTotals.kcal} kcal, ${finalTotals.protein}g P, ${finalTotals.carbs}g C, ${finalTotals.fat}g F`);
+    console.log(`  Deviation: ${((finalTotals.kcal - targetCalories) / targetCalories * 100).toFixed(1)}% kcal, ${((finalTotals.protein - targetProtein) / targetProtein * 100).toFixed(1)}% protein`);
+
 
     return {
         id: `plan_${Date.now()}`,
         name: 'Daily Meal Plan',
         name_es: 'Plan de Comidas Diario',
         meals,
-        totals
+        totals: finalTotals,
+        deviations
     };
 }
 

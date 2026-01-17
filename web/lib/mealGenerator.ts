@@ -324,7 +324,7 @@ class VarietyManager {
     markUsed(foodId: string, mealType?: string, assignedRole?: string): void {
         // Track by food ID
         this.usedFoods.set(foodId, new Date());
-        
+
         // Also track by ROLE within this meal type to prevent same role in same meal
         if (assignedRole && mealType) {
             const roleKey = `${mealType}_${assignedRole}`;
@@ -349,7 +349,7 @@ class VarietyManager {
 
         const hoursSince = (Date.now() - lastUsed.getTime()) / (1000 * 60 * 60);
         const shouldSkip = hoursSince < cooldownHours;
-        
+
         if (shouldSkip) {
             console.log(`[VARIETY] Skipping role ${roleKey} - used ${hoursSince.toFixed(1)}h ago`);
         }
@@ -364,7 +364,7 @@ class VarietyManager {
         const roleKey = `${mealType}_${role}`;
         const lastUsed = this.usedRoles.get(roleKey);
         if (!lastUsed) return 'AVAILABLE';
-        
+
         const hoursSince = (Date.now() - lastUsed.getTime()) / (1000 * 60 * 60);
         return `USED ${hoursSince.toFixed(1)}h ago`;
     }
@@ -421,13 +421,16 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
         const supabase = createClient();
 
         // ✅ UNIFIED QUERY: Load ALL foods in 1 call (instead of 6 separate queries)
+        // PRIORITIZATION: Tier 1 (Whole Foods) > Tier 2 (Processed). Tier 3 (Restaurant) excluded from auto-generation.
         const { data, error } = await supabase
             .from('foods')
             .select('*')
             .eq('is_simple_ingredient', true)
-            .eq('is_common_staple', true)
+            //.eq('is_common_staple', true) // Relaxed to allow more variety if fits Tier 1/2
+            .in('food_tier', [1, 2])     // Only Tier 1 & 2 allowed for generation
+            .order('food_tier', { ascending: true }) // Priority: Tier 1 first
             .order('priority', { ascending: true, nullsFirst: true })
-            .limit(500); // Enough to cover all categories with variety
+            .limit(600); // Enough to cover all categories with variety
 
         if (error || !data || data.length === 0) {
             console.warn('Unified food fetch failed, using fallback');
@@ -628,7 +631,7 @@ function generateMealFromFoods(
     const carbRatio = dietMacros.carbs_pct / 100;
     const fatRatio = dietMacros.fat_pct / 100;
 
-    console.log(`  🎯 Diet ratios (${dietType}): P=${(proteinRatio*100).toFixed(0)}% C=${(carbRatio*100).toFixed(0)}% F=${(fatRatio*100).toFixed(0)}%`);
+    console.log(`  🎯 Diet ratios (${dietType}): P=${(proteinRatio * 100).toFixed(0)}% C=${(carbRatio * 100).toFixed(0)}% F=${(fatRatio * 100).toFixed(0)}%`);
 
     // Calculate macro targets for this meal
     const mealProteinTarget = targetProteinGrams || (targetCalories * proteinRatio) / 4;
@@ -721,7 +724,7 @@ function generateMealFromFoods(
     // STEP 3: Add vegetables (1-2 servings)
     if (vegetables.length > 0) {
         const numVeggies = type === 'snack' ? 0 : Math.min(2, vegetables.length);
-        
+
         for (let i = 0; i < numVeggies; i++) {
             const veggieCandidates = vegetables.slice(0, Math.min(5, vegetables.length));
             const selectedVeggie = veggieCandidates[Math.floor(Math.random() * veggieCandidates.length)];

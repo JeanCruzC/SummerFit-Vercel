@@ -428,6 +428,8 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
             .eq('is_simple_ingredient', true)
             //.eq('is_common_staple', true) // Relaxed to allow more variety if fits Tier 1/2
             .in('food_tier', [1, 2])     // Only Tier 1 & 2 allowed for generation
+            .order('priority', { ascending: true }) // CRITICAL: Prefer "Clean" foods (Prio 1) over standard DB
+            .order('food_tier', { ascending: true })
             .order('food_tier', { ascending: true }) // Priority: Tier 1 first
             .order('priority', { ascending: true, nullsFirst: true })
             .limit(600); // Enough to cover all categories with variety

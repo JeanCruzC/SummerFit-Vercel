@@ -664,12 +664,12 @@ export class VarietyManager {
 export function isNutritionallyViable(food: SimpleFoodItem): boolean {
   if (!food) return false;
 
-  // Must have at least one significant macronutrient
+  // Must have at least one significant macronutrient (Relaxed for veggies/simple foods)
   const hasSignificantMacro =
-    food.protein >= 3 ||
-    food.carbs >= 5 ||
-    food.fat >= 3 ||
-    food.kcal >= 20;
+    food.protein >= 1 ||
+    food.carbs >= 1 ||
+    food.fat >= 1 ||
+    food.kcal >= 10;
 
   if (!hasSignificantMacro) {
     console.warn(`[portionRules] Food ${food.id} (${food.name_es}) has insufficient macros: Kcal:${food.kcal} P:${food.protein} C:${food.carbs} F:${food.fat}`);

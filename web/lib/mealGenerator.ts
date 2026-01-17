@@ -26,7 +26,7 @@ export interface SimpleFoodItem {
     name: string;
     name_es: string;
     emoji: string;
-    category: 'protein' | 'carb' | 'vegetable' | 'fat' | 'fruit' | 'dairy';
+    category: 'protein' | 'carb' | 'vegetable' | 'fat' | 'fruit' | 'dairy' | 'condiment' | 'beverage';
     kcal: number;
     protein: number;
     carbs: number;
@@ -458,21 +458,48 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
         // Transform raw DB data to SimpleFoodItem format
         const transformed: SimpleFoodItem[] = data.map(d => {
             // Detect category based on culinary_category field
-            let category: SimpleFoodItem['category'] = 'protein';
-            const cat = (d.culinary_category || '').toLowerCase();
+            // Detect category based on MULTIPLE fields (category, category_es, culinary_category)
+            let category: SimpleFoodItem['category'] | 'other' = 'other'; // Change default to 'other' to avoid protein pollution
 
-            if (cat.includes('proteina') || cat.includes('carne') || cat.includes('pescado') || cat.includes('mariscos') || cat.includes('huevo')) {
+            // Combine all category fields for search
+            const catSearch = (
+                (d.category || '') + ' ' +
+                (d.category_es || '') + ' ' +
+                (d.culinary_category || '') + ' ' +
+                (d.name || '')
+            ).toLowerCase();
+
+            if (catSearch.includes('proteina') || catSearch.includes('carne') || catSearch.includes('pescado') || catSearch.includes('mariscos') || catSearch.includes('huevo') || catSearch.includes('chicken') || catSearch.includes('beef') || catSearch.includes('pork') || catSearch.includes('turkey') || catSearch.includes('fish') || catSearch.includes('meat') || catSearch.includes('egg') || catSearch.includes('tofu')) {
                 category = 'protein';
-            } else if (cat.includes('carbohidrato') || cat.includes('grano') || cat.includes('cereal') || cat.includes('pan') || cat.includes('pasta') || cat.includes('arroz')) {
+            } else if (catSearch.includes('carbohidrato') || catSearch.includes('grano') || catSearch.includes('cereal') || catSearch.includes('pan') || catSearch.includes('pasta') || catSearch.includes('arroz') || catSearch.includes('rice') || catSearch.includes('bread') || catSearch.includes('oat') || catSearch.includes('quinoa') || catSearch.includes('potato') || catSearch.includes('camote') || catSearch.includes('yuca')) {
                 category = 'carb';
-            } else if (cat.includes('verdura') || cat.includes('vegetal') || cat.includes('hortaliza')) {
+            } else if (catSearch.includes('verdura') || catSearch.includes('vegetal') || catSearch.includes('hortaliza') || catSearch.includes('vegetable') || catSearch.includes('spinach') || catSearch.includes('broccoli') || catSearch.includes('lettuce') || catSearch.includes('zucchini') || catSearch.includes('tomato')) {
                 category = 'vegetable';
-            } else if (cat.includes('grasa') || cat.includes('aceite') || cat.includes('nuez') || cat.includes('semilla')) {
+            } else if (catSearch.includes('grasa') || catSearch.includes('aceite') || catSearch.includes('nuez') || catSearch.includes('semilla') || catSearch.includes('oil') || catSearch.includes('nut') || catSearch.includes('seed') || catSearch.includes('avocado') || catSearch.includes('palta')) {
                 category = 'fat';
-            } else if (cat.includes('fruta')) {
+            } else if (catSearch.includes('fruta') || catSearch.includes('fruit') || catSearch.includes('apple') || catSearch.includes('banana') || catSearch.includes('berry') || catSearch.includes('orange')) {
                 category = 'fruit';
-            } else if (cat.includes('lacteo') || cat.includes('leche') || cat.includes('queso') || cat.includes('yogurt')) {
+            } else if (catSearch.includes('lacteo') || catSearch.includes('leche') || catSearch.includes('queso') || catSearch.includes('yogurt') || catSearch.includes('dairy') || catSearch.includes('milk') || catSearch.includes('cheese')) {
                 category = 'dairy';
+            } else {
+                // Fallback: Macro-based classification if text fails
+                // (Useful for "NFS" items or poorly named ones)
+                const p = (d.protein_g_per_100g || 0) * 4;
+                const c = (d.carbs_g_per_100g || 0) * 4;
+                const f = (d.fat_g_per_100g || 0) * 9;
+
+                if (p > c && p > f && p > 50) category = 'protein'; // Only if significant calories
+                else if (c > p && c > f) category = 'carb'; // Broad carb check (includes fruit/veg, refinement needed?)
+                // Refinements:
+                if (category === 'carb') {
+                    if ((d.sugar_g || d.sugars_g || 0) > 15) category = 'fruit'; // High sugar -> Fruit-ish
+                    if ((d.fiber_g || d.fiber_g_per_100g || 0) > 2 && (d.kcal_per_100g || 0) < 60) category = 'vegetable'; // Low cal high fiber
+                }
+
+                if (f > p && f > c) category = 'fat';
+
+                // Final safety: if nothing matched
+                if (category === 'other') category = 'condiment'; // Or treat as condiment if unknown
             }
 
             // Clean up name (remove USDA clutter)

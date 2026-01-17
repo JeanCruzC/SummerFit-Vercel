@@ -552,6 +552,37 @@ function generateMealFromFoods(
             return false;
         }
 
+        // CULINARY SENSE CHECK: Reject ingredients that are not "Foods" (Powders, Flours, Spices)
+        // fitia_plus_fndds base has ingredients like "Cacao En Polvo" or "Harina" which macros-wise look like food
+        // but are NOT suitable as a main dish.
+        const lowerName = f.name.toLowerCase();
+        const lowerNameEs = (f.name_es || '').toLowerCase();
+        const badKeywords = [
+            'powder', 'polvo',
+            'flour', 'harina',
+            'starch', 'almidón',
+            'yeast', 'levadura',
+            'baking', 'hornear',
+            'extract', 'extracto',
+            'spice', 'especia',
+            'sauce', 'salsa',  // Unless specifically handled
+            'dressing', 'aderezo',
+            'paste', 'pasta de', // "Pasta" is fine, "Pasta de tomate" is bad. 
+            'concentrate', 'concentrado',
+            'shortening', 'manteca vegetal',
+            'syrup', 'jarabe'
+        ];
+
+        // Exception: "Pasta" (noodles) is okay, but "Pasta de tomate" (Tomato paste) is not.
+        const isPasta = (lowerName.includes('pasta') || lowerNameEs.includes('pasta')) &&
+            !lowerName.includes('paste') && !lowerNameEs.includes('pasta de');
+
+        if (!isPasta) {
+            if (badKeywords.some(k => lowerName.includes(k) || lowerNameEs.includes(k))) {
+                return false;
+            }
+        }
+
         return true;
     });
 

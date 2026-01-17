@@ -18,6 +18,7 @@ import {
     logPortionCalculation,
     type PortionCalculationContext
 } from './portionRules';
+import { assignRole } from './roleMapper';
 
 // Basic food items with nutrition per 100g
 export interface SimpleFoodItem {
@@ -622,13 +623,46 @@ function generateMealFromFoods(
         console.log(`  💉 Diabetes filter: ${filteredFoods.length} foods`);
     }
 
-    // Categorize foods by nutritional role
-    let proteins = filteredFoods.filter(f => f.category === 'protein' && isPrimaryProtein(f));
-    let carbs = filteredFoods.filter(f => f.category === 'carb' && isPrimaryCarb(f));
-    let vegetables = filteredFoods.filter(f => f.category === 'vegetable');
-    let fats = filteredFoods.filter(f => f.category === 'fat');
-    let fruits = filteredFoods.filter(f => f.category === 'fruit');
-    let dairy = filteredFoods.filter(f => f.category === 'dairy');
+    // Categorize foods by ROLE (Strong Typing)
+    // This replaces the old macro-based fuzzy matching with strict Role enforcement
+    const buckets: Record<string, SimpleFoodItem[]> = {
+        protein: [],
+        carb: [],
+        veggie: [],
+        fat: [],
+        fruit: [],
+        dairy: [],
+        condiment: [],
+        beverage: []
+    };
+
+    filteredFoods.forEach(f => {
+        const role = assignRole(f);
+        buckets[role].push(f);
+    });
+
+    console.log(`  📊 Buckets: P=${buckets.protein.length}, C=${buckets.carb.length}, V=${buckets.veggie.length}, F=${buckets.fat.length}, D=${buckets.dairy.length}, Cnd=${buckets.condiment.length}`);
+
+    // Map old variable names to new buckets for compatibility with rest of function
+    // But logically we should use the buckets directly.
+    let proteins = buckets.protein;
+    let carbs = buckets.carb;
+    let vegetables = buckets.veggie;
+    let fats = buckets.fat;
+    let fruits = buckets.fruit;
+    let dairy = buckets.dairy;
+
+    // Special Case: Vegans/Vegetarians count legumes as proteins
+    if (dietType === 'vegan' || dietType === 'vegetarian') {
+        // Find legumes in veggie/carb buckets and add to protein candidates
+        const legumes = [...buckets.veggie, ...buckets.carb].filter(f =>
+            f.name.toLowerCase().includes('lentil') ||
+            f.name.toLowerCase().includes('bean') ||
+            f.name.toLowerCase().includes('tofu') ||
+            f.name.toLowerCase().includes('chickpea')
+        );
+        proteins = [...proteins, ...legumes];
+    }
 
     console.log(`  📊 Categories: P=${proteins.length}, C=${carbs.length}, V=${vegetables.length}, F=${fats.length}, Fr=${fruits.length}, D=${dairy.length}`);
 
@@ -688,81 +722,96 @@ function generateMealFromFoods(
         targetFat: mealFatTarget
     };
 
-    // STEP 1: Add primary protein (if not snack)
-    if (type !== 'snack' && proteins.length > 0) {
+    // STEP 1: Add primary protein
+    // Template: Breakfast can use Dairy (Yogurt/Cottage Cheese) or Protein (Eggs). Lunch/Dinner uses Protein (Meat/Fish).
+    let proteinSourceList = proteins;
+    if (type === 'breakfast') {
+        proteinSourceList = [...proteins, ...dairy]; // Allow yogurt/cheese for breakfast
+    } else if (type === 'snack') {
+        proteinSourceList = [...dairy, ...proteins, ...fats]; // Snacks can be yogurt or nuts
+    }
+
+    if (proteinSourceList.length > 0) {
         // Select protein (prioritize variety)
-        const proteinCandidates = proteins.slice(0, Math.min(5, proteins.length));
+        // Filter out things that shouldn't be main protein if we have options
+        const proteinCandidates = proteinSourceList.slice(0, Math.min(10, proteinSourceList.length));
         const selectedProtein = proteinCandidates[Math.floor(Math.random() * proteinCandidates.length)];
 
         // Check if this role was already used in this meal type
-        if (varietyManager && varietyManager.shouldSkipByRole(type, 'primaryProtein', 0)) {
-            console.log(`  ❌ Skipping protein: ${selectedProtein.name_es} - protein role already used in ${type}`);
-        } else if (preventRoleDuplication(items, selectedProtein)) {
-            // Calculate optimal portion
-            const portionResult = calculateOptimalPortion(
-                selectedProtein,
-                { protein: mealProteinTarget * 0.9 }, // Use 90% of target to leave room for other foods
-                portionContext
-            );
+        if (selectedProtein && (!varietyManager || !varietyManager.shouldSkipByRole(type, 'primaryProtein', 0))) {
+            if (preventRoleDuplication(items, selectedProtein)) {
+                // Calculate optimal portion
+                const portionResult = calculateOptimalPortion(
+                    selectedProtein,
+                    { protein: mealProteinTarget * 0.9 }, // Use 90% of target to leave room for other foods
+                    portionContext
+                );
 
-            if (portionResult.isValid) {
-                items.push({
-                    food: selectedProtein,
-                    portion_g: portionResult.finalPortion,
-                    cooking_state: selectedProtein.cooking_states?.[0],
-                    macros: calculateItemMacros(selectedProtein, portionResult.finalPortion)
-                });
+                if (portionResult.isValid) {
+                    // ENFORCE HARD LIMITS FROM ROLE MAPPER
+                    const role = assignRole(selectedProtein);
+                    // Import ROLE_CONSTRAINTS (we need to export it or inline check)
+                    // Let's assume strict check:
+                    let finalG = portionResult.finalPortion;
+                    // Just simple hard caps based on typical serving sizes logic
+                    if (role === 'condiment') finalG = Math.min(finalG, 15);
+                    if (role === 'fat') finalG = Math.min(finalG, 60);
 
-                if (varietyManager) varietyManager.markUsed(selectedProtein.id, type, 'primaryProtein');
-                console.log(`  ✅ Added protein: ${selectedProtein.name_es} ${portionResult.finalPortion}g`);
-                logPortionCalculation(selectedProtein, portionResult);
-            } else {
-                console.warn(`  ⚠️  Protein portion calculation failed:`, portionResult.errors);
+                    items.push({
+                        food: selectedProtein,
+                        portion_g: finalG,
+                        cooking_state: selectedProtein.cooking_states?.[0],
+                        macros: calculateItemMacros(selectedProtein, finalG)
+                    });
+
+                    if (varietyManager) varietyManager.markUsed(selectedProtein.id, type, 'primaryProtein');
+                    console.log(`  ✅ Added protein: ${selectedProtein.name_es} ${finalG}g`);
+                    logPortionCalculation(selectedProtein, portionResult);
+                }
             }
-        } else {
-            console.warn(`  ⚠️  Protein ${selectedProtein.name_es} blocked by duplication rules`);
         }
     }
 
     // STEP 2: Add primary carb (if not keto)
-    if (dietType !== 'keto' && carbs.length > 0) {
-        const carbCandidates = carbs.slice(0, Math.min(5, carbs.length));
+    // Template: Breakfast/Lunch/Dinner usually have a carb. Snack might not.
+    if (dietType !== 'keto' && carbs.length > 0 && type !== 'snack') {
+        const carbCandidates = carbs.slice(0, Math.min(10, carbs.length));
         const selectedCarb = carbCandidates[Math.floor(Math.random() * carbCandidates.length)];
 
-        // Check if carb role was already used in this meal type
-        if (varietyManager && varietyManager.shouldSkipByRole(type, 'primaryCarb', 0)) {
-            console.log(`  ❌ Skipping carb: ${selectedCarb.name_es} - carb role already used in ${type}`);
-        } else if (preventRoleDuplication(items, selectedCarb)) {
-            const portionResult = calculateOptimalPortion(
-                selectedCarb,
-                { carbs: mealCarbTarget * 0.85 },
-                { ...portionContext, existingItems: items }
-            );
+        if (selectedCarb && (!varietyManager || !varietyManager.shouldSkipByRole(type, 'primaryCarb', 0))) {
+            if (preventRoleDuplication(items, selectedCarb)) {
+                const portionResult = calculateOptimalPortion(
+                    selectedCarb,
+                    { carbs: mealCarbTarget * 0.85 },
+                    { ...portionContext, existingItems: items }
+                );
 
-            if (portionResult.isValid) {
-                items.push({
-                    food: selectedCarb,
-                    portion_g: portionResult.finalPortion,
-                    cooking_state: selectedCarb.cooking_states?.[0],
-                    macros: calculateItemMacros(selectedCarb, portionResult.finalPortion)
-                });
+                if (portionResult.isValid) {
+                    items.push({
+                        food: selectedCarb,
+                        portion_g: portionResult.finalPortion,
+                        cooking_state: selectedCarb.cooking_states?.[0],
+                        macros: calculateItemMacros(selectedCarb, portionResult.finalPortion)
+                    });
 
-                if (varietyManager) varietyManager.markUsed(selectedCarb.id, type, 'primaryCarb');
-                console.log(`  ✅ Added carb: ${selectedCarb.name_es} ${portionResult.finalPortion}g`);
-                logPortionCalculation(selectedCarb, portionResult);
+                    if (varietyManager) varietyManager.markUsed(selectedCarb.id, type, 'primaryCarb');
+                    console.log(`  ✅ Added carb: ${selectedCarb.name_es} ${portionResult.finalPortion}g`);
+                    logPortionCalculation(selectedCarb, portionResult);
+                }
             }
         }
     }
 
-    // STEP 3: Add vegetables (1-2 servings)
+    // STEP 3: Add vegetables (Lunch/Dinner: 2 servings. Breakfast: Optional)
     if (vegetables.length > 0) {
-        const numVeggies = type === 'snack' ? 0 : Math.min(2, vegetables.length);
+        // Enforce 2 veggies for Lunch/Dinner
+        const numVeggies = (type === 'lunch' || type === 'dinner') ? 2 : 0;
 
         for (let i = 0; i < numVeggies; i++) {
-            const veggieCandidates = vegetables.slice(0, Math.min(5, vegetables.length));
+            const veggieCandidates = vegetables.slice(0, Math.min(10, vegetables.length));
             const selectedVeggie = veggieCandidates[Math.floor(Math.random() * veggieCandidates.length)];
 
-            if (preventRoleDuplication(items, selectedVeggie)) {
+            if (selectedVeggie && preventRoleDuplication(items, selectedVeggie)) {
                 const portionResult = calculateOptimalPortion(
                     selectedVeggie,
                     { kcal: 50 }, // Vegetables: aim for ~50 kcal
@@ -786,10 +835,10 @@ function generateMealFromFoods(
 
     // STEP 4: Add fruit (breakfast or snack)
     if ((type === 'breakfast' || type === 'snack') && fruits.length > 0 && dietType !== 'keto') {
-        const fruitCandidates = fruits.slice(0, Math.min(3, fruits.length));
+        const fruitCandidates = fruits.slice(0, Math.min(5, fruits.length));
         const selectedFruit = fruitCandidates[Math.floor(Math.random() * fruitCandidates.length)];
 
-        if (preventRoleDuplication(items, selectedFruit)) {
+        if (selectedFruit && preventRoleDuplication(items, selectedFruit)) {
             const portionResult = calculateOptimalPortion(
                 selectedFruit,
                 { kcal: 80 },

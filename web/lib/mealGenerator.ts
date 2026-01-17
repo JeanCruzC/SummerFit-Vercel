@@ -32,6 +32,9 @@ export interface SimpleFoodItem {
     carbs: number;
     fat: number;
     fiber?: number;
+    sodium_mg?: number;
+    sugar_g?: number;
+    sat_fat_g?: number;
     // Clinical Micros (Values per 100g)
     micros?: {
         iron_mg?: number;    // Hierro (Pregnancy/Anemia)
@@ -487,6 +490,10 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
                 meal_times: d.meal_times || [],
                 is_common_staple: d.is_common_staple || false,
                 cooking_states: d.cooking_states || [],
+                fiber: d.fiber_g || d.fiber_g_per_100g || 0,
+                sodium_mg: d.sodium_mg || d.sodium_mg_per_100g || 0,
+                sugar_g: d.sugar_g || d.sugars_g || d.sugar_g_per_100g || 0,
+                sat_fat_g: d.saturated_fat_g_per_100g || 0,
                 micros: {
                     iron_mg: d.iron_mg || 0,
                     calcium_mg: d.calcium_mg || 0,
@@ -498,7 +505,6 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
                     vit_a_iu: d.vitamin_a_iu || 0,
                     vit_b12_mcg: d.vitamin_b12_ug || 0,
                     folate_mcg: d.folate_ug || 0,
-                    fiber: d.fiber_g || 0,
                     omega3_g: d.omega3_g || 0,
                     colina_mg: d.colina_mg || 0,
                 }

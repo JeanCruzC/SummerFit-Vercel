@@ -40,7 +40,19 @@ export function assignRole(food: SimpleFoodItem): FoodRole {
         return 'condiment';
     }
 
-    // 2. Category Based Mapping
+    // 2. Direct Normalized Category Check (Optimization)
+    switch (cat) {
+        case 'protein': return 'protein';
+        case 'carb': return 'carb';
+        case 'vegetable': return 'veggie'; // Map loader 'vegetable' to role 'veggie'
+        case 'veggie': return 'veggie';
+        case 'fat': return 'fat';
+        case 'fruit': return 'fruit';
+        case 'dairy': return 'dairy';
+        case 'condiment': return 'condiment';
+    }
+
+    // 3. Fuzzy Category Based Mapping (Fallback)
     if (cat.includes('meat') || cat.includes('poultry') || cat.includes('fish') || cat.includes('chicken') || cat.includes('beef') || cat.includes('pork') || cat.includes('seafood') || cat.includes('egg') || cat.includes('tofu')) {
         return 'protein';
     }

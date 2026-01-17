@@ -5,6 +5,7 @@
 // ============================================================================
 
 import { SimpleFoodItem, MealItem } from './mealGenerator';
+import { getCorrectedPortion } from './roleMapper';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -523,26 +524,17 @@ export function calculateOptimalPortion(
   appliedRules.push(`Final multiplier: ${finalMultiplier.toFixed(2)}x`);
 
   // ========================================
-  // STEP 7: APPLY ABSOLUTE LIMITS
+  // STEP 7: APPLY ABSOLUTE LIMITS & ROLE CONSTRAINTS
   // ========================================
 
-  // Minimum portion
-  if (finalPortion < ABSOLUTE_LIMITS.MIN_PORTION) {
-    warnings.push(`Portion ${finalPortion}g below minimum, setting to ${ABSOLUTE_LIMITS.MIN_PORTION}g`);
-    finalPortion = ABSOLUTE_LIMITS.MIN_PORTION;
+  // Enforce Role-Based Limits (USDA Standards)
+  const roleCorrected = getCorrectedPortion(food, finalPortion);
+  if (roleCorrected !== finalPortion) {
+    warnings.push(`Portion adjusted by Role Limits: ${finalPortion}g -> ${roleCorrected}g`);
+    finalPortion = roleCorrected;
   }
 
-  // Maximum portion
-  if (finalPortion > ABSOLUTE_LIMITS.MAX_PORTION) {
-    warnings.push(`Portion ${finalPortion}g exceeds absolute maximum, capping at ${ABSOLUTE_LIMITS.MAX_PORTION}g`);
-    finalPortion = ABSOLUTE_LIMITS.MAX_PORTION;
-  }
 
-  // Protein-specific minimum
-  if (food.category === 'protein' && finalPortion < ABSOLUTE_LIMITS.MIN_PROTEIN_PORTION) {
-    warnings.push(`Protein portion ${finalPortion}g below minimum, setting to ${ABSOLUTE_LIMITS.MIN_PROTEIN_PORTION}g`);
-    finalPortion = ABSOLUTE_LIMITS.MIN_PROTEIN_PORTION;
-  }
 
   // Round to nearest 5g for cleaner portions
   finalPortion = Math.round(finalPortion / 5) * 5;

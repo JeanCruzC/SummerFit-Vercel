@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ChevronLeft, Check, TrendingDown, TrendingUp, Minus, Target, Flame, Scale, Ruler, AlertCircle, Users, MapPin, Smartphone } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { GROCERY_CATEGORIES, type GroceryCategory } from "@/lib/groceries";
 
 // App colors - Purple theme to match the rest of the app
 const COLORS = {
@@ -22,6 +23,7 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [pantrySelections, setPantrySelections] = useState<Record<string, Set<string>>>({});
 
   const [formData, setFormData] = useState({
     goal: "",
@@ -49,6 +51,11 @@ export default function OnboardingPage() {
       }
     };
     getUser();
+
+    // Init pantry selections
+    const initial: Record<string, Set<string>> = {};
+    GROCERY_CATEGORIES.forEach(cat => { initial[cat.id] = new Set(); });
+    setPantrySelections(initial);
   }, [router]);
 
   const handleChange = (field: string, value: string) => {
@@ -56,7 +63,7 @@ export default function OnboardingPage() {
   };
 
   const handleNext = () => {
-    if (currentStep < 6) setCurrentStep(currentStep + 1);
+    if (currentStep < TOTAL_STEPS) setCurrentStep(currentStep + 1);
   };
 
   const handleBack = () => {
@@ -66,6 +73,12 @@ export default function OnboardingPage() {
   const handleComplete = async () => {
     setIsLoading(true);
     const supabase = createClient();
+
+    if (!userId) {
+      alert("No hay sesión activa. Vuelve a iniciar sesión.");
+      setIsLoading(false);
+      return;
+    }
 
     const goalMap: { [key: string]: string } = {
       lose_weight: "Definir",
@@ -95,6 +108,7 @@ export default function OnboardingPage() {
       phone: formData.phone,
       location_name: formData.location_name,
       onboarding_completed: true,
+      pantry_setup_completed: true,
       updated_at: new Date().toISOString(),
     });
 
@@ -105,8 +119,43 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Después del onboarding básico, dirigir al paso de selección de alimentos
-    router.push("/pantry-setup");
+    // Guardar pantry seleccionado dentro del onboarding
+    const allItems: Array<{
+      user_id: string;
+      ingredient_name: string;
+      ingredient_name_es: string;
+      category: string;
+      emoji: string;
+      search_term: string;
+    }> = [];
+    GROCERY_CATEGORIES.forEach(cat => {
+      const selected = pantrySelections[cat.id];
+      cat.items.forEach(item => {
+        if (selected?.has(item.name)) {
+          allItems.push({
+            user_id: userId!,
+            ingredient_name: item.searchTerm,
+            ingredient_name_es: item.name,
+            category: cat.id,
+            emoji: item.emoji,
+            search_term: item.searchTerm,
+          });
+        }
+      });
+    });
+
+    const { error: pantryError } = await supabase
+      .from("user_pantry")
+      .upsert(allItems, { onConflict: "user_id,ingredient_name" });
+
+    if (pantryError) {
+      console.error("Error pantry:", pantryError);
+      alert("Error al guardar tu despensa");
+      setIsLoading(false);
+      return;
+    }
+
+    router.push("/dashboard/meal-generator");
   };
 
   const isStepValid = () => {
@@ -116,12 +165,36 @@ export default function OnboardingPage() {
       case 3: return formData.height && formData.weight && formData.target_weight;
       case 4: return formData.activity_level;
       case 5: return formData.goal_speed;
-      case 6: return true; // Optional step
+      case 6: return true; // Optional step (social)
+      case 7: return pantryValid();
       default: return false;
     }
   };
 
-  const TOTAL_STEPS = 6;
+  const TOTAL_STEPS = 7;
+
+  const pantryValid = () =>
+    GROCERY_CATEGORIES.every(cat => (pantrySelections[cat.id]?.size || 0) >= cat.minRequired);
+
+  const togglePantryItem = (categoryId: string, itemName: string) => {
+    setPantrySelections(prev => {
+      const updated = { ...prev };
+      const set = new Set(updated[categoryId]);
+      if (set.has(itemName)) set.delete(itemName); else set.add(itemName);
+      updated[categoryId] = set;
+      return updated;
+    });
+  };
+
+  const selectAllPantry = (category: GroceryCategory) => {
+    setPantrySelections(prev => ({
+      ...prev,
+      [category.id]: new Set(category.items.map(i => i.name))
+    }));
+  };
+
+  const totalPantrySelected = () =>
+    Object.values(pantrySelections).reduce((sum, set) => sum + (set?.size || 0), 0);
 
   return (
     <div style={{ backgroundColor: COLORS.background }} className="min-h-screen">
@@ -158,6 +231,13 @@ export default function OnboardingPage() {
               {currentStep === 4 && <ActivityStep formData={formData} onChange={handleChange} />}
               {currentStep === 5 && <SpeedStep formData={formData} onChange={handleChange} />}
               {currentStep === 6 && <SocialStep formData={formData} onChange={handleChange} />}
+              {currentStep === 7 && (
+                <PantryStep
+                  selections={pantrySelections}
+                  onToggle={togglePantryItem}
+                  onSelectAll={selectAllPantry}
+                />
+              )}
 
               {/* Navigation */}
               <div className="flex gap-4 mt-8">
@@ -508,6 +588,80 @@ function SocialStep({ formData, onChange }: any) {
             Esto ayuda a sugerirte amigos en tu área. Puedes configurar la privacidad más tarde.
           </p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PantryStep({
+  selections,
+  onToggle,
+  onSelectAll,
+}: {
+  selections: Record<string, Set<string>>;
+  onToggle: (categoryId: string, itemName: string) => void;
+  onSelectAll: (category: GroceryCategory) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <div className="w-16 h-16 mx-auto rounded-full bg-amber-100 flex items-center justify-center text-2xl">🛒</div>
+        <h1 className="text-2xl font-black text-center mt-2">Selecciona tus alimentos</h1>
+        <p className="text-center text-zinc-500 text-sm">Tu plan dependerá de lo que marques aquí.</p>
+      </div>
+
+      <div className="space-y-6 max-h-[55vh] overflow-y-auto pr-2">
+        {GROCERY_CATEGORIES.map(cat => {
+          const selectedCount = selections[cat.id]?.size || 0;
+          const meetsMin = selectedCount >= cat.minRequired;
+          return (
+            <div key={cat.id} className="border border-gray-200 rounded-2xl p-4 bg-white shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {cat.nameEs}{" "}
+                    <span className="text-sm text-gray-500">(mín. {cat.minRequired})</span>
+                  </h3>
+                  <p className={`text-sm ${meetsMin ? "text-green-600" : "text-amber-600"}`}>
+                    {selectedCount} seleccionados
+                  </p>
+                </div>
+                <button
+                  onClick={() => onSelectAll(cat)}
+                  className="text-sm text-amber-600 hover:underline"
+                  type="button"
+                >
+                  Seleccionar todo
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {cat.items.map((item) => {
+                  const isSelected = selections[cat.id]?.has(item.name);
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => onToggle(cat.id, item.name)}
+                      className={`
+                        flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium border
+                        ${isSelected
+                          ? "bg-amber-100 border-amber-300 text-amber-800"
+                          : "bg-white border-gray-200 text-gray-700 hover:border-amber-300"}
+                      `}
+                      type="button"
+                    >
+                      <span>{item.emoji}</span>
+                      <span>{item.name}</span>
+                      {isSelected && <Check className="h-4 w-4 text-amber-600" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="text-sm text-gray-500 text-center">
+        Debes cumplir el mínimo en cada categoría para continuar.
       </div>
     </div>
   );

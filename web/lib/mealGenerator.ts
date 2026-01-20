@@ -666,14 +666,14 @@ function generateMealFromFoods(
         console.log(`  🌱 Vegan filter: ${filteredFoods.length} foods`);
     }
     if (dietType === 'vegetarian') {
-        filteredFoods = filteredFoods.filter(f =>
-            f.category !== 'protein' ||
-            f.category === 'legume' ||
-            f.name.toLowerCase().includes('egg') ||
-            f.name.toLowerCase().includes('bean') ||
-            f.name.toLowerCase().includes('lentil') ||
-            f.name.toLowerCase().includes('chickpea')
-        );
+        filteredFoods = filteredFoods.filter(f => {
+            if (f.category === 'protein') {
+                const nm = f.name.toLowerCase();
+                return nm.includes('egg') || nm.includes('tofu') || nm.includes('bean') || nm.includes('lentil') || nm.includes('chickpea');
+            }
+            // Legumes are in their own bucket now and allowed
+            return true;
+        });
         console.log(`  🥚 Vegetarian filter: ${filteredFoods.length} foods`);
     }
     if (dietType === 'diabetes_friendly' || conditions.includes('diabetes_type_2')) {

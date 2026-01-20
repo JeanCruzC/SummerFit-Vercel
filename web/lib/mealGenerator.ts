@@ -1531,11 +1531,12 @@ function validateUSDA(plan: MealPlan, targetCalories: number): string[] {
 }
 
 // ASYNC: Generate daily meal plan from database with VALIDATION
+// userPantryTerms: Array of search_term values from user_pantry table (e.g., ['chicken', 'rice', 'beef'])
 export async function generateDayMealPlanFromDB(
     targetCalories: number,
     targetProtein: number,
     numMeals: 3 | 4 | 5 = 4,
-    availableFoods?: string[],
+    userPantryTerms?: string[],
     dietType: string = 'balanced',
     conditions: string[] = [],
     nutrientPriorities: string[] = [],
@@ -1543,20 +1544,39 @@ export async function generateDayMealPlanFromDB(
 ): Promise<MealPlan> {
     console.log(`\n📅 [DAY PLAN] Generating day plan: ${targetCalories} kcal, ${targetProtein}g protein, ${numMeals} meals`);
     console.log(`  🍽️  Diet: ${dietType}, Conditions: ${conditions.join(', ') || 'none'}`);
+    console.log(`  🛒 User pantry terms: ${userPantryTerms?.length || 0} items`);
 
     // Load foods from database
     const dbFoods = await loadFoodsFromDB(nutrientPriorities);
     console.log(`  💾 Loaded ${dbFoods.length} foods from database`);
 
-    // Restrict to onboarding whitelist and optional user selections
-    const baseWhitelist = ONBOARDING_FOOD_IDS;
-    const userSelected = (availableFoods || []).map(id => String(id));
-    const effectiveWhitelist = userSelected.length
-        ? userSelected.filter(id => baseWhitelist.has(id))
-        : Array.from(baseWhitelist);
+    let filteredDbFoods: SimpleFoodItem[];
 
-    let filteredDbFoods = dbFoods.filter(f => effectiveWhitelist.includes(String(f.id)));
-    console.log(`  ✅ Onboarding filter: ${filteredDbFoods.length} foods (user selected: ${userSelected.length ? 'yes' : 'no'})`);
+    if (userPantryTerms && userPantryTerms.length > 0) {
+        // Filter by user's pantry selection using search_term matching
+        // Match food name (english or spanish) against pantry search terms
+        const pantryTermsLower = userPantryTerms.map(t => t.toLowerCase());
+
+        filteredDbFoods = dbFoods.filter(f => {
+            const foodNameLower = f.name.toLowerCase();
+            const foodNameEsLower = (f.name_es || '').toLowerCase();
+
+            // Check if any pantry term matches this food
+            return pantryTermsLower.some(term =>
+                foodNameLower.includes(term) ||
+                foodNameEsLower.includes(term) ||
+                term.includes(foodNameLower.split(' ')[0]) ||  // Match first word
+                term.includes(foodNameEsLower.split(' ')[0])
+            );
+        });
+
+        console.log(`  ✅ Pantry filter: ${filteredDbFoods.length} foods match user's ${userPantryTerms.length} pantry items`);
+    } else {
+        // Fallback to onboarding whitelist if no pantry provided
+        const baseWhitelist = ONBOARDING_FOOD_IDS;
+        filteredDbFoods = dbFoods.filter(f => baseWhitelist.has(String(f.id)));
+        console.log(`  ⚠️ No pantry provided, using default whitelist: ${filteredDbFoods.length} foods`);
+    }
 
     if (filteredDbFoods.length === 0) {
         throw new Error('No foods available after applying onboarding selection. Please select more items in pantry setup.');
@@ -1683,11 +1703,12 @@ export async function generateDayMealPlanFromDB(
 }
 
 // ASYNC: Generate weekly meal plan from database
+// userPantryTerms: Array of search_term values from user_pantry table
 export async function generateWeeklyMealPlanFromDB(
     targetCalories: number,
     targetProtein: number,
     numMeals: 3 | 4 | 5 = 4,
-    availableFoods?: string[],
+    userPantryTerms?: string[],
     dietType: string = 'balanced',
     conditions: string[] = [],
     nutrientPriorities: string[] = []
@@ -1698,9 +1719,10 @@ export async function generateWeeklyMealPlanFromDB(
     // ✅ Create ONE master variety manager for the entire week
     const masterVarietyManager = new VarietyManager();
     console.log(`\n🗓️  [WEEK PLAN] Creating master variety manager for 7 days`);
+    console.log(`  🛒 User pantry terms: ${userPantryTerms?.length || 0} items`);
 
     for (let i = 0; i < 7; i++) {
-        const plan = await generateDayMealPlanFromDB(targetCalories, targetProtein, numMeals, availableFoods, dietType, conditions, nutrientPriorities, masterVarietyManager);
+        const plan = await generateDayMealPlanFromDB(targetCalories, targetProtein, numMeals, userPantryTerms, dietType, conditions, nutrientPriorities, masterVarietyManager);
         plan.id = `day_${i}_${Date.now()}_${Math.random()}`;
         plan.name_es = `Día ${i + 1} - ${dayNames[i]}`;
         days.push(plan);

@@ -44,6 +44,9 @@ export default function MealGeneratorPage() {
     const [validation, setValidation] = useState<PlanValidation | null>(null);
     const [previousDietType, setPreviousDietType] = useState<string>('balanced');
 
+    // User's pantry selection (search terms from user_pantry table)
+    const [userPantryTerms, setUserPantryTerms] = useState<string[]>([]);
+
     // Profile state for accurate projection
     const [goalSpeed, setGoalSpeed] = useState<'conservador' | 'moderado' | 'acelerado'>('moderado');
 
@@ -115,6 +118,20 @@ export default function MealGeneratorPage() {
                             const mappedType = dietMap[userProfile.diet_type] || 'balanced';
                             setDietType(mappedType);
                         }
+
+                        // 5. Load user's pantry selection (search terms)
+                        const { data: pantryData, error: pantryError } = await supabase
+                            .from('user_pantry')
+                            .select('search_term')
+                            .eq('user_id', session.user.id);
+
+                        if (!pantryError && pantryData && pantryData.length > 0) {
+                            const terms = pantryData.map(p => p.search_term).filter(Boolean);
+                            setUserPantryTerms(terms);
+                            console.log(`🛒 Loaded ${terms.length} pantry items for meal generation`);
+                        } else {
+                            console.log('⚠️ No pantry items found, will use default food selection');
+                        }
                     }
                 }
             } catch (error) {
@@ -130,13 +147,13 @@ export default function MealGeneratorPage() {
     const handleGenerate = async () => {
         if (generating) return; // Prevent race condition
         setGenerating(true);
-        
+
         // Clear cache if diet changed
         if (dietType !== previousDietType) {
             foodCache.clear();
             setPreviousDietType(dietType);
         }
-        
+
         try {
             const conditions = dietType === 'diabetes_friendly' ? ['diabetes_type_2'] : [];
             const nutrientPriorities: string[] = [];
@@ -152,27 +169,31 @@ export default function MealGeneratorPage() {
             }
 
             if (mode === 'daily') {
-                const plan = await generateDayMealPlanFromDB(targetCalories, targetProtein, numMeals, undefined, dietType, conditions, nutrientPriorities);
+                // Pass user's pantry terms to filter available foods
+                const pantryFilter = userPantryTerms.length > 0 ? userPantryTerms : undefined;
+                const plan = await generateDayMealPlanFromDB(targetCalories, targetProtein, numMeals, pantryFilter, dietType, conditions, nutrientPriorities);
                 setMealPlan(plan);
                 setWeeklyPlan(null);
-                
+
                 // Validate plan
                 const val = validateMealPlan(plan, targetCalories, targetProtein);
                 setValidation(val);
-                
+
                 if (!val.isValid) {
                     console.warn('⚠️ Plan generado con problemas:', val.issues);
                 }
             } else {
-                const plan = await generateWeeklyMealPlanFromDB(targetCalories, targetProtein, numMeals, undefined, dietType, conditions, nutrientPriorities);
+                // Pass user's pantry terms to filter available foods
+                const pantryFilter = userPantryTerms.length > 0 ? userPantryTerms : undefined;
+                const plan = await generateWeeklyMealPlanFromDB(targetCalories, targetProtein, numMeals, pantryFilter, dietType, conditions, nutrientPriorities);
                 setWeeklyPlan(plan);
                 setMealPlan(null);
                 setActiveDay(0);
-                
+
                 // Validate weekly plan
                 const val = validateWeeklyPlan(plan, targetCalories, targetProtein);
                 setValidation(val);
-                
+
                 if (!val.isValid) {
                     console.warn('⚠️ Plan semanal con problemas:', val.issues);
                 }
@@ -643,10 +664,10 @@ export default function MealGeneratorPage() {
                                         allItems.forEach(item => {
                                             const key = `${item.food.id}_${item.cooking_state || 'raw'}`;
                                             if (!totals[key]) {
-                                                totals[key] = { 
-                                                    food: item.food, 
+                                                totals[key] = {
+                                                    food: item.food,
                                                     grams: 0,
-                                                    cooking_state: item.cooking_state 
+                                                    cooking_state: item.cooking_state
                                                 };
                                             }
                                             totals[key].grams += item.portion_g;
@@ -658,7 +679,7 @@ export default function MealGeneratorPage() {
                                                 const units = (grams / food.serving_size).toFixed(1).replace('.0', '');
                                                 qtyDisplay = `${units} ${food.serving_unit}`;
                                             }
-                                            
+
                                             let displayName = food.name_es;
                                             if (cooking_state && cooking_state !== 'raw') {
                                                 displayName += ` (${cooking_state})`;

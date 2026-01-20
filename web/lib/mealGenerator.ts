@@ -823,10 +823,29 @@ function generateMealFromFoods(
         return Math.max(minG, Math.min(maxG, grams));
     };
 
-    // STEP 1: Add primary protein
-    // Template: Breakfast can use High-Protein Dairy (Greek Yogurt/Cottage) or Protein (Eggs). Lunch/Dinner uses Protein (Meat/Fish).
+    // ===========================================================
+    // OPTIMIZATION-BASED MEAL CONSTRUCTION (multi-factor scoring)
+    // ===========================================================
+    type ScoredItem = { food: SimpleFoodItem; portion_g: number; macros: MacroTotals; course: 'main' | 'side' | 'snack' };
 
     const norm = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const getServingSize = (f: SimpleFoodItem): number => f.serving_size || f.portion_g || 100;
+    const inferCourse = (f: SimpleFoodItem): 'main' | 'side' | 'snack' => {
+        const s = getServingSize(f);
+        const kcal = f.kcal || 0;
+        if (kcal >= 120 && s >= 80 && ['protein', 'carb', 'legume', 'fat'].includes(f.category)) return 'main';
+        if (s <= 40 || f.category === 'condiment') return 'snack';
+        if (f.category === 'vegetable' || f.category === 'fruit') return 'side';
+        if (f.category === 'dairy' && f.protein >= 8 && s >= 150) return 'main';
+        return 'side';
+    };
+    const isSweetCereal = (f: SimpleFoodItem): boolean =>
+        (f.sugar_g ?? 0) >= 10 && f.category === 'carb' && getServingSize(f) <= 80;
+    const isFishFood = (f: SimpleFoodItem): boolean => {
+        const nm = `${f.name} ${f.name_es}`.toLowerCase();
+        return ['fish', 'tuna', 'atún', 'salmón', 'salmon', 'tilapia', 'pescado'].some(k => nm.includes(k));
+    };
+
     const isUltraProcessedFood = (f: SimpleFoodItem): boolean => {
         const txt = `${norm(f.name)} ${norm(f.name_es)}`;
         const processedKeywords = [
@@ -839,69 +858,192 @@ function generateMealFromFoods(
         return branded || extremeSodiumSugar || processedKeywords.some(k => txt.includes(k));
     };
 
-    // Quality scoring function - lower is better
-    const getServingSize = (f: SimpleFoodItem): number => f.serving_size || f.portion_g || 100;
-    const inferCourse = (f: SimpleFoodItem): 'main' | 'side' | 'snack' => {
-        const s = getServingSize(f);
-        const kcal = f.kcal || 0;
-        // Dense + large serving => main
-        if (kcal >= 120 && s >= 80 && ['protein', 'carb', 'legume', 'fat'].includes(f.category)) return 'main';
-        // Very small serving or condiment => snack/side
-        if (s <= 40 || f.category === 'condiment') return 'snack';
-        // Vegetables/fruits moderate size => side
-        if (f.category === 'vegetable' || f.category === 'fruit') return 'side';
-        // Dairy high-protein can be main for breakfast
-        if (f.category === 'dairy' && f.protein >= 8 && s >= 150) return 'main';
-        return 'side';
-    };
-    const isSnackLike = (f: SimpleFoodItem): boolean => inferCourse(f) === 'snack';
-    const isSweetCereal = (f: SimpleFoodItem): boolean =>
-        (f.sugar_g ?? 0) >= 10 && f.category === 'carb' && getServingSize(f) <= 80;
-    const isFishFood = (f: SimpleFoodItem): boolean => {
-        const nm = `${f.name} ${f.name_es}`.toLowerCase();
-        return ['fish', 'tuna', 'atún', 'salmón', 'salmon', 'tilapia', 'pescado'].some(k => nm.includes(k));
-    };
-    const hasFish = items.some(i => isFishFood(i.food));
-    const hasLegume = items.some(i => i.food.category === 'legume');
 
-    const culinaryPenalty = (f: SimpleFoodItem): number => {
-        let c = 0;
-        const course = inferCourse(f);
-        // Course vs mealType compatibility
-        if ((type === 'lunch' || type === 'dinner') && course === 'snack') c += 8;
-        if ((type === 'lunch' || type === 'dinner') && isSweetCereal(f)) c += 10;
-        if ((type === 'breakfast' || type === 'snack') && course === 'main' && f.category === 'fat') c += 4;
-        // Avoid fish + legume pairing
-        if ((isFishFood(f) && hasLegume) || (f.category === 'legume' && hasFish)) c += 8;
-        // Penalize carbs that are low-fiber/high-sugar as mains
-        if ((type === 'lunch' || type === 'dinner') && f.category === 'carb') {
-            if ((f.fiber ?? 0) < 2) c += 4;
-            if ((f.sugar_g ?? 0) > 12) c += 6;
-        }
-        // Encourage sides/vegetables at lunch/dinner
-        if ((type === 'lunch' || type === 'dinner') && f.category === 'vegetable') c -= 2;
-        return c;
-    };
-
+    // Base quality/culinary penalty reused across selection
     const qualityPenalty = (f: SimpleFoodItem): number => {
         let p = 0;
         if ((f.sodium_mg ?? 0) > 700) p += 3;
         if ((f.sugar_g ?? 0) > 12 && f.category !== 'fruit') p += 3;
         if ((f.sat_fat_g ?? 0) > 6) p += 2;
         if (isUltraProcessedFood(f)) p += 4;
-        p += culinaryPenalty(f);
-        // Bonus: fiber and key micronutrients
+        const course = inferCourse(f);
+        const hasFish = items.some(i => isFishFood(i.food));
+        const hasLegume = items.some(i => i.food.category === 'legume');
+        if ((type === 'lunch' || type === 'dinner') && course === 'snack') p += 8;
+        if ((type === 'lunch' || type === 'dinner') && isSweetCereal(f)) p += 10;
+        if ((isFishFood(f) && hasLegume) || (f.category === 'legume' && hasFish)) p += 8;
+        if ((type === 'lunch' || type === 'dinner') && f.category === 'carb') {
+            if ((f.fiber ?? 0) < 2) p += 4;
+            if ((f.sugar_g ?? 0) > 12) p += 6;
+        }
+        if ((type === 'lunch' || type === 'dinner') && f.category === 'vegetable') p -= 2;
+        if (varietyManager && varietyManager.shouldSkip(f.id, 24)) p += 2;
         let bonus = 0;
         if ((f.fiber ?? 0) > 3) bonus += 1;
         if ((f.micros?.potassium_mg ?? 0) > 300) bonus += 0.5;
         if ((f.micros?.iron_mg ?? 0) > 2) bonus += 0.5;
         if ((f.micros?.magnesium_mg ?? 0) > 40) bonus += 0.5;
-        // Penalize repetition within the same day via varietyManager
-        if (varietyManager && varietyManager.shouldSkip(f.id, 24)) {
-            p += 2;
-        }
         return Math.max(0, p - bonus);
     };
+
+    // Quality scoring function - lower is better
+    const pickTop = (pool: SimpleFoodItem[], max: number) =>
+        [...pool].sort((a, b) => qualityPenalty(a) - qualityPenalty(b)).slice(0, Math.min(max, pool.length));
+
+    const proteinPool = pickTop(proteins, 10);
+    const carbPool = pickTop([...carbs, ...legumes], 10);
+    const veggiePool = pickTop(vegetables, 10);
+    const fatPool = pickTop(fats, 5);
+    const fruitPool = pickTop(fruits, 5);
+
+    const portionItem = (food: SimpleFoodItem, target: { protein?: number; carbs?: number; fat?: number; kcal?: number }): ScoredItem | null => {
+        const res = calculateOptimalPortion(food, target, { ...portionContext, existingItems: items });
+        if (!res.isValid) return null;
+        const portion = adjustToServingBounds(food, res.finalPortion);
+        return { food, portion_g: portion, macros: calculateItemMacros(food, portion), course: inferCourse(food) };
+    };
+
+    const randomPick = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+
+    const evaluateMeal = (mealItems: ScoredItem[]) => {
+        const totals = sumMacros(mealItems.map(i => i.macros));
+        const parts: number[] = [];
+        parts.push(Math.abs(totals.kcal - targetCalories) * 0.4);
+        parts.push(Math.abs(totals.protein - mealProteinTarget));
+
+        const fatPct = totals.kcal > 0 ? ((totals.fat || 0) * 9 / totals.kcal) * 100 : 0;
+        const satPct = totals.kcal > 0 ? ((totals.sat_fat_g || 0) * 9 / totals.kcal) * 100 : 0;
+        const sugarPct = totals.kcal > 0 ? ((totals.sugar_g || 0) * 4 / totals.kcal) * 100 : 0;
+        const addedPct = totals.kcal > 0 ? ((totals.added_sugars_g || 0) * 4 / totals.kcal) * 100 : 0;
+        const fiberTarget = Math.max(10, (totals.kcal / 1000) * 14);
+        const fiber = totals.fiber || 0;
+        if (satPct > 10) parts.push(20 * (satPct - 10));
+        if (addedPct > 10) parts.push(25 * (addedPct - 10));
+        if (sugarPct > 15) parts.push(10 * (sugarPct - 15));
+        if (fatPct < 20) parts.push((20 - fatPct) * 5);
+        else if (fatPct > 35) parts.push((fatPct - 35) * 3);
+        if (fiber < fiberTarget) parts.push((fiberTarget - fiber) * 2);
+        if ((totals.sodium_mg || 0) > 2300) parts.push(((totals.sodium_mg || 0) - 2300) * 0.02);
+
+        const hasFish = mealItems.some(i => isFishFood(i.food));
+        const hasLegume = mealItems.some(i => i.food.category === 'legume');
+        if (hasFish && hasLegume) parts.push(50);
+
+        mealItems.forEach(i => {
+            if ((type === 'lunch' || type === 'dinner') && i.course === 'snack') parts.push(20);
+            const sweetCereal = isSweetCereal(i.food);
+            if ((type === 'lunch' || type === 'dinner') && sweetCereal) parts.push(30);
+            if (varietyManager && varietyManager.shouldSkip(i.food.id, 24)) parts.push(10);
+        });
+
+        const densityBonus = (fiber / Math.max(totals.kcal, 1)) * 1000;
+        parts.push(-densityBonus);
+        return parts.reduce((a, b) => a + b, 0);
+    };
+
+    const initialMeal = (): ScoredItem[] => {
+        const meal: ScoredItem[] = [];
+        const prot = proteinPool.length ? portionItem(randomPick(proteinPool), { protein: mealProteinTarget * 0.9 }) : null;
+        if (prot) meal.push(prot);
+        if (carbPool.length) {
+            const carb = portionItem(randomPick(carbPool), { carbs: mealCarbTarget * 0.85 });
+            if (carb) meal.push(carb);
+        }
+        const vegCount = (type === 'lunch' || type === 'dinner') ? 2 : 1;
+        for (let i = 0; i < vegCount; i++) {
+            if (veggiePool.length) {
+                const v = portionItem(randomPick(veggiePool), { kcal: 60 });
+                if (v && !meal.find(m => m.food.id === v.food.id)) meal.push(v);
+            }
+        }
+        if ((type === 'breakfast' || type === 'snack') && fruitPool.length) {
+            const fr = portionItem(randomPick(fruitPool), { kcal: 80 });
+            if (fr) meal.push(fr);
+        }
+        return meal;
+    };
+
+    const optimizeMeal = (): ScoredItem[] => {
+        let current = initialMeal();
+        let currentCost = evaluateMeal(current);
+        let best = current;
+        let bestCost = currentCost;
+        const iterations = 250;
+        for (let it = 0; it < iterations; it++) {
+            const candidate = [...current];
+            const roles = ['protein', 'carb', 'veg', 'veg', 'fat', 'fruit'] as const;
+            const role = roles[Math.floor(Math.random() * roles.length)];
+            if (role === 'protein' && proteinPool.length) {
+                const p = portionItem(randomPick(proteinPool), { protein: mealProteinTarget * 0.9 });
+                if (p) {
+                    const idx = candidate.findIndex(c => c.food.category === 'protein');
+                    if (idx >= 0) candidate[idx] = p; else candidate.push(p);
+                }
+            } else if (role === 'carb' && carbPool.length) {
+                const c = portionItem(randomPick(carbPool), { carbs: mealCarbTarget * 0.85 });
+                if (c) {
+                    const idx = candidate.findIndex(ci => ci.food.category === 'carb' || ci.food.category === 'legume');
+                    if (idx >= 0) candidate[idx] = c; else candidate.push(c);
+                }
+            } else if (role === 'veg' && veggiePool.length) {
+                const v = portionItem(randomPick(veggiePool), { kcal: 60 });
+                if (v) {
+                    const idx = candidate.findIndex(ci => ci.food.category === 'vegetable');
+                    if (idx >= 0) candidate[idx] = v; else candidate.push(v);
+                }
+            } else if (role === 'fat' && fatPool.length) {
+                const f = portionItem(randomPick(fatPool), { fat: mealFatTarget * 0.6 });
+                if (f) {
+                    const idx = candidate.findIndex(ci => ci.food.category === 'fat');
+                    if (idx >= 0) candidate[idx] = f; else candidate.push(f);
+                }
+            } else if (role === 'fruit' && fruitPool.length && (type === 'breakfast' || type === 'snack')) {
+                const fr = portionItem(randomPick(fruitPool), { kcal: 80 });
+                if (fr) {
+                    const idx = candidate.findIndex(ci => ci.food.category === 'fruit');
+                    if (idx >= 0) candidate[idx] = fr; else candidate.push(fr);
+                }
+            }
+
+            const cost = evaluateMeal(candidate);
+            const temp = 1 + (iterations - it) / iterations;
+            const accept = cost < currentCost || Math.exp((currentCost - cost) / temp) > Math.random();
+            if (accept) {
+                current = candidate;
+                currentCost = cost;
+            }
+            if (cost < bestCost) {
+                best = candidate;
+                bestCost = cost;
+            }
+        }
+        return best;
+    };
+
+    const optimizedItems = optimizeMeal();
+    if (optimizedItems.length > 0) {
+        optimizedItems.forEach(i => items.push({
+            food: i.food,
+            portion_g: i.portion_g,
+            cooking_state: i.food.cooking_states?.[0],
+            macros: i.macros
+        }));
+        const finalTotals = sumMacros(items.map(i => i.macros));
+        const calorieDeviation = ((finalTotals.kcal - targetCalories) / targetCalories) * 100;
+        const proteinDeviation = ((finalTotals.protein - mealProteinTarget) / mealProteinTarget) * 100;
+        console.log(`  📊 Final totals: ${finalTotals.kcal} kcal (${calorieDeviation > 0 ? '+' : ''}${calorieDeviation.toFixed(1)}%), ${finalTotals.protein}g P (${proteinDeviation > 0 ? '+' : ''}${proteinDeviation.toFixed(1)}%)`);
+        console.log(`  🍽️  Total items: ${items.length}`);
+        return {
+            id: `meal_${type}_${Date.now()}`,
+            type,
+            type_es: typeNames[type] || type,
+            items,
+            totals: finalTotals
+        };
+    }
+
+    // STEP 1: Add primary protein
+
 
     // Pick best candidate by scoring (lower = better)
     const pickBest = (candidates: SimpleFoodItem[], scorer: (f: SimpleFoodItem) => number): SimpleFoodItem | undefined => {

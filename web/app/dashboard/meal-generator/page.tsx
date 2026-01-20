@@ -122,11 +122,11 @@ export default function MealGeneratorPage() {
                         // 5. Load user's pantry selection (search terms)
                         const { data: pantryData, error: pantryError } = await supabase
                             .from('user_pantry')
-                            .select('search_term')
+                            .select('ingredient_name_es')
                             .eq('user_id', session.user.id);
 
                         if (!pantryError && pantryData && pantryData.length > 0) {
-                            const terms = pantryData.map(p => p.search_term).filter(Boolean);
+                            const terms = pantryData.map(p => p.ingredient_name_es).filter(Boolean);
                             setUserPantryTerms(terms);
                             console.log(`🛒 Loaded ${terms.length} pantry items for meal generation`);
                         } else {
@@ -158,6 +158,13 @@ export default function MealGeneratorPage() {
             const conditions = dietType === 'diabetes_friendly' ? ['diabetes_type_2'] : [];
             const nutrientPriorities: string[] = [];
 
+            // Build RDA profile from user profile
+            const rdaProfile = profile ? {
+                gender: profile.gender === 'F' ? 'female' : 'male',
+                age: profile.age || 30,
+                lifeStage: profile.life_stage || 'standard'
+            } : undefined;
+
             if (profile) {
                 const lifeStage = profile.life_stage || 'standard';
                 // Pass lifeStage as condition too
@@ -171,7 +178,17 @@ export default function MealGeneratorPage() {
             if (mode === 'daily') {
                 // Pass user's pantry terms to filter available foods
                 const pantryFilter = userPantryTerms.length > 0 ? userPantryTerms : undefined;
-                const plan = await generateDayMealPlanFromDB(targetCalories, targetProtein, numMeals, pantryFilter, dietType, conditions, nutrientPriorities);
+                const plan = await generateDayMealPlanFromDB(
+                    targetCalories,
+                    targetProtein,
+                    numMeals,
+                    pantryFilter,
+                    dietType,
+                    conditions,
+                    nutrientPriorities,
+                    undefined, // varietyManager
+                    rdaProfile
+                );
                 setMealPlan(plan);
                 setWeeklyPlan(null);
 
@@ -185,7 +202,16 @@ export default function MealGeneratorPage() {
             } else {
                 // Pass user's pantry terms to filter available foods
                 const pantryFilter = userPantryTerms.length > 0 ? userPantryTerms : undefined;
-                const plan = await generateWeeklyMealPlanFromDB(targetCalories, targetProtein, numMeals, pantryFilter, dietType, conditions, nutrientPriorities);
+                const plan = await generateWeeklyMealPlanFromDB(
+                    targetCalories,
+                    targetProtein,
+                    numMeals,
+                    pantryFilter,
+                    dietType,
+                    conditions,
+                    nutrientPriorities,
+                    rdaProfile
+                );
                 setWeeklyPlan(plan);
                 setMealPlan(null);
                 setActiveDay(0);
@@ -613,26 +639,41 @@ export default function MealGeneratorPage() {
                                                             <div className="text-xs text-gray-500">
                                                                 {(() => {
                                                                     const grams = Math.round(item.portion_g);
+                                                                    // Avoid tiny gram displays (e.g., "2 g") - always show at least reasonable context
+                                                                    const servingSize = (item.food as any).serving_size;
+                                                                    const servingUnit = (item.food as any).serving_unit;
+
                                                                     // Only show complex units if they are clean (e.g. 2 eggs, not 1.3 eggs)
-                                                                    // @ts-ignore
-                                                                    if (item.food.serving_unit && item.food.serving_size && item.food.serving_size > 0) {
-                                                                        // @ts-ignore
-                                                                        const rawUnits = item.portion_g / item.food.serving_size;
+                                                                    if (servingUnit && servingSize && servingSize > 0) {
+                                                                        const rawUnits = item.portion_g / servingSize;
 
                                                                         // If it's close to whole number (e.g. 1.05 eggs), show units
-                                                                        if (Math.abs(Math.round(rawUnits) - rawUnits) < 0.1) {
-                                                                            // @ts-ignore
-                                                                            return <span className="font-medium text-orange-600 dark:text-orange-400">{Math.round(rawUnits)} {item.food.serving_unit} <span className="text-gray-400 font-normal">({grams}g)</span></span>;
+                                                                        if (Math.abs(Math.round(rawUnits) - rawUnits) < 0.15 && rawUnits >= 0.5) {
+                                                                            const roundedUnits = Math.round(rawUnits);
+                                                                            // Avoid showing "0" or very small fractions
+                                                                            if (roundedUnits >= 1) {
+                                                                                return <span className="font-medium text-orange-600 dark:text-orange-400">{roundedUnits} {servingUnit} <span className="text-gray-400 font-normal">({grams}g)</span></span>;
+                                                                            }
+                                                                        }
+
+                                                                        // Handle fractional servings nicely (e.g., "0.5 cup" -> "1/2 cup")
+                                                                        if (rawUnits >= 0.4 && rawUnits < 1) {
+                                                                            const fraction = rawUnits >= 0.7 ? '¾' : rawUnits >= 0.4 ? '½' : '¼';
+                                                                            return <span className="font-medium text-orange-600 dark:text-orange-400">{fraction} {servingUnit} <span className="text-gray-400 font-normal">({grams}g)</span></span>;
                                                                         }
 
                                                                         // If it's ounces (special case where unit=oz usually means serving_size=28.35)
-                                                                        // @ts-ignore
-                                                                        if (item.food.serving_unit.includes('oz')) {
+                                                                        if (servingUnit.includes('oz') && grams >= 28) {
                                                                             const oz = (grams / 28.35).toFixed(1);
                                                                             return <span className="font-medium text-orange-600 dark:text-orange-400">{grams}g <span className="text-gray-400 font-normal">({oz} oz)</span></span>;
                                                                         }
                                                                     }
-                                                                    // Default to clear grams
+
+                                                                    // Default to clear grams - but format nicely
+                                                                    // For very small portions (condiments), show more context
+                                                                    if (grams < 20) {
+                                                                        return <span className="font-medium text-gray-600 dark:text-gray-400">{grams}g <span className="text-gray-400 font-normal">(~{Math.max(1, Math.round(grams / 5))} cdta)</span></span>;
+                                                                    }
                                                                     return <span className="font-medium text-gray-700 dark:text-gray-300">{grams}g</span>;
                                                                 })()}
                                                                 {item.cooking_state && ` • ${item.cooking_state}`}

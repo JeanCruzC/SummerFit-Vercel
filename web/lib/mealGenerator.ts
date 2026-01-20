@@ -153,6 +153,17 @@ export interface MacroTotals {
     sugar_g?: number;
     added_sugars_g?: number;
     sat_fat_g?: number;
+    micros?: {
+        calcium_mg?: number;
+        iron_mg?: number;
+        potassium_mg?: number;
+        magnesium_mg?: number;
+        folate_mcg?: number;
+        vitamin_b12_ug?: number;
+        vitamin_a_iu?: number;
+        vitamin_c_mg?: number;
+        vitamin_d_iu?: number;
+    };
 }
 
 // Whitelist of onboarding foods (IDs from Supabase) to keep generation aligned with user-selected simple ingredients.
@@ -173,6 +184,164 @@ const ONBOARDING_FOOD_IDS: Set<string> = new Set([
     // Condiments / spices
     '32500', '29857', '32148', '32593', '33241', '33242', '33243'
 ]);
+
+// Map normalized Spanish names to IDs for pantry matching by name/search_term.
+const NAME_TO_ID: Record<string, string> = {
+    // Proteins
+    'pollo': '28346', 'carne': '28237', 'pescado': '28639', 'atun': '28726', 'atún': '28726',
+    'langostinos': '28775', 'huevo': '29568', 'huevos': '29568', 'pavo': '28519', 'chancho': '28277', 'cerdo': '28277',
+    'jamon': '28293', 'jamón': '28293', 'tofu': '29891', 'carne de soya': '29866', 'tempeh': '33238',
+    'seitan': '33239', 'seitán': '33239', 'proteina en polvo': '33146', 'proteína en polvo': '33146',
+    'pechuga': '28346', 'pechuga de pollo': '28346', 'pollo pechuga': '28346',
+    'salmon': '28639', 'salmón': '28639', 'tilapia': '28639',
+    // Carbs / Legumes
+    'arroz': '30817', 'arroz blanco': '30817', 'arroz integral': '30817', 'papa': '29844', 'papas': '29844',
+    'camote': '32117', 'yuca': '31979', 'lentejas': '29840', 'lenteja': '29840', 'frijoles': '29776', 'frijol': '29776',
+    'garbanzos': '29831', 'garbanzo': '29831', 'arvejas': '32374', 'arveja': '32374', 'quinua': '30815', 'quinoa': '30815',
+    'pasta': '30766', 'fideos': '30766', 'choclo': '32198', 'maiz': '32198', 'maíz': '32198',
+    'popcorn': '30580', 'palomitas': '30580', 'avena': '30796', 'pan': '30013', 'pan integral': '30013',
+    'tortilla': '30237', 'cereal': '30497',
+    // Vegetables
+    'lechuga': '32204', 'tomate': '32134', 'tomates': '32134', 'brocoli': '32058', 'brócoli': '32058', 'brocolis': '32058',
+    'zanahoria': '32075', 'zanahorias': '32075', 'espinaca': '32029', 'espinacas': '32029',
+    'cebolla': '32210', 'cebollas': '32210', 'pepino': '32199', 'pepinos': '32199',
+    'zapallo italiano': '32223', 'calabacin': '32223', 'calabacín': '32223', 'zucchini': '32223',
+    'repollo': '32188', 'col': '32188', 'acelga': '31989', 'acelgas': '31989',
+    'esparrago': '32182', 'espárrago': '32182', 'esparragos': '32182', 'espárragos': '32182',
+    'apio': '32193', 'cebollin': '33240', 'cebollín': '33240', 'cebollino': '33240',
+    'alcachofa': '32181', 'albahaca': '32195', 'coliflor': '32192', 'zapallo': '32108',
+    'pimiento': '32216', 'pimientos': '32216', 'pimiento rojo': '32216', 'pimiento verde': '32216',
+    'vainitas': '32184', 'judias verdes': '32184', 'judías verdes': '32184', 'ejotes': '32184',
+    'betarraga': '32185', 'remolacha': '32185', 'rabano': '32218', 'rábano': '32218',
+    'berenjena': '32200', 'berenjenas': '32200', 'champiñones': '32208', 'hongos': '32208', 'champinones': '32208',
+    // Fats / Nuts / Seeds
+    'palta': '31638', 'aguacate': '31638', 'avocado': '31638', 'mani': '29934', 'maní': '29934', 'cacahuate': '29934',
+    'mantequilla de mani': '29952', 'mantequilla de maní': '29952', 'crema de mani': '29952',
+    'almendras': '29904', 'almendra': '29904', 'pecanas': '29939', 'nuez pecana': '29939',
+    'cashews': '29908', 'anacardos': '29908', 'marañon': '29908', 'nueces': '29946', 'nuez': '29946',
+    'aceitunas': '32504', 'olivas': '32504', 'chia': '30005', 'chía': '30005', 'semillas de chia': '30005',
+    'chocolate': '27881', 'chocolate oscuro': '27881', 'cacao en polvo': '28002', 'cacao': '28002',
+    'aceite de oliva': '27881', 'aceite': '27881',
+    // Dairy / plant milks
+    'leche': '27800', 'leche entera': '27800', 'leche descremada': '27800', 'yogurt': '27829', 'yogur': '27829',
+    'yogurt griego': '27829', 'queso blanco': '28160', 'queso fresco': '28160', 'queso amarillo': '28124',
+    'queso cheddar': '28124', 'queso': '28160', 'bebida de almendras': '27824', 'leche de almendras': '27824',
+    'bebida de soya': '27820', 'leche de soya': '27820', 'bebida de coco': '27828', 'leche de coco': '27828',
+    // Fruits
+    'platano': '31639', 'plátano': '31639', 'banana': '31639', 'banano': '31639',
+    'fresas': '31698', 'fresa': '31698', 'frutillas': '31698', 'manzana': '31630', 'manzanas': '31630',
+    'arandanos': '31690', 'arándanos': '31690', 'blueberries': '31690', 'mora azul': '31690',
+    'pina': '31675', 'piña': '31675', 'anana': '31675', 'ananás': '31675',
+    'papaya': '31621', 'mandarina': '31590', 'mandarinas': '31590', 'naranja': '31586', 'naranjas': '31586',
+    'kiwi': '31654', 'kiwis': '31654', 'mango': '31620', 'mangos': '31620',
+    'sandia': '31685', 'sandía': '31685', 'patilla': '31685', 'pera': '31669', 'peras': '31669',
+    'durazno': '31664', 'duraznos': '31664', 'melocoton': '31664', 'melocotón': '31664',
+    'uvas': '31652', 'uva': '31652', 'granadilla': '31663', 'maracuya': '31663', 'maracuyá': '31663',
+    'melon': '31656', 'melón': '31656', 'datiles': '31618', 'dátiles': '31618', 'pitahaya': '31649',
+    // Condiments
+    'mostaza': '32500', 'sillao': '29857', 'salsa de soya': '29857', 'salsa de tomate': '32148', 'ketchup': '32148',
+    'curry': '32593', 'pimenton': '33241', 'pimentón': '33241', 'paprika': '33241',
+    'curcuma': '33242', 'cúrcuma': '33242', 'canela': '33243'
+};
+
+// RDA Profile for sex/age-specific micronutrient targets
+interface RDAProfile {
+    gender?: 'male' | 'female' | string;
+    age?: number;
+    lifeStage?: 'pregnancy' | 'lactation' | 'menopause' | 'standard' | string;
+}
+
+// Get RDA targets based on demographic profile
+function getRDATargets(profile?: RDAProfile): Record<string, number> {
+    const isFemale = profile?.gender === 'female';
+    const age = profile?.age || 30;
+    const lifeStage = profile?.lifeStage || 'standard';
+
+    // Pregnancy/Lactation special cases
+    if (lifeStage === 'pregnancy') {
+        return {
+            calcium_mg: 1000,
+            iron_mg: 27,         // Much higher in pregnancy
+            potassium_mg: 2900,
+            magnesium_mg: 400,
+            folate_mcg: 600,     // Critical for neural tube
+            vitamin_b12_ug: 2.6,
+            vitamin_a_iu: 2567,  // ~770 mcg RAE
+            vitamin_c_mg: 85,
+            vitamin_d_iu: 600,
+        };
+    }
+    if (lifeStage === 'lactation') {
+        return {
+            calcium_mg: 1000,
+            iron_mg: 9,
+            potassium_mg: 2800,
+            magnesium_mg: 360,
+            folate_mcg: 500,
+            vitamin_b12_ug: 2.8,
+            vitamin_a_iu: 4333,  // ~1300 mcg RAE (higher for milk)
+            vitamin_c_mg: 120,
+            vitamin_d_iu: 600,
+        };
+    }
+
+    // Age-specific adjustments
+    if (age >= 51) {
+        // Adults 51+
+        return {
+            calcium_mg: 1200,    // Higher for bone health
+            iron_mg: isFemale ? 8 : 8, // Post-menopause women need less
+            potassium_mg: 4700,
+            magnesium_mg: isFemale ? 320 : 420,
+            folate_mcg: 400,
+            vitamin_b12_ug: 2.4,
+            vitamin_a_iu: isFemale ? 2333 : 3000, // ~700/900 mcg RAE
+            vitamin_c_mg: isFemale ? 75 : 90,
+            vitamin_d_iu: 800,   // Higher for 51+
+        };
+    }
+
+    // Standard adults 19-50
+    return {
+        calcium_mg: 1000,
+        iron_mg: isFemale ? 18 : 8, // Pre-menopausal women need more
+        potassium_mg: isFemale ? 2600 : 3400,
+        magnesium_mg: isFemale ? 310 : 400,
+        folate_mcg: 400,
+        vitamin_b12_ug: 2.4,
+        vitamin_a_iu: isFemale ? 2333 : 3000, // ~700/900 mcg RAE
+        vitamin_c_mg: isFemale ? 75 : 90,
+        vitamin_d_iu: 600,
+    };
+}
+
+// Fuzzy matching utility for pantry terms that don't match exactly
+function fuzzyMatchPantryTerm(term: string, nameToIdMap: Record<string, string>): string | undefined {
+    const normTerm = term.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+    // 1. Exact match
+    if (nameToIdMap[normTerm]) return nameToIdMap[normTerm];
+
+    // 2. Partial match (term contains key or key contains term)
+    for (const [key, id] of Object.entries(nameToIdMap)) {
+        if (normTerm.includes(key) || key.includes(normTerm)) {
+            return id;
+        }
+    }
+
+    // 3. Word-based matching (any word in term matches any key)
+    const termWords = normTerm.split(/\s+/);
+    for (const word of termWords) {
+        if (word.length < 3) continue; // Skip short words
+        for (const [key, id] of Object.entries(nameToIdMap)) {
+            if (key.includes(word) || word.includes(key)) {
+                return id;
+            }
+        }
+    }
+
+    return undefined;
+}
 
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
 
@@ -236,6 +405,25 @@ function calculateItemMacros(food: SimpleFoodItem, portion_g: number): MacroTota
         sugar_g: food.sugar_g ? Math.round(food.sugar_g * factor * 10) / 10 : 0,
         added_sugars_g: food.added_sugars_g ? Math.round(food.added_sugars_g * factor * 10) / 10 : 0,
         sat_fat_g: food.sat_fat_g ? Math.round(food.sat_fat_g * factor * 10) / 10 : 0,
+        micros: {
+            calcium_mg: food.micros?.calcium_mg ? Math.round(food.micros.calcium_mg * factor * 10) / 10 : 0,
+            iron_mg: food.micros?.iron_mg ? Math.round(food.micros.iron_mg * factor * 10) / 10 : 0,
+            potassium_mg: food.micros?.potassium_mg ? Math.round(food.micros.potassium_mg * factor * 10) / 10 : 0,
+            magnesium_mg: food.micros?.magnesium_mg ? Math.round(food.micros.magnesium_mg * factor * 10) / 10 : 0,
+            folate_mcg: food.micros?.folate_mcg ? Math.round(food.micros.folate_mcg * factor * 10) / 10 : 0,
+            vitamin_b12_ug: food.micros?.vit_b12_mcg
+                ? Math.round(food.micros.vit_b12_mcg * factor * 10) / 10
+                : (food.micros as any)?.vitamin_b12_ug
+                    ? Math.round(((food.micros as any).vitamin_b12_ug as number) * factor * 10) / 10
+                    : 0,
+            vitamin_a_iu: food.micros?.vit_a_iu
+                ? Math.round(food.micros.vit_a_iu * factor * 10) / 10
+                : 0,
+            vitamin_c_mg: food.micros?.vit_c_mg ? Math.round(food.micros.vit_c_mg * factor * 10) / 10 : 0,
+            vitamin_d_iu: food.micros?.vit_d_iu
+                ? Math.round(food.micros.vit_d_iu * factor * 10) / 10
+                : 0,
+        }
     };
 }
 
@@ -261,7 +449,18 @@ function sumMacros(items: MacroTotals[]): MacroTotals {
         sugar_g: (acc.sugar_g || 0) + (item.sugar_g || 0),
         added_sugars_g: (acc.added_sugars_g || 0) + (item.added_sugars_g || 0),
         sat_fat_g: (acc.sat_fat_g || 0) + (item.sat_fat_g || 0),
-    }), { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sodium_mg: 0, sugar_g: 0, added_sugars_g: 0, sat_fat_g: 0 });
+        micros: {
+            calcium_mg: (acc.micros?.calcium_mg || 0) + (item.micros?.calcium_mg || 0),
+            iron_mg: (acc.micros?.iron_mg || 0) + (item.micros?.iron_mg || 0),
+            potassium_mg: (acc.micros?.potassium_mg || 0) + (item.micros?.potassium_mg || 0),
+            magnesium_mg: (acc.micros?.magnesium_mg || 0) + (item.micros?.magnesium_mg || 0),
+            folate_mcg: (acc.micros?.folate_mcg || 0) + (item.micros?.folate_mcg || 0),
+            vitamin_b12_ug: (acc.micros?.vitamin_b12_ug || 0) + (item.micros?.vitamin_b12_ug || 0),
+            vitamin_a_iu: (acc.micros?.vitamin_a_iu || 0) + (item.micros?.vitamin_a_iu || 0),
+            vitamin_c_mg: (acc.micros?.vitamin_c_mg || 0) + (item.micros?.vitamin_c_mg || 0),
+            vitamin_d_iu: (acc.micros?.vitamin_d_iu || 0) + (item.micros?.vitamin_d_iu || 0),
+        }
+    }), { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sodium_mg: 0, sugar_g: 0, added_sugars_g: 0, sat_fat_g: 0, micros: {} });
 }
 
 // Get foods by category
@@ -1543,8 +1742,63 @@ function validateUSDA(plan: MealPlan, targetCalories: number): string[] {
     return issues;
 }
 
+function aggregateMicrosFromMeals(meals: Meal[]): MacroTotals['micros'] {
+    const totals = { calcium_mg: 0, iron_mg: 0, potassium_mg: 0, magnesium_mg: 0, folate_mcg: 0, vitamin_b12_ug: 0, vitamin_a_iu: 0, vitamin_c_mg: 0, vitamin_d_iu: 0 };
+    meals.forEach(meal => {
+        meal.items.forEach(mi => {
+            const m = mi.macros.micros;
+            if (!m) return;
+            totals.calcium_mg += m.calcium_mg || 0;
+            totals.iron_mg += m.iron_mg || 0;
+            totals.potassium_mg += m.potassium_mg || 0;
+            totals.magnesium_mg += m.magnesium_mg || 0;
+            totals.folate_mcg += m.folate_mcg || 0;
+            totals.vitamin_b12_ug += m.vitamin_b12_ug || 0;
+            totals.vitamin_a_iu += m.vitamin_a_iu || 0;
+            totals.vitamin_c_mg += m.vitamin_c_mg || 0;
+            totals.vitamin_d_iu += m.vitamin_d_iu || 0;
+        });
+    });
+    return totals;
+}
+
+function validateMicros(totals: MacroTotals['micros'], rdaProfile?: RDAProfile): string[] {
+    if (!totals) return ['⚠️ Micronutrient data missing'];
+    const issues: string[] = [];
+
+    // Get sex/age-specific RDA targets
+    const targets = getRDATargets(rdaProfile);
+
+    const genderLabel = rdaProfile?.gender === 'female' ? 'mujer' : 'hombre';
+    const ageLabel = rdaProfile?.age ? `${rdaProfile.age} años` : '';
+    const lifeStageLabel = rdaProfile?.lifeStage && rdaProfile.lifeStage !== 'standard'
+        ? ` (${rdaProfile.lifeStage})` : '';
+
+    const check = (key: string, label: string, unit: string) => {
+        const val = Math.round((totals as any)[key] || 0);
+        const target = targets[key] || 0;
+        if (target > 0 && val < target * 0.7) {
+            const percent = Math.round((val / target) * 100);
+            issues.push(`⚠️ Bajo en ${label}: ${val}${unit} (${percent}% del objetivo ${target}${unit})`);
+        }
+    };
+
+    check('calcium_mg', 'Calcio', ' mg');
+    check('iron_mg', 'Hierro', ' mg');
+    check('potassium_mg', 'Potasio', ' mg');
+    check('magnesium_mg', 'Magnesio', ' mg');
+    check('folate_mcg', 'Folato', ' mcg');
+    check('vitamin_b12_ug', 'Vitamina B12', ' µg');
+    check('vitamin_a_iu', 'Vitamina A', ' IU');
+    check('vitamin_c_mg', 'Vitamina C', ' mg');
+    check('vitamin_d_iu', 'Vitamina D', ' IU');
+
+    return issues;
+}
+
 // ASYNC: Generate daily meal plan from database with VALIDATION
 // userPantryTerms: Array of search_term values from user_pantry table (e.g., ['chicken', 'rice', 'beef'])
+// rdaProfile: Optional sex/age profile for personalized micronutrient validation
 export async function generateDayMealPlanFromDB(
     targetCalories: number,
     targetProtein: number,
@@ -1553,11 +1807,13 @@ export async function generateDayMealPlanFromDB(
     dietType: string = 'balanced',
     conditions: string[] = [],
     nutrientPriorities: string[] = [],
-    varietyManager?: VarietyManager
+    varietyManager?: VarietyManager,
+    rdaProfile?: RDAProfile
 ): Promise<MealPlan> {
     console.log(`\n📅 [DAY PLAN] Generating day plan: ${targetCalories} kcal, ${targetProtein}g protein, ${numMeals} meals`);
     console.log(`  🍽️  Diet: ${dietType}, Conditions: ${conditions.join(', ') || 'none'}`);
     console.log(`  🛒 User pantry terms: ${userPantryTerms?.length || 0} items`);
+    console.log(`  👤 RDA Profile: ${rdaProfile?.gender || 'default'}, ${rdaProfile?.age || 'N/A'} años, ${rdaProfile?.lifeStage || 'standard'}`);
 
     // Load foods from database
     const dbFoods = await loadFoodsFromDB(nutrientPriorities);
@@ -1566,42 +1822,46 @@ export async function generateDayMealPlanFromDB(
     let filteredDbFoods: SimpleFoodItem[];
 
     if (userPantryTerms && userPantryTerms.length > 0) {
-        // Filter by user's pantry selection using exact/normalized term matching
+        // Map pantry terms to IDs with fuzzy matching fallback
         const norm = (s: string) => (s || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-        const allowed = new Set(userPantryTerms.map(norm));
+        const pantryIds = new Set<string>();
+        const unmatchedTerms: string[] = [];
 
-        filteredDbFoods = dbFoods.filter(f => {
-            const rawTokens = [
-                norm(f.name),
-                norm(f.name_es || ""),
-                norm((f as any).search_tags || ""),
-                norm(f.category),
-                norm((f as any).culinary_category || "")
-            ];
-            const tokens: string[] = [];
-            rawTokens.forEach(t => {
-                t.split(/[,;]+/).forEach(v => {
-                    const trimmed = v.trim();
-                    if (trimmed) {
-                        tokens.push(trimmed);
-                        // agregar variante sin lo que sigue después de coma
-                        const base = trimmed.split(',')[0].trim();
-                        if (base && base !== trimmed) tokens.push(base);
-                    }
-                });
-            });
+        userPantryTerms.forEach(rawTerm => {
+            const normTerm = norm(rawTerm);
+            // Try exact match first
+            let id: string | undefined = NAME_TO_ID[normTerm];
 
-            // Match ONLY exact tokens (no substring/fuzzy) para evitar "spinach dip"
-            return tokens.some(tok => allowed.has(tok));
+            // If no exact match, try fuzzy matching
+            if (!id) {
+                id = fuzzyMatchPantryTerm(rawTerm, NAME_TO_ID);
+            }
+
+            if (id) {
+                pantryIds.add(id);
+            } else {
+                unmatchedTerms.push(rawTerm);
+            }
         });
 
-        // Safety: also intersect with onboarding whitelist IDs
-        filteredDbFoods = filteredDbFoods.filter(f => ONBOARDING_FOOD_IDS.has(String(f.id)));
+        if (unmatchedTerms.length > 0) {
+            console.warn(`  ⚠️ Unmatched pantry terms (no IDs found): ${unmatchedTerms.join(', ')}`);
+        }
 
-        console.log(`  ✅ Pantry filter: ${filteredDbFoods.length} foods match user's ${userPantryTerms.length} pantry items`);
+        filteredDbFoods = dbFoods.filter(f => pantryIds.has(String(f.id)));
+        console.log(`  ✅ Pantry ID filter: ${filteredDbFoods.length} foods match user's ${pantryIds.size} pantry IDs (${unmatchedTerms.length} unmatched)`);
+
+        // If very few matches, supplement with essential staples from whitelist
+        if (filteredDbFoods.length < 10) {
+            console.log(`  ℹ️ Few pantry matches (${filteredDbFoods.length}), adding essential staples...`);
+            const essentialIds = new Set(['30817', '29568', '32134', '31639', '27829']); // arroz, huevo, tomate, platano, yogurt
+            const supplementFoods = dbFoods.filter(f => essentialIds.has(String(f.id)) && !pantryIds.has(String(f.id)));
+            filteredDbFoods = [...filteredDbFoods, ...supplementFoods];
+            console.log(`  ✅ Supplemented with ${supplementFoods.length} essential staples, total: ${filteredDbFoods.length}`);
+        }
 
         if (filteredDbFoods.length === 0) {
-            throw new Error('Tu despensa no coincide con ningún alimento del catálogo. Revisa tu selección.');
+            throw new Error(`Tu despensa no coincide con ningún alimento del catálogo. Términos no reconocidos: ${unmatchedTerms.slice(0, 5).join(', ')}${unmatchedTerms.length > 5 ? '...' : ''}. Revisa tu selección.`);
         }
     } else {
         // Fallback to onboarding whitelist if no pantry provided
@@ -1704,6 +1964,8 @@ export async function generateDayMealPlanFromDB(
         sat_fat_g: meals.reduce((sum, m) => sum + (m.totals.sat_fat_g || 0), 0),
     };
 
+    const microTotals = aggregateMicrosFromMeals(meals);
+
     const deviations = [];
     const calorieDiff = ((finalTotals.kcal - targetCalories) / targetCalories) * 100;
     const proteinDiff = ((finalTotals.protein - targetProtein) / targetProtein) * 100;
@@ -1714,9 +1976,35 @@ export async function generateDayMealPlanFromDB(
     // USDA GUARDRAILS
     const usdaIssues = validateUSDA({ id: 'day', name: 'Day', name_es: 'Día', meals: [], totals: finalTotals }, targetCalories);
 
+    // Micronutrient checks with sex/age-specific RDA targets
+    const microIssues = validateMicros(microTotals, rdaProfile);
+
+    // Daily composition checks: 2 frutas, 2 verduras, 1 grasa, 1-2 lácteos, máx 1 legumbre principal
+    const dayCounts = { fruit: 0, vegetable: 0, fat: 0, dairy: 0, legume: 0 };
+    meals.forEach(m => {
+        m.items.forEach(it => {
+            const cat = it.food.category;
+            if (cat === 'fruit') dayCounts.fruit++;
+            if (cat === 'vegetable') dayCounts.vegetable++;
+            if (cat === 'fat') dayCounts.fat++;
+            if (cat === 'dairy') dayCounts.dairy++;
+            if (cat === 'legume') dayCounts.legume++;
+        });
+    });
+    if (dayCounts.fruit < 2) deviations.push(`⚠️ Frutas insuficientes (${dayCounts.fruit}/2)`);
+    if (dayCounts.vegetable < 2) deviations.push(`⚠️ Verduras insuficientes (${dayCounts.vegetable}/2)`);
+    if (dayCounts.fat < 1) deviations.push(`⚠️ Grasas saludables insuficientes (${dayCounts.fat}/1)`);
+    if (dayCounts.dairy < 1) deviations.push(`⚠️ Lácteos insuficientes (${dayCounts.dairy}/1)`);
+    if (dayCounts.dairy > 2) deviations.push(`⚠️ Lácteos excedidos (${dayCounts.dairy}/2)`);
+    if (dayCounts.legume > 1) deviations.push(`⚠️ Demasiadas legumbres principales (${dayCounts.legume}/1)`);
+
     if (usdaIssues.length > 0) {
         console.warn('⚠️ USDA Guardrails triggered:', usdaIssues);
         deviations.push(...usdaIssues);
+    }
+    if (microIssues.length > 0) {
+        console.warn('⚠️ Micronutrient issues:', microIssues);
+        deviations.push(...microIssues);
     }
 
     console.log(`\n🎉 [DAY PLAN COMPLETE]`);
@@ -1729,13 +2017,14 @@ export async function generateDayMealPlanFromDB(
         name: 'Daily Meal Plan',
         name_es: 'Plan de Comidas Diario',
         meals,
-        totals: finalTotals,
+        totals: { ...finalTotals, micros: microTotals },
         deviations
     };
 }
 
 // ASYNC: Generate weekly meal plan from database
 // userPantryTerms: Array of search_term values from user_pantry table
+// rdaProfile: Optional sex/age profile for personalized micronutrient validation
 export async function generateWeeklyMealPlanFromDB(
     targetCalories: number,
     targetProtein: number,
@@ -1743,7 +2032,8 @@ export async function generateWeeklyMealPlanFromDB(
     userPantryTerms?: string[],
     dietType: string = 'balanced',
     conditions: string[] = [],
-    nutrientPriorities: string[] = []
+    nutrientPriorities: string[] = [],
+    rdaProfile?: RDAProfile
 ): Promise<WeeklyMealPlan> {
     const days: MealPlan[] = [];
     const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -1752,9 +2042,10 @@ export async function generateWeeklyMealPlanFromDB(
     const masterVarietyManager = new VarietyManager();
     console.log(`\n🗓️  [WEEK PLAN] Creating master variety manager for 7 days`);
     console.log(`  🛒 User pantry terms: ${userPantryTerms?.length || 0} items`);
+    console.log(`  👤 RDA Profile: ${rdaProfile?.gender || 'default'}, ${rdaProfile?.age || 'N/A'} años`);
 
     for (let i = 0; i < 7; i++) {
-        const plan = await generateDayMealPlanFromDB(targetCalories, targetProtein, numMeals, userPantryTerms, dietType, conditions, nutrientPriorities, masterVarietyManager);
+        const plan = await generateDayMealPlanFromDB(targetCalories, targetProtein, numMeals, userPantryTerms, dietType, conditions, nutrientPriorities, masterVarietyManager, rdaProfile);
         plan.id = `day_${i}_${Date.now()}_${Math.random()}`;
         plan.name_es = `Día ${i + 1} - ${dayNames[i]}`;
         days.push(plan);

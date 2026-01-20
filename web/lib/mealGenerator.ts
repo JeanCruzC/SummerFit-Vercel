@@ -841,12 +841,22 @@ function generateMealFromFoods(
 
     // Quality scoring function - lower is better
     const getServingSize = (f: SimpleFoodItem): number => f.serving_size || f.portion_g || 100;
-    const isSnackLike = (f: SimpleFoodItem): boolean => {
+    const inferCourse = (f: SimpleFoodItem): 'main' | 'side' | 'snack' => {
         const s = getServingSize(f);
-        return s <= 40 || f.category === 'condiment';
+        const kcal = f.kcal || 0;
+        // Dense + large serving => main
+        if (kcal >= 120 && s >= 80 && ['protein', 'carb', 'legume', 'fat'].includes(f.category)) return 'main';
+        // Very small serving or condiment => snack/side
+        if (s <= 40 || f.category === 'condiment') return 'snack';
+        // Vegetables/fruits moderate size => side
+        if (f.category === 'vegetable' || f.category === 'fruit') return 'side';
+        // Dairy high-protein can be main for breakfast
+        if (f.category === 'dairy' && f.protein >= 8 && s >= 150) return 'main';
+        return 'side';
     };
+    const isSnackLike = (f: SimpleFoodItem): boolean => inferCourse(f) === 'snack';
     const isSweetCereal = (f: SimpleFoodItem): boolean =>
-        (f.sugar_g ?? 0) >= 10 && f.category === 'carb' && getServingSize(f) <= 60;
+        (f.sugar_g ?? 0) >= 10 && f.category === 'carb' && getServingSize(f) <= 80;
     const isFishFood = (f: SimpleFoodItem): boolean => {
         const nm = `${f.name} ${f.name_es}`.toLowerCase();
         return ['fish', 'tuna', 'atún', 'salmón', 'salmon', 'tilapia', 'pescado'].some(k => nm.includes(k));
@@ -856,14 +866,20 @@ function generateMealFromFoods(
 
     const culinaryPenalty = (f: SimpleFoodItem): number => {
         let c = 0;
-        // Snack-like items are poor mains in lunch/dinner
-        if ((type === 'lunch' || type === 'dinner') && isSnackLike(f)) c += 6;
-        // Sweet cereals outside breakfast/snack are undesirable
-        if ((type === 'lunch' || type === 'dinner') && isSweetCereal(f)) c += 8;
+        const course = inferCourse(f);
+        // Course vs mealType compatibility
+        if ((type === 'lunch' || type === 'dinner') && course === 'snack') c += 8;
+        if ((type === 'lunch' || type === 'dinner') && isSweetCereal(f)) c += 10;
+        if ((type === 'breakfast' || type === 'snack') && course === 'main' && f.category === 'fat') c += 4;
         // Avoid fish + legume pairing
         if ((isFishFood(f) && hasLegume) || (f.category === 'legume' && hasFish)) c += 8;
-        // Carb with very small serving is likely a snack cereal/popcorn
-        if ((type === 'lunch' || type === 'dinner') && f.category === 'carb' && getServingSize(f) <= 50) c += 6;
+        // Penalize carbs that are low-fiber/high-sugar as mains
+        if ((type === 'lunch' || type === 'dinner') && f.category === 'carb') {
+            if ((f.fiber ?? 0) < 2) c += 4;
+            if ((f.sugar_g ?? 0) > 12) c += 6;
+        }
+        // Encourage sides/vegetables at lunch/dinner
+        if ((type === 'lunch' || type === 'dinner') && f.category === 'vegetable') c -= 2;
         return c;
     };
 
@@ -890,9 +906,18 @@ function generateMealFromFoods(
     // Pick best candidate by scoring (lower = better)
     const pickBest = (candidates: SimpleFoodItem[], scorer: (f: SimpleFoodItem) => number): SimpleFoodItem | undefined => {
         if (candidates.length === 0) return undefined;
-        // Light shuffle to reduce deterministic repetition
+        // Shuffle and pick lowest score
         const shuffled = [...candidates].sort(() => Math.random() - 0.5);
-        return shuffled.reduce((best, f) => scorer(f) < scorer(best) ? f : best);
+        let best = shuffled[0];
+        let bestScore = scorer(best);
+        for (let i = 1; i < shuffled.length; i++) {
+            const s = scorer(shuffled[i]);
+            if (s < bestScore) {
+                best = shuffled[i];
+                bestScore = s;
+            }
+        }
+        return best;
     };
 
     let proteinSourceList = proteins;
@@ -1145,6 +1170,54 @@ function generateMealFromFoods(
             ).idx;
             adjustItemPortion(proteinIdx, 0.9);
             totals = recomputeTotals();
+        }
+    }
+
+    // If fat% is too low (<20%) try adding/upsizing a healthy fat if available
+    const fatPct = totals.kcal > 0 ? ((totals.fat || 0) * 9 / totals.kcal) * 100 : 0;
+    if (fatPct < 18 && fats.length > 0) {
+        const fatCandidate = pickBest(fats, qualityPenalty);
+        if (fatCandidate && preventRoleDuplication(items, fatCandidate)) {
+            const portionResult = calculateOptimalPortion(
+                fatCandidate,
+                { fat: mealFatTarget * 0.6 },
+                { ...portionContext, existingItems: items }
+            );
+            if (portionResult.isValid) {
+                const finalPortion = adjustToServingBounds(fatCandidate, portionResult.finalPortion);
+                items.push({
+                    food: fatCandidate,
+                    portion_g: finalPortion,
+                    cooking_state: fatCandidate.cooking_states?.[0] || 'raw',
+                    macros: calculateItemMacros(fatCandidate, finalPortion)
+                });
+                totals = recomputeTotals();
+            }
+        }
+    }
+
+    // If fiber is too low (<14g per 1000 kcal), add a high-fiber veg/legume if space
+    const targetFiber = Math.max(10, Math.round((totals.kcal / 1000) * 14));
+    const currentFiber = totals.fiber || 0;
+    if (currentFiber < targetFiber && (vegetables.length > 0 || legumes.length > 0)) {
+        const fiberPool = [...vegetables, ...legumes].filter(f => (f.fiber ?? 0) >= 2);
+        const fiberCandidate = pickBest(fiberPool, qualityPenalty);
+        if (fiberCandidate && preventRoleDuplication(items, fiberCandidate)) {
+            const portionResult = calculateOptimalPortion(
+                fiberCandidate,
+                { kcal: 60 },
+                { ...portionContext, existingItems: items }
+            );
+            if (portionResult.isValid) {
+                const finalPortion = adjustToServingBounds(fiberCandidate, portionResult.finalPortion);
+                items.push({
+                    food: fiberCandidate,
+                    portion_g: finalPortion,
+                    cooking_state: fiberCandidate.cooking_states?.[0],
+                    macros: calculateItemMacros(fiberCandidate, finalPortion)
+                });
+                totals = recomputeTotals();
+            }
         }
     }
 

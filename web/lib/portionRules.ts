@@ -319,9 +319,29 @@ export function isFoodAppropriateForMeal(
     return true; // Permissive fallback
   }
 
-  // -----------------------------------------------------------------
-  // HELPER UTILITIES
-  // -----------------------------------------------------------------
+  // Ultra‑processed detection (food_tier or extreme nutrient combo)
+  const isBranded = (food as any).food_tier === 'Branded';
+  const ultraHighSodiumSugar = (food.sodium_mg ?? 0) > 900 && (food.sugar_g ?? 0) > 20;
+  if (isBranded || ultraHighSodiumSugar) {
+    // Block ultraprocessed foods from any meal
+    return false;
+  }
+
+  // Priority 1: Use AI‑tagged meal_times if available
+  if (food.meal_times && Array.isArray(food.meal_times) && food.meal_times.length > 0) {
+    const isTagged = food.meal_times.includes(mealType);
+
+    // Special case: snacks can include fruits and nuts even without explicit tag
+    if (mealType === 'snack' && !isTagged) {
+      if (['fruit', 'fat', 'dairy'].includes(food.category)) {
+        return true;
+      }
+    }
+
+    return isTagged;
+  }
+
+  // Helper utilities for keyword matching
   const norm = (s: string) =>
     (s || '')
       .toLowerCase()
@@ -336,7 +356,7 @@ export function isFoodAppropriateForMeal(
   ];
   const BREAKFAST_PROTEIN = [
     'huevo', 'egg', 'omelet', 'omelette', 'tofu', 'yogurt griego',
-    'greek yogurt', 'cottage', 'queso fresco', 'requesón'
+    'greek yogurt', 'cottage', 'cottage cheese', 'queso fresco', 'requesón'
   ];
   const LEGUMES = [
     'lenteja', 'lentil', 'frijol', 'frejol', 'bean', 'garbanzo',
@@ -349,74 +369,39 @@ export function isFoodAppropriateForMeal(
 
   const txt = `${food.name || ''} ${food.name_es || ''}`;
 
-  // -----------------------------------------------------------------
-  // UNIVERSAL BLOCKERS (apply to all meals)
-  // -----------------------------------------------------------------
+  // Universal blockers
   const isProcessedMeat = hasAny(txt, PROCESSED_MEAT) || (food.sodium_mg ?? 0) > 900;
   const isHighSugar = (food.sugar_g ?? 0) > 20 && food.category !== 'fruit';
-
-  // Block processed meats and ultra-high sugar everywhere
   if (isProcessedMeat) return false;
   if (isHighSugar) return false;
 
-  // -----------------------------------------------------------------
-  // Priority 1: Use AI-tagged meal_times if available and valid
-  // -----------------------------------------------------------------
-  if (food.meal_times && Array.isArray(food.meal_times) && food.meal_times.length > 0) {
-    const isTagged = food.meal_times.includes(mealType);
-
-    // Special case: snacks can include fruits and nuts even without explicit tag
-    if (mealType === 'snack' && !isTagged) {
-      if (['fruit', 'fat', 'dairy'].includes(food.category)) {
-        return true;
-      }
-    }
-
-    return isTagged;
-  }
-
-  // -----------------------------------------------------------------
-  // Priority 2: Smart category-based rules (fallback)
-  // -----------------------------------------------------------------
-  const isLegume = hasAny(txt, LEGUMES);
-  const isSweetCereal = hasAny(txt, SWEET_CEREAL) || (hasAny(txt, ['cereal']) && (food.sugar_g ?? 0) >= 10);
-
+  // Category‑based rules
   switch (mealType) {
     case 'breakfast':
-      // Block legumes in breakfast (no lentils at 7am)
-      if (isLegume) return false;
-
-      // Proteins: only breakfast-style (eggs, tofu, greek yogurt, cottage)
+      if (hasAny(txt, LEGUMES)) return false;
       if (food.category === 'protein') {
-        return hasAny(txt, BREAKFAST_PROTEIN) ||
-          (food.protein >= 15 && (food.sodium_mg ?? 0) <= 600);
+        // Only allow classic breakfast proteins (eggs, tofu, fresh/lean dairy proteins)
+        return hasAny(txt, BREAKFAST_PROTEIN);
       }
-
-      // Dairy: only high-protein, low-sugar variants
       if (food.category === 'dairy') {
         return food.protein >= 8 && (food.sugar_g ?? 0) <= 12;
       }
-
-      // Allow carbs, fruits, fats, vegetables
       return ['carb', 'fruit', 'fat', 'vegetable'].includes(food.category);
-
     case 'lunch':
     case 'dinner':
-      // Block sweet cereals in lunch/dinner
-      if (isSweetCereal) return false;
-
-      // Everything else is allowed
+      if (hasAny(txt, SWEET_CEREAL) || (hasAny(txt, ['cereal']) && (food.sugar_g ?? 0) >= 10)) {
+        return false;
+      }
       return ['protein', 'carb', 'vegetable', 'fat', 'fruit', 'dairy', 'condiment', 'beverage'].includes(food.category);
-
     case 'snack':
-      // Snacks: fruits, nuts, dairy, light proteins
-      return ['fruit', 'fat', 'dairy'].includes(food.category) ||
-        (food.category === 'protein' && food.protein > 10 && food.kcal < 200);
-
+      return ['fruit', 'fat', 'dairy'].includes(food.category) || (food.category === 'protein' && food.protein > 10 && food.kcal < 200);
     default:
       return true;
   }
 }
+
+
+
 
 // ============================================================================
 // 5. OPTIMAL PORTION CALCULATOR (CORE ALGORITHM)

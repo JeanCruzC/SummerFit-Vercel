@@ -34,6 +34,7 @@ export interface SimpleFoodItem {
     fiber?: number;
     sodium_mg?: number;
     sugar_g?: number;
+    added_sugars_g?: number;
     sat_fat_g?: number;
     // Clinical Micros (Values per 100g)
     micros?: {
@@ -150,6 +151,7 @@ export interface MacroTotals {
     fiber?: number;
     sodium_mg?: number;
     sugar_g?: number;
+    added_sugars_g?: number;
     sat_fat_g?: number;
 }
 
@@ -164,6 +166,7 @@ function calculateItemMacros(food: SimpleFoodItem, portion_g: number): MacroTota
         fiber: food.fiber ? Math.round(food.fiber * factor * 10) / 10 : 0,
         sodium_mg: food.sodium_mg ? Math.round(food.sodium_mg * factor) : 0,
         sugar_g: food.sugar_g ? Math.round(food.sugar_g * factor * 10) / 10 : 0,
+        added_sugars_g: food.added_sugars_g ? Math.round(food.added_sugars_g * factor * 10) / 10 : 0,
         sat_fat_g: food.sat_fat_g ? Math.round(food.sat_fat_g * factor * 10) / 10 : 0,
     };
 }
@@ -178,8 +181,9 @@ function sumMacros(items: MacroTotals[]): MacroTotals {
         fiber: (acc.fiber || 0) + (item.fiber || 0),
         sodium_mg: (acc.sodium_mg || 0) + (item.sodium_mg || 0),
         sugar_g: (acc.sugar_g || 0) + (item.sugar_g || 0),
+        added_sugars_g: (acc.added_sugars_g || 0) + (item.added_sugars_g || 0),
         sat_fat_g: (acc.sat_fat_g || 0) + (item.sat_fat_g || 0),
-    }), { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sodium_mg: 0, sugar_g: 0, sat_fat_g: 0 });
+    }), { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sodium_mg: 0, sugar_g: 0, added_sugars_g: 0, sat_fat_g: 0 });
 }
 
 // Get foods by category
@@ -204,7 +208,8 @@ export async function getFoodsFromDB(
     }
 
     try {
-        const { createClient } = await import('@/lib/supabase/client');
+        // Use relative path to avoid path-alias resolution issues when running via tsx
+        const { createClient } = await import('./supabase/client');
         const supabase = createClient();
 
         const categoryMap: Record<string, string[]> = {
@@ -431,7 +436,8 @@ export interface WeeklyMealPlan {
 // UNIFIED QUERY: Pre-load ALL food categories from Supabase in 1 single query
 async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<SimpleFoodItem[]> {
     try {
-        const { createClient } = await import('@/lib/supabase/client');
+        // Use relative path to avoid path-alias resolution issues when running via tsx
+        const { createClient } = await import('./supabase/client');
         const supabase = createClient();
 
         // ✅ UNIFIED QUERY: Load ALL foods in 1 call (instead of 6 separate queries)
@@ -768,12 +774,26 @@ function generateMealFromFoods(
     // STEP 1: Add primary protein
     // Template: Breakfast can use High-Protein Dairy (Greek Yogurt/Cottage) or Protein (Eggs). Lunch/Dinner uses Protein (Meat/Fish).
 
+    const norm = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const isUltraProcessedFood = (f: SimpleFoodItem): boolean => {
+        const txt = `${norm(f.name)} ${norm(f.name_es)}`;
+        const processedKeywords = [
+            'jamon', 'ham', 'salchicha', 'sausage', 'mortadela', 'embutido',
+            'pepperoni', 'hot dog', 'tocino', 'bacon', 'cereal azucar', 'granola',
+            'barrita', 'ultra proces'
+        ];
+        const branded = (f as any).food_tier === 'Branded';
+        const extremeSodiumSugar = (f.sodium_mg ?? 0) > 900 && (f.sugar_g ?? 0) > 20;
+        return branded || extremeSodiumSugar || processedKeywords.some(k => txt.includes(k));
+    };
+
     // Quality scoring function - lower is better
     const qualityPenalty = (f: SimpleFoodItem): number => {
         let p = 0;
         if ((f.sodium_mg ?? 0) > 700) p += 3;
         if ((f.sugar_g ?? 0) > 12 && f.category !== 'fruit') p += 3;
         if ((f.sat_fat_g ?? 0) > 6) p += 2;
+        if (isUltraProcessedFood(f)) p += 4;
         return p;
     };
 
@@ -997,22 +1017,23 @@ function validateUSDA(plan: MealPlan, targetCalories: number): string[] {
     const issues: string[] = [];
     const totals = plan.totals;
 
-    // 1. Added Sugars (<10% of kcal)
+    // 1. Added/Total Sugars
     // 1g Sugar = 4 kcal
-    const sugarKcal = (totals.sugar_g || 0) * 4; // Using Total Sugar as proxy if added not separated, but strictly USDA says Added.
-    // NOTE: DB has 'sugar_g' which is likely Total. 'added_sugars_g' might be 0 if not mapped.
-    // We will use a loose check on Total Sugar for now, or Added if available.
-    // Ideally we want Added. Let's assume we map 'sugar_g' as Total for fruit/dairy context awareness?
-    // Actually, simple food DBs don't always distinguish.
-    // Let's check: If Sugar > 50g (approx 200kcal) AND it's not mostly fruit...
-    const sugarPct = (sugarKcal / totals.kcal) * 100;
-    if (sugarPct > 15) { // Looser 15% for Total Sugar (Fruit included)
+    const totalSugarKcal = (totals.sugar_g || 0) * 4;
+    const addedSugarKcal = (totals.added_sugars_g || 0) * 4;
+    const sugarPct = totals.kcal > 0 ? (totalSugarKcal / totals.kcal) * 100 : 0;
+    const addedSugarPct = totals.kcal > 0 ? (addedSugarKcal / totals.kcal) * 100 : 0;
+
+    if (addedSugarPct > 10) {
+        issues.push(`⚠️ High Added Sugar: ${addedSugarPct.toFixed(1)}% of kcal (Limit 10%)`);
+    } else if (sugarPct > 15) { // Looser 15% for Total Sugar (Fruit included)
         issues.push(`⚠️ High Sugar: ${sugarPct.toFixed(1)}% of kcal (Limit 15% Total / 10% Added)`);
     }
 
     // 2. Sodium (<2300mg)
-    if ((totals.sodium_mg || 0) > 2300) {
-        issues.push(`⚠️ High Sodium: ${totals.sodium_mg}mg (Limit 2300mg)`);
+    const sodiumMg = totals.sodium_mg || 0;
+    if (sodiumMg > 2300) {
+        issues.push(`⚠️ High Sodium: ${sodiumMg}mg (Limit 2300mg)`);
     }
 
     // 3. Saturated Fat (<10% of kcal)
@@ -1020,6 +1041,12 @@ function validateUSDA(plan: MealPlan, targetCalories: number): string[] {
     const satFatPct = (satFatKcal / totals.kcal) * 100;
     if (satFatPct > 10) {
         issues.push(`⚠️ High Saturated Fat: ${satFatPct.toFixed(1)}% (Limit 10%)`);
+    }
+
+    // 4. Ultra-processed profile: high sodium + high sugar combo
+    const hasHighSugarCombo = addedSugarPct > 8 || sugarPct > 15 || (totals.sugar_g || 0) > 60;
+    if (sodiumMg > 1800 && hasHighSugarCombo) {
+        issues.push('⚠️ Ultra-processed profile: high sodium + sugar combo');
     }
 
     return issues;

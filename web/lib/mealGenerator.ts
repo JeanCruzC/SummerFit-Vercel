@@ -239,6 +239,16 @@ function calculateItemMacros(food: SimpleFoodItem, portion_g: number): MacroTota
     };
 }
 
+const hasDuplicateIds = (mealItems: { food: SimpleFoodItem }[]): boolean => {
+    const seen = new Set<string>();
+    for (const mi of mealItems) {
+        const id = String(mi.food.id);
+        if (seen.has(id)) return true;
+        seen.add(id);
+    }
+    return false;
+};
+
 // Sum macros from multiple items
 function sumMacros(items: MacroTotals[]): MacroTotals {
     return items.reduce((acc, item) => ({
@@ -1102,6 +1112,9 @@ function generateMealFromFoods(
                 }
             }
 
+            // Skip candidates with duplicate food IDs to avoid repeats (e.g., doble yogurt)
+            if (hasDuplicateIds(candidate)) continue;
+
             const cost = evaluateMeal(candidate);
             // Simulated annealing with slower cooling for more exploration
             const temp = 1.5 + (iterations - it) / iterations;
@@ -1553,24 +1566,43 @@ export async function generateDayMealPlanFromDB(
     let filteredDbFoods: SimpleFoodItem[];
 
     if (userPantryTerms && userPantryTerms.length > 0) {
-        // Filter by user's pantry selection using search_term matching
-        // Match food name (english or spanish) against pantry search terms
-        const pantryTermsLower = userPantryTerms.map(t => t.toLowerCase());
+        // Filter by user's pantry selection using exact/normalized term matching
+        const norm = (s: string) => (s || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        const allowed = new Set(userPantryTerms.map(norm));
 
         filteredDbFoods = dbFoods.filter(f => {
-            const foodNameLower = f.name.toLowerCase();
-            const foodNameEsLower = (f.name_es || '').toLowerCase();
+            const rawTokens = [
+                norm(f.name),
+                norm(f.name_es || ""),
+                norm((f as any).search_tags || ""),
+                norm(f.category),
+                norm((f as any).culinary_category || "")
+            ];
+            const tokens: string[] = [];
+            rawTokens.forEach(t => {
+                t.split(/[,;]+/).forEach(v => {
+                    const trimmed = v.trim();
+                    if (trimmed) {
+                        tokens.push(trimmed);
+                        // agregar variante sin lo que sigue después de coma
+                        const base = trimmed.split(',')[0].trim();
+                        if (base && base !== trimmed) tokens.push(base);
+                    }
+                });
+            });
 
-            // Check if any pantry term matches this food
-            return pantryTermsLower.some(term =>
-                foodNameLower.includes(term) ||
-                foodNameEsLower.includes(term) ||
-                term.includes(foodNameLower.split(' ')[0]) ||  // Match first word
-                term.includes(foodNameEsLower.split(' ')[0])
-            );
+            // Match ONLY exact tokens (no substring/fuzzy) para evitar "spinach dip"
+            return tokens.some(tok => allowed.has(tok));
         });
 
+        // Safety: also intersect with onboarding whitelist IDs
+        filteredDbFoods = filteredDbFoods.filter(f => ONBOARDING_FOOD_IDS.has(String(f.id)));
+
         console.log(`  ✅ Pantry filter: ${filteredDbFoods.length} foods match user's ${userPantryTerms.length} pantry items`);
+
+        if (filteredDbFoods.length === 0) {
+            throw new Error('Tu despensa no coincide con ningún alimento del catálogo. Revisa tu selección.');
+        }
     } else {
         // Fallback to onboarding whitelist if no pantry provided
         const baseWhitelist = ONBOARDING_FOOD_IDS;

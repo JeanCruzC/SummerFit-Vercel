@@ -155,15 +155,83 @@ export interface MacroTotals {
     sat_fat_g?: number;
 }
 
+// Whitelist of onboarding foods (IDs from Supabase) to keep generation aligned with user-selected simple ingredients.
+// Only these IDs (or a user-subset via availableFoods) are eligible for automatic generation.
+const ONBOARDING_FOOD_IDS: Set<string> = new Set([
+    // Proteins
+    '28346', '28237', '28639', '28726', '28775', '29568', '28519', '28277', '28293', '29891', '33146', '33238', '33239',
+    // Carbs / Legumes
+    '30817', '29844', '32117', '31979', '29840', '29776', '29831', '32374', '30815', '30766', '32198', '30580', '30796', '30013', '30237', '30497',
+    // Vegetables
+    '32204', '32134', '32058', '32075', '32029', '32210', '32199', '32223', '32188', '31989', '32182', '32193', '32181', '32195', '32192', '32108', '32216', '32184', '32185', '32218', '32200', '32208', '33240',
+    // Fats / Nuts / Seeds
+    '31638', '29934', '29952', '29904', '29939', '29908', '29946', '32504', '30005', '27881', '28002',
+    // Dairy / Plant milks
+    '27800', '27829', '28160', '28124', '27824', '27820', '27828',
+    // Fruits
+    '31639', '31698', '31630', '31690', '31675', '31621', '31590', '31586', '31654', '31620', '31685', '31669', '31664', '31652', '31663', '31656', '31618', '31649',
+    // Condiments / spices
+    '32500', '29857', '32148', '32593', '33241', '33242', '33243'
+]);
+
+const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+
+// If fiber is missing in the DB, estimate it from macros/category to keep USDA guardrails meaningful.
+function estimateFiberPer100g(food: SimpleFoodItem): number {
+    const carbs = food.carbs || 0;
+    const kcal = food.kcal || 0;
+    const nameMix = `${food.name || ''} ${food.name_es || ''}`.toLowerCase();
+
+    // Helper: detect whole grains / high-fiber staples
+    const isWholeGrain = /integral|whole|bran|oat|avena|quinoa|quinua|trigo|centeno/.test(nameMix);
+    const isRoot = /papa|potato|camote|yuca|cassava|sweet potato|taro/.test(nameMix);
+    const isNutSeed = /almond|almendra|peanut|man[ií]|nut|nuez|chia|linaza|sesame|ajonjol[ií]/.test(nameMix);
+
+    switch (food.category) {
+        case 'legume': {
+            // Legumes typically 6–9 g/100g; scale with carbs to avoid over/under shooting.
+            return clamp(carbs * 0.35, 4, 9);
+        }
+        case 'vegetable': {
+            // Non-starchy veggies cluster 1.5–4 g/100g.
+            return clamp(carbs * 0.4, 1.5, 5);
+        }
+        case 'fruit': {
+            // Fruits: 1.5–4.5 g/100g depending on pulp/peel.
+            return clamp(carbs * 0.25, 1.5, 4.5);
+        }
+        case 'carb': {
+            // Grain/tuber carbs: base fiber proportional to carbs; boost if whole-grain.
+            const base = clamp(carbs * 0.1, 0.5, 3.5);
+            const bonus = isWholeGrain ? 1.5 : isRoot ? 0.5 : 0;
+            return clamp(base + bonus, 0.5, 6);
+        }
+        case 'fat': {
+            // Nuts/seeds carry fiber; oils do not.
+            if (isNutSeed) return clamp(kcal * 0.01, 2, 12); // ~2–12 g depending on density
+            return 0;
+        }
+        default:
+            return 0;
+    }
+}
+
+function resolveFiberPer100g(food: SimpleFoodItem): number {
+    const dbFiber = food.fiber ?? 0;
+    if (dbFiber > 0) return dbFiber;
+    return estimateFiberPer100g(food);
+}
+
 // Calculate macros for a portion
 function calculateItemMacros(food: SimpleFoodItem, portion_g: number): MacroTotals {
     const factor = portion_g / 100;
+    const fiberPer100 = resolveFiberPer100g(food);
     return {
         kcal: Math.round(food.kcal * factor),
         protein: Math.round(food.protein * factor * 10) / 10,
         carbs: Math.round(food.carbs * factor * 10) / 10,
         fat: Math.round(food.fat * factor * 10) / 10,
-        fiber: food.fiber ? Math.round(food.fiber * factor * 10) / 10 : 0,
+        fiber: Math.round(fiberPer100 * factor * 10) / 10,
         sodium_mg: food.sodium_mg ? Math.round(food.sodium_mg * factor) : 0,
         sugar_g: food.sugar_g ? Math.round(food.sugar_g * factor * 10) / 10 : 0,
         added_sugars_g: food.added_sugars_g ? Math.round(food.added_sugars_g * factor * 10) / 10 : 0,
@@ -890,11 +958,14 @@ function generateMealFromFoods(
     const pickTop = (pool: SimpleFoodItem[], max: number) =>
         [...pool].sort((a, b) => qualityPenalty(a) - qualityPenalty(b)).slice(0, Math.min(max, pool.length));
 
-    const proteinPool = pickTop(proteins, 10);
-    const carbPool = pickTop([...carbs, ...legumes], 10);
-    const veggiePool = pickTop(vegetables, 10);
-    const fatPool = pickTop(fats, 5);
-    const fruitPool = pickTop(fruits, 5);
+    const proteinPoolBase = proteins.filter(p =>
+        (p.protein >= 10 && ['protein', 'legume', 'dairy'].includes(p.category)) || p.protein >= 18
+    );
+    const proteinPool = pickTop(proteinPoolBase.length ? proteinPoolBase : proteins, 16);
+    const carbPool = pickTop([...carbs, ...legumes], 16);
+    const veggiePool = pickTop(vegetables, 14);
+    const fatPool = pickTop(fats, 10);
+    const fruitPool = pickTop(fruits, 7);
 
     const portionItem = (food: SimpleFoodItem, target: { protein?: number; carbs?: number; fat?: number; kcal?: number }): ScoredItem | null => {
         const res = calculateOptimalPortion(food, target, { ...portionContext, existingItems: items });
@@ -908,8 +979,11 @@ function generateMealFromFoods(
     const evaluateMeal = (mealItems: ScoredItem[]) => {
         const totals = sumMacros(mealItems.map(i => i.macros));
         const parts: number[] = [];
-        parts.push(Math.abs(totals.kcal - targetCalories) * 0.4);
-        parts.push(Math.abs(totals.protein - mealProteinTarget));
+        const kcalDiff = (totals.kcal - targetCalories) / Math.max(targetCalories, 1);
+        const proteinDiff = (totals.protein - mealProteinTarget) / Math.max(mealProteinTarget, 1);
+        const proteinWeight = proteinDiff < 0 ? 1800 : 1200; // penalize déficit más fuerte
+        parts.push(Math.pow(kcalDiff, 2) * 900); // 10% error ≈ 9 pts
+        parts.push(Math.pow(proteinDiff, 2) * proteinWeight);
 
         const fatPct = totals.kcal > 0 ? ((totals.fat || 0) * 9 / totals.kcal) * 100 : 0;
         const satPct = totals.kcal > 0 ? ((totals.sat_fat_g || 0) * 9 / totals.kcal) * 100 : 0;
@@ -917,13 +991,21 @@ function generateMealFromFoods(
         const addedPct = totals.kcal > 0 ? ((totals.added_sugars_g || 0) * 4 / totals.kcal) * 100 : 0;
         const fiberTarget = Math.max(10, (totals.kcal / 1000) * 14);
         const fiber = totals.fiber || 0;
-        if (satPct > 10) parts.push(20 * (satPct - 10));
-        if (addedPct > 10) parts.push(25 * (addedPct - 10));
-        if (sugarPct > 15) parts.push(10 * (sugarPct - 15));
-        if (fatPct < 20) parts.push((20 - fatPct) * 5);
-        else if (fatPct > 35) parts.push((fatPct - 35) * 3);
-        if (fiber < fiberTarget) parts.push((fiberTarget - fiber) * 2);
-        if ((totals.sodium_mg || 0) > 2300) parts.push(((totals.sodium_mg || 0) - 2300) * 0.02);
+        if (satPct > 10) parts.push(Math.pow(satPct - 10, 1.2) * 18);
+        if (addedPct > 10) parts.push(Math.pow(addedPct - 10, 1.3) * 22);
+        if (sugarPct > 15) parts.push(Math.pow(sugarPct - 15, 1.1) * 10);
+        if (fatPct < 20) {
+            const gap = (20 - fatPct) / 20;
+            parts.push(Math.pow(gap, 2) * 1400);
+        } else if (fatPct > 35) {
+            const gap = (fatPct - 35) / 35;
+            parts.push(Math.pow(gap, 2) * 900);
+        }
+        if (fiber < fiberTarget) {
+            const gap = (fiberTarget - fiber) / fiberTarget;
+            parts.push(Math.pow(gap, 2) * 1600);
+        }
+        if ((totals.sodium_mg || 0) > 2300) parts.push(Math.pow(((totals.sodium_mg || 0) - 2300) / 1000, 2) * 900);
 
         const hasFish = mealItems.some(i => isFishFood(i.food));
         const hasLegume = mealItems.some(i => i.food.category === 'legume');
@@ -934,6 +1016,21 @@ function generateMealFromFoods(
             const sweetCereal = isSweetCereal(i.food);
             if ((type === 'lunch' || type === 'dinner') && sweetCereal) parts.push(30);
             if (varietyManager && varietyManager.shouldSkip(i.food.id, 24)) parts.push(10);
+        });
+
+        // Coverage constraints (avoid meals sin verdura/fruit según tipo)
+        const vegCount = mealItems.filter(i => i.food.category === 'vegetable').length;
+        if ((type === 'lunch' || type === 'dinner') && vegCount === 0) parts.push(200);
+        if (type === 'breakfast') {
+            const fruitCount = mealItems.some(i => i.food.category === 'fruit');
+            if (!fruitCount) parts.push(80);
+        }
+
+        // Penalize duplicating the same food ID within the meal (variedad intra-meal)
+        const seen: Record<string, number> = {};
+        mealItems.forEach(i => { seen[i.food.id] = (seen[i.food.id] || 0) + 1; });
+        Object.values(seen).forEach(count => {
+            if (count > 1) parts.push((count - 1) * 60);
         });
 
         const densityBonus = (fiber / Math.max(totals.kcal, 1)) * 1000;
@@ -968,7 +1065,7 @@ function generateMealFromFoods(
         let currentCost = evaluateMeal(current);
         let best = current;
         let bestCost = currentCost;
-        const iterations = 250;
+        const iterations = 520;
         for (let it = 0; it < iterations; it++) {
             const candidate = [...current];
             const roles = ['protein', 'carb', 'veg', 'veg', 'fat', 'fruit'] as const;
@@ -1006,7 +1103,8 @@ function generateMealFromFoods(
             }
 
             const cost = evaluateMeal(candidate);
-            const temp = 1 + (iterations - it) / iterations;
+            // Simulated annealing with slower cooling for more exploration
+            const temp = 1.5 + (iterations - it) / iterations;
             const accept = cost < currentCost || Math.exp((currentCost - cost) / temp) > Math.random();
             if (accept) {
                 current = candidate;
@@ -1450,6 +1548,20 @@ export async function generateDayMealPlanFromDB(
     const dbFoods = await loadFoodsFromDB(nutrientPriorities);
     console.log(`  💾 Loaded ${dbFoods.length} foods from database`);
 
+    // Restrict to onboarding whitelist and optional user selections
+    const baseWhitelist = ONBOARDING_FOOD_IDS;
+    const userSelected = (availableFoods || []).map(id => String(id));
+    const effectiveWhitelist = userSelected.length
+        ? userSelected.filter(id => baseWhitelist.has(id))
+        : Array.from(baseWhitelist);
+
+    let filteredDbFoods = dbFoods.filter(f => effectiveWhitelist.includes(String(f.id)));
+    console.log(`  ✅ Onboarding filter: ${filteredDbFoods.length} foods (user selected: ${userSelected.length ? 'yes' : 'no'})`);
+
+    if (filteredDbFoods.length === 0) {
+        throw new Error('No foods available after applying onboarding selection. Please select more items in pantry setup.');
+    }
+
     // Create variety manager for this day (or use provided one for weekly plans)
     const dayVarietyManager = varietyManager || new VarietyManager();
 
@@ -1467,7 +1579,7 @@ export async function generateDayMealPlanFromDB(
         meals.push(generateMealFromFoods(
             'breakfast',
             targetCalories * dist.breakfast,
-            dbFoods,
+            filteredDbFoods,
             dietType,
             conditions,
             nutrientPriorities,
@@ -1480,7 +1592,7 @@ export async function generateDayMealPlanFromDB(
         meals.push(generateMealFromFoods(
             'snack',
             targetCalories * dist.snack1,
-            dbFoods,
+            filteredDbFoods,
             dietType,
             conditions,
             nutrientPriorities,
@@ -1493,7 +1605,7 @@ export async function generateDayMealPlanFromDB(
         meals.push(generateMealFromFoods(
             'lunch',
             targetCalories * dist.lunch,
-            dbFoods,
+            filteredDbFoods,
             dietType,
             conditions,
             nutrientPriorities,
@@ -1506,7 +1618,7 @@ export async function generateDayMealPlanFromDB(
         meals.push(generateMealFromFoods(
             'snack',
             targetCalories * dist.snack2,
-            dbFoods,
+            filteredDbFoods,
             dietType,
             conditions,
             nutrientPriorities,
@@ -1519,7 +1631,7 @@ export async function generateDayMealPlanFromDB(
         meals.push(generateMealFromFoods(
             'dinner',
             targetCalories * dist.dinner,
-            dbFoods,
+            filteredDbFoods,
             dietType,
             conditions,
             nutrientPriorities,

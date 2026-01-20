@@ -1,0 +1,14 @@
+{
+  "total_processed": 109,
+  "total_ai": 104,
+  "total_fallback": 0,
+  "total_override": 5,
+  "tier_1_count": 54,
+  "tier_2_count": 45,
+  "tier_3_count": 10,
+  "errors": 0,
+  "api_errors": 0,
+  "db_errors": 0,
+  "total_time_seconds": 193.09671568870544,
+  "api_calls": 5
+}

@@ -28,6 +28,8 @@ export default function ProfilePage() {
     const { t, lang } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [resetting, setResetting] = useState(false);
+    const [resetMessage, setResetMessage] = useState<string | null>(null);
     const [saved, setSaved] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [profile, setProfile] = useState<UserProfile>({
@@ -172,6 +174,46 @@ export default function ProfilePage() {
         { value: "acelerado", label: t('profile.speeds.accelerated') },
     ];
 
+    const handleResetAccount = async () => {
+        if (resetting) return;
+        const confirmed = window.confirm(lang === 'es'
+            ? "Esto eliminará tu historial, pantry y progreso. ¿Continuar?"
+            : "This will delete your history, pantry and progress. Continue?");
+        if (!confirmed) return;
+
+        setResetting(true);
+        setResetMessage(null);
+        try {
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            const uid = session?.user?.id;
+            if (!uid) throw new Error("No session");
+
+            const tables = ['user_pantry', 'daily_logs', 'meal_entries', 'exercise_logs', 'weight_history'];
+            for (const table of tables) {
+                await supabase.from(table).delete().eq('user_id', uid);
+            }
+
+            // Reset profile flags and basic fields
+            await supabase.from('profiles').update({
+                onboarding_completed: false,
+                pantry_setup_completed: false,
+            }).eq('user_id', uid);
+
+            setResetMessage(lang === 'es'
+                ? "Cuenta reiniciada. Te enviaremos al onboarding."
+                : "Account reset. Redirecting to onboarding.");
+
+            // Redirigir al onboarding para empezar de cero
+            setTimeout(() => router.push('/onboarding'), 1200);
+        } catch (err: any) {
+            console.error("Reset error:", err);
+            setResetMessage(err.message || 'Error al reiniciar');
+        } finally {
+            setResetting(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -197,6 +239,7 @@ export default function ProfilePage() {
             <SuccessOverlay isVisible={showSuccess} message={t('profile.saved')} />
 
             {saved && !showSuccess && <Alert type="success">✅ {t('profile.updated')}</Alert>}
+            {resetMessage && <Alert type="info">{resetMessage}</Alert>}
 
             {/* Basic Info */}
             <Card>
@@ -288,6 +331,26 @@ export default function ProfilePage() {
                     <div className="mt-2 text-xs text-gray-500">
                         {t('profile.idealWeight')}: {idealRange.min} - {idealRange.max} kg
                     </div>
+                </div>
+            </Card>
+
+            {/* Reset Account */}
+            <Card className="border-red-200 bg-red-50">
+                <div className="flex flex-col gap-3">
+                    <h2 className="text-lg font-semibold text-red-700 flex items-center gap-2">
+                        🧹 Reiniciar cuenta
+                    </h2>
+                    <p className="text-sm text-red-700">
+                        Esto borra tu pantry, logs diarios, comidas, ejercicios y peso. Volverás al onboarding para empezar de cero.
+                    </p>
+                    <Button
+                        variant="danger"
+                        disabled={resetting}
+                        onClick={handleResetAccount}
+                        className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                    >
+                        {resetting ? "Reiniciando..." : "Borrar historial y reiniciar"}
+                    </Button>
                 </div>
             </Card>
 

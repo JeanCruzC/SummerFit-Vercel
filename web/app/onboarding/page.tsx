@@ -105,7 +105,8 @@ export default function OnboardingPage() {
       return;
     }
 
-    router.push("/dashboard/meal-generator");
+    // Después del onboarding básico, dirigir al paso de selección de alimentos
+    router.push("/pantry-setup");
   };
 
   const isStepValid = () => {

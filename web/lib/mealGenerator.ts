@@ -852,13 +852,19 @@ function generateMealFromFoods(
         if ((f.micros?.potassium_mg ?? 0) > 300) bonus += 0.5;
         if ((f.micros?.iron_mg ?? 0) > 2) bonus += 0.5;
         if ((f.micros?.magnesium_mg ?? 0) > 40) bonus += 0.5;
+        // Penalize repetition within the same day via varietyManager
+        if (varietyManager && varietyManager.shouldSkip(f.id, 24)) {
+            p += 2;
+        }
         return Math.max(0, p - bonus);
     };
 
     // Pick best candidate by scoring (lower = better)
     const pickBest = (candidates: SimpleFoodItem[], scorer: (f: SimpleFoodItem) => number): SimpleFoodItem | undefined => {
         if (candidates.length === 0) return undefined;
-        return candidates.reduce((best, f) => scorer(f) < scorer(best) ? f : best);
+        // Light shuffle to reduce deterministic repetition
+        const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+        return shuffled.reduce((best, f) => scorer(f) < scorer(best) ? f : best);
     };
 
     let proteinSourceList = proteins;
@@ -929,7 +935,13 @@ function generateMealFromFoods(
             ? [...legumes, ...carbs]
             : carbs;
 
-        const carbCandidates = carbPool.slice(0, Math.min(10, carbPool.length));
+        // Avoid fish/legume combo (culinary compatibility)
+        const primaryProtein = items.find(i => i.food.category === 'protein');
+        const isFishProtein = primaryProtein ? (primaryProtein.food.name.toLowerCase().includes('fish') || primaryProtein.food.name.toLowerCase().includes('atún') || primaryProtein.food.name.toLowerCase().includes('tuna') || primaryProtein.food.name.toLowerCase().includes('salmon') || primaryProtein.food.name.toLowerCase().includes('tilapia')) : false;
+
+        const carbCandidates = carbPool
+            .filter(c => !(isFishProtein && c.category === 'legume')) // avoid tuna+beans style combo
+            .slice(0, Math.min(10, carbPool.length));
         // Score: prefer high fiber, low sugar
         const selectedCarb = pickBest(carbCandidates, (f) => {
             const fiberBonus = (f.fiber ?? 0) > 3 ? -2 : 0;

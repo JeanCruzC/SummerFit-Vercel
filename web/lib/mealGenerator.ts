@@ -766,19 +766,43 @@ function generateMealFromFoods(
     };
 
     // STEP 1: Add primary protein
-    // Template: Breakfast can use Dairy (Yogurt/Cottage Cheese) or Protein (Eggs). Lunch/Dinner uses Protein (Meat/Fish).
+    // Template: Breakfast can use High-Protein Dairy (Greek Yogurt/Cottage) or Protein (Eggs). Lunch/Dinner uses Protein (Meat/Fish).
+
+    // Quality scoring function - lower is better
+    const qualityPenalty = (f: SimpleFoodItem): number => {
+        let p = 0;
+        if ((f.sodium_mg ?? 0) > 700) p += 3;
+        if ((f.sugar_g ?? 0) > 12 && f.category !== 'fruit') p += 3;
+        if ((f.sat_fat_g ?? 0) > 6) p += 2;
+        return p;
+    };
+
+    // Pick best candidate by scoring (lower = better)
+    const pickBest = (candidates: SimpleFoodItem[], scorer: (f: SimpleFoodItem) => number): SimpleFoodItem | undefined => {
+        if (candidates.length === 0) return undefined;
+        return candidates.reduce((best, f) => scorer(f) < scorer(best) ? f : best);
+    };
+
     let proteinSourceList = proteins;
     if (type === 'breakfast') {
-        proteinSourceList = [...proteins, ...dairy]; // Allow yogurt/cheese for breakfast
+        // Only HIGH-PROTEIN dairy (≥8g protein, ≤12g sugar) qualifies for breakfast
+        const highProteinDairy = dairy.filter(d => d.protein >= 8 && (d.sugar_g ?? 0) <= 12);
+        proteinSourceList = [...proteins, ...highProteinDairy];
     } else if (type === 'snack') {
-        proteinSourceList = [...dairy, ...proteins, ...fats]; // Snacks can be yogurt or nuts
+        const highProteinDairy = dairy.filter(d => d.protein >= 8 && (d.sugar_g ?? 0) <= 12);
+        proteinSourceList = [...highProteinDairy, ...proteins, ...fats];
     }
 
     if (proteinSourceList.length > 0) {
-        // Select protein (prioritize variety)
-        // Filter out things that shouldn't be main protein if we have options
+        // Select protein using SCORING instead of random
         const proteinCandidates = proteinSourceList.slice(0, Math.min(10, proteinSourceList.length));
-        const selectedProtein = proteinCandidates[Math.floor(Math.random() * proteinCandidates.length)];
+
+        // Score: prioritize protein density (protein per kcal) and low quality penalty
+        const selectedProtein = pickBest(proteinCandidates, (f) => {
+            const proteinPerKcal = f.kcal > 0 ? (f.protein * 4) / f.kcal : 0;
+            const densityPenalty = proteinPerKcal > 0 ? (1 / proteinPerKcal) : 100;
+            return densityPenalty + qualityPenalty(f);
+        });
 
         // Check if this role was already used in this meal type
         if (selectedProtein && (!varietyManager || !varietyManager.shouldSkipByRole(type, 'primaryProtein', 0))) {
@@ -819,7 +843,11 @@ function generateMealFromFoods(
     // Template: Breakfast/Lunch/Dinner usually have a carb. Snack might not.
     if (dietType !== 'keto' && carbs.length > 0 && type !== 'snack') {
         const carbCandidates = carbs.slice(0, Math.min(10, carbs.length));
-        const selectedCarb = carbCandidates[Math.floor(Math.random() * carbCandidates.length)];
+        // Score: prefer high fiber, low sugar
+        const selectedCarb = pickBest(carbCandidates, (f) => {
+            const fiberBonus = (f.fiber ?? 0) > 3 ? -2 : 0;
+            return qualityPenalty(f) + fiberBonus;
+        });
 
         if (selectedCarb && (!varietyManager || !varietyManager.shouldSkipByRole(type, 'primaryCarb', 0))) {
             if (preventRoleDuplication(items, selectedCarb)) {
@@ -852,7 +880,13 @@ function generateMealFromFoods(
 
         for (let i = 0; i < numVeggies; i++) {
             const veggieCandidates = vegetables.slice(0, Math.min(10, vegetables.length));
-            const selectedVeggie = veggieCandidates[Math.floor(Math.random() * veggieCandidates.length)];
+            // Score: prefer low sodium, high fiber veggies
+            const selectedVeggie = pickBest(veggieCandidates, (f) => qualityPenalty(f));
+
+            // Remove selected veggie from pool to avoid duplicates
+            if (selectedVeggie) {
+                vegetables = vegetables.filter(v => v.id !== selectedVeggie.id);
+            }
 
             if (selectedVeggie && preventRoleDuplication(items, selectedVeggie)) {
                 const portionResult = calculateOptimalPortion(
@@ -879,7 +913,8 @@ function generateMealFromFoods(
     // STEP 4: Add fruit (breakfast or snack)
     if ((type === 'breakfast' || type === 'snack') && fruits.length > 0 && dietType !== 'keto') {
         const fruitCandidates = fruits.slice(0, Math.min(5, fruits.length));
-        const selectedFruit = fruitCandidates[Math.floor(Math.random() * fruitCandidates.length)];
+        // Score: prefer lower sugar fruits
+        const selectedFruit = pickBest(fruitCandidates, (f) => (f.sugar_g ?? 0));
 
         if (selectedFruit && preventRoleDuplication(items, selectedFruit)) {
             const portionResult = calculateOptimalPortion(
@@ -908,10 +943,13 @@ function generateMealFromFoods(
 
     if (fatDeficit > 5 && fats.length > 0) {
         const fatCandidates = fats.slice(0, Math.min(3, fats.length));
-        const selectedFat = fatCandidates[Math.floor(Math.random() * fatCandidates.length)];
+        // Score: prefer low saturated fat
+        const selectedFat = pickBest(fatCandidates, (f) => (f.sat_fat_g ?? 0));
 
         // Check if fat role was already used in this meal type
-        if (varietyManager && varietyManager.shouldSkipByRole(type, 'healthyFat', 0)) {
+        if (!selectedFat) {
+            // No valid fat candidate found
+        } else if (varietyManager && varietyManager.shouldSkipByRole(type, 'healthyFat', 0)) {
             console.log(`  ❌ Skipping fat: ${selectedFat.name_es} - fat role already used in ${type}`);
         } else if (preventRoleDuplication(items, selectedFat)) {
             const portionResult = calculateOptimalPortion(

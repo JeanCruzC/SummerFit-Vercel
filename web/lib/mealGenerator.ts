@@ -26,7 +26,7 @@ export interface SimpleFoodItem {
     name: string;
     name_es: string;
     emoji: string;
-    category: 'protein' | 'carb' | 'vegetable' | 'fat' | 'fruit' | 'dairy' | 'condiment' | 'beverage';
+    category: 'protein' | 'carb' | 'vegetable' | 'fat' | 'fruit' | 'dairy' | 'condiment' | 'beverage' | 'legume';
     kcal: number;
     protein: number;
     carbs: number;
@@ -85,8 +85,8 @@ export const SIMPLE_FOODS: SimpleFoodItem[] = [
     { id: 'oats', name: 'Oatmeal', name_es: 'Avena', emoji: '🌾', category: 'carb', kcal: 68, protein: 2.4, carbs: 12, fat: 1.4, fiber: 1.7, portion_g: 200, serving_size: 234, serving_unit: 'cup cooked', micros: { iron_mg: 1.0, magnesium_mg: 27 }, cooking_states: ['cooked'] },
     { id: 'bread_whole', name: 'Whole Wheat Bread', name_es: 'Pan Integral', emoji: '🍞', category: 'carb', kcal: 247, protein: 13, carbs: 41, fat: 3.4, fiber: 7, portion_g: 60, serving_size: 28, serving_unit: 'slice', micros: { iron_mg: 2.5, magnesium_mg: 82 }, cooking_states: ['toasted'] },
     { id: 'quinoa', name: 'Quinoa', name_es: 'Quinua', emoji: '🌾', category: 'carb', kcal: 120, protein: 4.4, carbs: 21, fat: 1.9, fiber: 2.8, portion_g: 150, serving_size: 185, serving_unit: 'cup cooked', micros: { iron_mg: 1.5, magnesium_mg: 64, folate_mcg: 42 }, cooking_states: ['cooked'] },
-    { id: 'beans_black', name: 'Black Beans', name_es: 'Frijoles Negros', emoji: '🫘', category: 'carb', kcal: 132, protein: 8.9, carbs: 24, fat: 0.5, fiber: 8.7, portion_g: 150, serving_size: 172, serving_unit: 'cup cooked', micros: { iron_mg: 2.1, folate_mcg: 149, magnesium_mg: 70 }, cooking_states: ['cooked'] },
-    { id: 'lentils', name: 'Lentils', name_es: 'Lentejas', emoji: '🫘', category: 'carb', kcal: 116, protein: 9, carbs: 20, fat: 0.4, fiber: 7.9, portion_g: 150, serving_size: 198, serving_unit: 'cup cooked', micros: { iron_mg: 3.3, folate_mcg: 181, magnesium_mg: 36 }, cooking_states: ['cooked'] },
+    { id: 'beans_black', name: 'Black Beans', name_es: 'Frijoles Negros', emoji: '🫘', category: 'legume', kcal: 132, protein: 8.9, carbs: 24, fat: 0.5, fiber: 8.7, portion_g: 150, serving_size: 172, serving_unit: 'cup cooked', micros: { iron_mg: 2.1, folate_mcg: 149, magnesium_mg: 70 }, cooking_states: ['cooked'] },
+    { id: 'lentils', name: 'Lentils', name_es: 'Lentejas', emoji: '🫘', category: 'legume', kcal: 116, protein: 9, carbs: 20, fat: 0.4, fiber: 7.9, portion_g: 150, serving_size: 198, serving_unit: 'cup cooked', micros: { iron_mg: 3.3, folate_mcg: 181, magnesium_mg: 36 }, cooking_states: ['cooked'] },
 
     // VEGETABLES
     { id: 'broccoli', name: 'Broccoli', name_es: 'Brócoli', emoji: '🥦', category: 'vegetable', kcal: 35, protein: 2.4, carbs: 7, fat: 0.4, fiber: 3.3, portion_g: 100, serving_size: 91, serving_unit: 'cup chopped', micros: { vit_c_mg: 89, calcium_mg: 47, folate_mcg: 63 }, cooking_states: ['steamed', 'raw', 'sautéed'] },
@@ -472,12 +472,17 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
                 (d.category || '') + ' ' +
                 (d.category_es || '') + ' ' +
                 (d.culinary_category || '') + ' ' +
-                (d.name || '')
+                (d.name || '') + ' ' +
+                (d.name_es || '')
             ).toLowerCase();
+
+            const isLegume = catSearch.includes('legumbre') || catSearch.includes('bean') || catSearch.includes('lentil') || catSearch.includes('chickpea') || catSearch.includes('garbanzo') || catSearch.includes('frijol') || catSearch.includes('frejol') || catSearch.includes('alubia') || catSearch.includes('haba') || catSearch.includes('pallar');
 
             if (catSearch.includes('proteina') || catSearch.includes('carne') || catSearch.includes('pescado') || catSearch.includes('mariscos') || catSearch.includes('huevo') || catSearch.includes('chicken') || catSearch.includes('beef') || catSearch.includes('pork') || catSearch.includes('turkey') || catSearch.includes('fish') || catSearch.includes('meat') || catSearch.includes('egg') || catSearch.includes('tofu')) {
                 category = 'protein';
-            } else if (catSearch.includes('carbohidrato') || catSearch.includes('grano') || catSearch.includes('cereal') || catSearch.includes('pan') || catSearch.includes('pasta') || catSearch.includes('arroz') || catSearch.includes('rice') || catSearch.includes('bread') || catSearch.includes('oat') || catSearch.includes('quinoa') || catSearch.includes('potato') || catSearch.includes('camote') || catSearch.includes('yuca')) {
+            } else if (isLegume) {
+                category = 'legume';
+            } else if (catSearch.includes('carbohidrato') || catSearch.includes('grano') || catSearch.includes('cereal') || catSearch.includes('pan') || catSearch.includes('pasta') || catSearch.includes('arroz') || catSearch.includes('rice') || catSearch.includes('bread') || catSearch.includes('oat') || catSearch.includes('quinoa') || catSearch.includes('quinua') || catSearch.includes('kiwicha') || catSearch.includes('potato') || catSearch.includes('camote') || catSearch.includes('yuca') || catSearch.includes('cassava') || catSearch.includes('papa')) {
                 category = 'carb';
             } else if (catSearch.includes('verdura') || catSearch.includes('vegetal') || catSearch.includes('hortaliza') || catSearch.includes('vegetable') || catSearch.includes('spinach') || catSearch.includes('broccoli') || catSearch.includes('lettuce') || catSearch.includes('zucchini') || catSearch.includes('tomato')) {
                 category = 'vegetable';
@@ -536,6 +541,7 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
                 fiber: d.fiber_g || d.fiber_g_per_100g || 0,
                 sodium_mg: d.sodium_mg || d.sodium_mg_per_100g || 0,
                 sugar_g: d.sugar_g || d.sugars_g || d.sugar_g_per_100g || 0,
+                added_sugars_g: d.added_sugars_g_per_100g || d.added_sugars_g || d.added_sugars || 0,
                 sat_fat_g: d.saturated_fat_g_per_100g || 0,
                 micros: {
                     iron_mg: d.iron_mg || 0,
@@ -642,6 +648,7 @@ function generateMealFromFoods(
     if (dietType === 'keto') {
         filteredFoods = filteredFoods.filter(f =>
             f.category !== 'carb' &&
+            f.category !== 'legume' &&
             !(f.category === 'fruit' && f.carbs > 10) &&
             !(f.category === 'dairy' && f.carbs > 5)
         );
@@ -650,18 +657,22 @@ function generateMealFromFoods(
     if (dietType === 'vegan') {
         filteredFoods = filteredFoods.filter(f =>
             !['protein', 'dairy'].includes(f.category) ||
+            f.category === 'legume' ||
             f.name.toLowerCase().includes('bean') ||
             f.name.toLowerCase().includes('lentil') ||
-            f.name.toLowerCase().includes('tofu')
+            f.name.toLowerCase().includes('tofu') ||
+            f.name.toLowerCase().includes('chickpea')
         );
         console.log(`  🌱 Vegan filter: ${filteredFoods.length} foods`);
     }
     if (dietType === 'vegetarian') {
         filteredFoods = filteredFoods.filter(f =>
             f.category !== 'protein' ||
+            f.category === 'legume' ||
             f.name.toLowerCase().includes('egg') ||
             f.name.toLowerCase().includes('bean') ||
-            f.name.toLowerCase().includes('lentil')
+            f.name.toLowerCase().includes('lentil') ||
+            f.name.toLowerCase().includes('chickpea')
         );
         console.log(`  🥚 Vegetarian filter: ${filteredFoods.length} foods`);
     }
@@ -681,16 +692,20 @@ function generateMealFromFoods(
         fat: [],
         fruit: [],
         dairy: [],
+        legume: [],
         condiment: [],
         beverage: []
     };
 
     filteredFoods.forEach(f => {
         const role = assignRole(f);
+        if (!buckets[role]) {
+            buckets[role] = [];
+        }
         buckets[role].push(f);
     });
 
-    console.log(`  📊 Buckets: P=${buckets.protein.length}, C=${buckets.carb.length}, V=${buckets.veggie.length}, F=${buckets.fat.length}, D=${buckets.dairy.length}, Cnd=${buckets.condiment.length}`);
+    console.log(`  📊 Buckets: P=${buckets.protein.length}, C=${buckets.carb.length}, V=${buckets.veggie.length}, L=${buckets.legume.length}, F=${buckets.fat.length}, D=${buckets.dairy.length}, Cnd=${buckets.condiment.length}`);
 
     // Map old variable names to new buckets for compatibility with rest of function
     // But logically we should use the buckets directly.
@@ -700,30 +715,28 @@ function generateMealFromFoods(
     let fats = buckets.fat;
     let fruits = buckets.fruit;
     let dairy = buckets.dairy;
+    let legumes = buckets.legume;
 
     // Special Case: Vegans/Vegetarians count legumes as proteins
+    const legumeBlocked = varietyManager ? varietyManager.shouldSkipByRole('any', 'legume', 24) : false;
+
     if (dietType === 'vegan' || dietType === 'vegetarian') {
-        // Find legumes in veggie/carb buckets and add to protein candidates
-        const legumes = [...buckets.veggie, ...buckets.carb].filter(f =>
-            f.name.toLowerCase().includes('lentil') ||
-            f.name.toLowerCase().includes('bean') ||
-            f.name.toLowerCase().includes('tofu') ||
-            f.name.toLowerCase().includes('chickpea')
-        );
-        proteins = [...proteins, ...legumes];
+        // Legumes can act as proteins for plant-based diets
+        proteins = legumeBlocked ? proteins : [...proteins, ...legumes];
     }
 
-    console.log(`  📊 Categories: P=${proteins.length}, C=${carbs.length}, V=${vegetables.length}, F=${fats.length}, Fr=${fruits.length}, D=${dairy.length}`);
+    console.log(`  📊 Categories: P=${proteins.length}, C=${carbs.length}, V=${vegetables.length}, L=${legumes.length}, F=${fats.length}, Fr=${fruits.length}, D=${dairy.length}`);
 
     // Apply variety filtering
     if (varietyManager) {
-        const beforeVariety = proteins.length + carbs.length + vegetables.length;
+        const beforeVariety = proteins.length + carbs.length + vegetables.length + legumes.length;
         proteins = varietyManager.getAvailableFoods(proteins, 6);
         carbs = varietyManager.getAvailableFoods(carbs, 12);
         vegetables = varietyManager.getAvailableFoods(vegetables, 8);
         fats = varietyManager.getAvailableFoods(fats, 12);
+        legumes = varietyManager.getAvailableFoods(legumes, 12);
         fruits = varietyManager.getAvailableFoods(fruits, 12);
-        const afterVariety = proteins.length + carbs.length + vegetables.length;
+        const afterVariety = proteins.length + carbs.length + vegetables.length + legumes.length;
         console.log(`  🔄 Variety filter: ${beforeVariety} → ${afterVariety} foods`);
     }
 
@@ -750,9 +763,19 @@ function generateMealFromFoods(
     console.log(`  🎯 Diet ratios (${dietType}): P=${(proteinRatio * 100).toFixed(0)}% C=${(carbRatio * 100).toFixed(0)}% F=${(fatRatio * 100).toFixed(0)}%`);
 
     // Calculate macro targets for this meal
-    const mealProteinTarget = targetProteinGrams || (targetCalories * proteinRatio) / 4;
-    const mealCarbTarget = (targetCalories * carbRatio) / 4;
-    const mealFatTarget = (targetCalories * fatRatio) / 9;
+    // If protein is provided in grams, allocate carbs/fat from remaining kcal to avoid over-budgeting
+    const mealProteinTarget = typeof targetProteinGrams === 'number'
+        ? targetProteinGrams
+        : (targetCalories * proteinRatio) / 4;
+
+    const proteinKcal = mealProteinTarget * 4;
+    const remainingKcal = Math.max(0, targetCalories - proteinKcal);
+    const cfSum = carbRatio + fatRatio;
+    const carbShare = cfSum > 0 ? (carbRatio / cfSum) : 0.67;
+    const fatShare = cfSum > 0 ? (fatRatio / cfSum) : 0.33;
+
+    const mealCarbTarget = (remainingKcal * carbShare) / 4;
+    const mealFatTarget = (remainingKcal * fatShare) / 9;
 
     console.log(`  🎯 Meal targets: ${mealProteinTarget.toFixed(1)}g P, ${mealCarbTarget.toFixed(1)}g C, ${mealFatTarget.toFixed(1)}g F`);
 
@@ -769,6 +792,35 @@ function generateMealFromFoods(
         targetProtein: mealProteinTarget,
         targetCarbs: mealCarbTarget,
         targetFat: mealFatTarget
+    };
+
+    // Clamp portions to realistic serving ranges based on standard serving_size
+    const adjustToServingBounds = (food: SimpleFoodItem, grams: number): number => {
+        const baseServing = food.serving_size || food.portion_g || 100;
+        let minServ = 1;
+        let maxServ = 2;
+        switch (food.category) {
+            case 'fat':
+                minServ = 0.5; maxServ = 1.5; break;
+            case 'condiment':
+                minServ = 0.25; maxServ = 0.75; break;
+            case 'vegetable':
+                minServ = 1; maxServ = 3; break;
+            case 'fruit':
+                minServ = 1; maxServ = 2; break;
+            case 'beverage':
+                minServ = 1; maxServ = 2; break;
+            case 'legume':
+            case 'carb':
+                minServ = 1; maxServ = 2; break;
+            case 'protein':
+            case 'dairy':
+            default:
+                minServ = 1; maxServ = 2; break;
+        }
+        const minG = Math.round(minServ * baseServing);
+        const maxG = Math.round(maxServ * baseServing);
+        return Math.max(minG, Math.min(maxG, grams));
     };
 
     // STEP 1: Add primary protein
@@ -794,7 +846,13 @@ function generateMealFromFoods(
         if ((f.sugar_g ?? 0) > 12 && f.category !== 'fruit') p += 3;
         if ((f.sat_fat_g ?? 0) > 6) p += 2;
         if (isUltraProcessedFood(f)) p += 4;
-        return p;
+        // Bonus: fiber and key micronutrients
+        let bonus = 0;
+        if ((f.fiber ?? 0) > 3) bonus += 1;
+        if ((f.micros?.potassium_mg ?? 0) > 300) bonus += 0.5;
+        if ((f.micros?.iron_mg ?? 0) > 2) bonus += 0.5;
+        if ((f.micros?.magnesium_mg ?? 0) > 40) bonus += 0.5;
+        return Math.max(0, p - bonus);
     };
 
     // Pick best candidate by scoring (lower = better)
@@ -843,6 +901,7 @@ function generateMealFromFoods(
                     // Just simple hard caps based on typical serving sizes logic
                     if (role === 'condiment') finalG = Math.min(finalG, 15);
                     if (role === 'fat') finalG = Math.min(finalG, 60);
+                    finalG = adjustToServingBounds(selectedProtein, finalG);
 
                     items.push({
                         food: selectedProtein,
@@ -852,6 +911,9 @@ function generateMealFromFoods(
                     });
 
                     if (varietyManager) varietyManager.markUsed(selectedProtein.id, type, 'primaryProtein');
+                    if (varietyManager && selectedProtein.category === 'legume') {
+                        varietyManager.markUsed(selectedProtein.id, 'any', 'legume');
+                    }
                     console.log(`  ✅ Added protein: ${selectedProtein.name_es} ${finalG}g`);
                     logPortionCalculation(selectedProtein, portionResult);
                 }
@@ -862,7 +924,12 @@ function generateMealFromFoods(
     // STEP 2: Add primary carb (if not keto)
     // Template: Breakfast/Lunch/Dinner usually have a carb. Snack might not.
     if (dietType !== 'keto' && carbs.length > 0 && type !== 'snack') {
-        const carbCandidates = carbs.slice(0, Math.min(10, carbs.length));
+        const legumeCooldown = legumeBlocked;
+        const carbPool = (!legumeCooldown && type !== 'breakfast')
+            ? [...legumes, ...carbs]
+            : carbs;
+
+        const carbCandidates = carbPool.slice(0, Math.min(10, carbPool.length));
         // Score: prefer high fiber, low sugar
         const selectedCarb = pickBest(carbCandidates, (f) => {
             const fiberBonus = (f.fiber ?? 0) > 3 ? -2 : 0;
@@ -878,15 +945,22 @@ function generateMealFromFoods(
                 );
 
                 if (portionResult.isValid) {
+                    let finalPortion = portionResult.finalPortion;
+                    finalPortion = adjustToServingBounds(selectedCarb, finalPortion);
+
                     items.push({
                         food: selectedCarb,
-                        portion_g: portionResult.finalPortion,
+                        portion_g: finalPortion,
                         cooking_state: selectedCarb.cooking_states?.[0],
-                        macros: calculateItemMacros(selectedCarb, portionResult.finalPortion)
+                        macros: calculateItemMacros(selectedCarb, finalPortion)
                     });
 
                     if (varietyManager) varietyManager.markUsed(selectedCarb.id, type, 'primaryCarb');
-                    console.log(`  ✅ Added carb: ${selectedCarb.name_es} ${portionResult.finalPortion}g`);
+                    if (varietyManager && selectedCarb.category === 'legume') {
+                        // Mark global legume usage to limit to 1/day
+                        varietyManager.markUsed(selectedCarb.id, 'any', 'legume');
+                    }
+                    console.log(`  ✅ Added carb: ${selectedCarb.name_es} ${finalPortion}g`);
                     logPortionCalculation(selectedCarb, portionResult);
                 }
             }
@@ -916,15 +990,16 @@ function generateMealFromFoods(
                 );
 
                 if (portionResult.isValid) {
+                    const finalPortion = adjustToServingBounds(selectedVeggie, portionResult.finalPortion);
                     items.push({
                         food: selectedVeggie,
-                        portion_g: portionResult.finalPortion,
+                        portion_g: finalPortion,
                         cooking_state: selectedVeggie.cooking_states?.[0],
-                        macros: calculateItemMacros(selectedVeggie, portionResult.finalPortion)
+                        macros: calculateItemMacros(selectedVeggie, finalPortion)
                     });
 
                     if (varietyManager) varietyManager.markUsed(selectedVeggie.id, type, 'vegetable');
-                    console.log(`  ✅ Added vegetable: ${selectedVeggie.name_es} ${portionResult.finalPortion}g`);
+                    console.log(`  ✅ Added vegetable: ${selectedVeggie.name_es} ${finalPortion}g`);
                 }
             }
         }
@@ -944,15 +1019,16 @@ function generateMealFromFoods(
             );
 
             if (portionResult.isValid) {
+                const finalPortion = adjustToServingBounds(selectedFruit, portionResult.finalPortion);
                 items.push({
                     food: selectedFruit,
-                    portion_g: portionResult.finalPortion,
+                    portion_g: finalPortion,
                     cooking_state: 'raw',
-                    macros: calculateItemMacros(selectedFruit, portionResult.finalPortion)
+                    macros: calculateItemMacros(selectedFruit, finalPortion)
                 });
 
                 if (varietyManager) varietyManager.markUsed(selectedFruit.id, type, 'fruit');
-                console.log(`  ✅ Added fruit: ${selectedFruit.name_es} ${portionResult.finalPortion}g`);
+                console.log(`  ✅ Added fruit: ${selectedFruit.name_es} ${finalPortion}g`);
             }
         }
     }
@@ -979,15 +1055,16 @@ function generateMealFromFoods(
             );
 
             if (portionResult.isValid && portionResult.finalPortion >= 10) {
+                const finalPortion = adjustToServingBounds(selectedFat, portionResult.finalPortion);
                 items.push({
                     food: selectedFat,
-                    portion_g: portionResult.finalPortion,
+                    portion_g: finalPortion,
                     cooking_state: selectedFat.cooking_states?.[0] || 'raw',
-                    macros: calculateItemMacros(selectedFat, portionResult.finalPortion)
+                    macros: calculateItemMacros(selectedFat, finalPortion)
                 });
 
                 if (varietyManager) varietyManager.markUsed(selectedFat.id, type, 'healthyFat');
-                console.log(`  ✅ Added fat: ${selectedFat.name_es} ${portionResult.finalPortion}g`);
+                console.log(`  ✅ Added fat: ${selectedFat.name_es} ${finalPortion}g`);
             }
         }
     }
@@ -996,7 +1073,42 @@ function generateMealFromFoods(
     // PHASE 4: FINAL ADJUSTMENTS
     // ========================================
 
-    const finalTotals = sumMacros(items.map(i => i.macros));
+    const recomputeTotals = () => sumMacros(items.map(i => i.macros));
+
+    // Light post-adjustment to pull macros closer to targets
+    let totals = recomputeTotals();
+    const adjustItemPortion = (idx: number, factor: number) => {
+        const item = items[idx];
+        const newPortion = adjustToServingBounds(item.food, Math.max(10, Math.round(item.portion_g * factor)));
+        items[idx] = {
+            ...item,
+            portion_g: newPortion,
+            macros: calculateItemMacros(item.food, newPortion)
+        };
+    };
+
+    // Reduce most caloric item if calories are >10% over target
+    if (totals.kcal > targetCalories * 1.1 && items.length > 0) {
+        const maxKcalIdx = items.reduce((idx, item, i, arr) => (arr[idx].macros.kcal < item.macros.kcal ? i : idx), 0);
+        adjustItemPortion(maxKcalIdx, 0.85);
+        totals = recomputeTotals();
+    }
+
+    // If protein >15% over target, trim the highest-protein item (protein or legume)
+    if (totals.protein > mealProteinTarget * 1.15) {
+        const proteinCandidates = items
+            .map((item, idx) => ({ item, idx }))
+            .filter(({ item }) => item.food.category === 'protein' || item.food.category === 'legume');
+        if (proteinCandidates.length > 0) {
+            const proteinIdx = proteinCandidates.reduce((best, curr) =>
+                curr.item.macros.protein > best.item.macros.protein ? curr : best
+            ).idx;
+            adjustItemPortion(proteinIdx, 0.9);
+            totals = recomputeTotals();
+        }
+    }
+
+    const finalTotals = totals;
     const calorieDeviation = ((finalTotals.kcal - targetCalories) / targetCalories) * 100;
     const proteinDeviation = ((finalTotals.protein - mealProteinTarget) / mealProteinTarget) * 100;
 
@@ -1041,6 +1153,19 @@ function validateUSDA(plan: MealPlan, targetCalories: number): string[] {
     const satFatPct = (satFatKcal / totals.kcal) * 100;
     if (satFatPct > 10) {
         issues.push(`⚠️ High Saturated Fat: ${satFatPct.toFixed(1)}% (Limit 10%)`);
+    }
+
+    // 3b. Fat too low (<20% kcal) reduces satiety and fat-soluble vitamin absorption
+    const fatKcal = (totals.fat || 0) * 9;
+    const fatPct = totals.kcal > 0 ? (fatKcal / totals.kcal) * 100 : 0;
+    if (fatPct < 20) {
+        issues.push(`⚠️ Fat very low: ${fatPct.toFixed(1)}% of kcal (target 20-35%)`);
+    }
+
+    // 3c. Fiber floor
+    const fiber = totals.fiber || 0;
+    if (fiber < 20) {
+        issues.push(`⚠️ Low fiber: ${fiber}g (target 25g+)`);
     }
 
     // 4. Ultra-processed profile: high sodium + high sugar combo

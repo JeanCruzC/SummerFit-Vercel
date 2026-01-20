@@ -1,7 +1,7 @@
 
 import { SimpleFoodItem } from './mealGenerator';
 
-export type FoodRole = 'protein' | 'carb' | 'veggie' | 'fat' | 'fruit' | 'dairy' | 'condiment' | 'beverage';
+export type FoodRole = 'protein' | 'carb' | 'veggie' | 'fat' | 'fruit' | 'dairy' | 'legume' | 'condiment' | 'beverage';
 
 interface RoleConstraints {
     min_g: number;
@@ -16,6 +16,7 @@ export const ROLE_CONSTRAINTS: Record<FoodRole, RoleConstraints> = {
     fat: { min_g: 10, max_g: 60, target_kcal_pct_max: 0.3 },
     fruit: { min_g: 80, max_g: 200, target_kcal_pct_max: 0.3 },
     dairy: { min_g: 100, max_g: 250, target_kcal_pct_max: 0.3 },
+    legume: { min_g: 80, max_g: 250, target_kcal_pct_max: 0.4 },
     condiment: { min_g: 1, max_g: 15, target_kcal_pct_max: 0.1 }, // Strict limit on spices/powders
     beverage: { min_g: 200, max_g: 500, target_kcal_pct_max: 0.2 }
 };
@@ -50,6 +51,8 @@ export function assignRole(food: SimpleFoodItem): FoodRole {
         case 'fruit': return 'fruit';
         case 'dairy': return 'dairy';
         case 'condiment': return 'condiment';
+        case 'beverage': return 'beverage';
+        case 'legume': return 'legume';
     }
 
     // 3. Fuzzy Category Based Mapping (Fallback)
@@ -57,7 +60,11 @@ export function assignRole(food: SimpleFoodItem): FoodRole {
         return 'protein';
     }
 
-    if (cat.includes('rice') || cat.includes('pasta') || cat.includes('bread') || cat.includes('cereal') || cat.includes('grain') || cat.includes('tortilla') || cat.includes('potato') || cat.includes('starch')) {
+    if (cat.includes('legume') || cat.includes('bean') || cat.includes('lentil') || cat.includes('chickpea') || cat.includes('garbanzo') || cat.includes('frijol') || cat.includes('frejol') || cat.includes('alubia') || cat.includes('haba') || cat.includes('pallar')) {
+        return 'legume';
+    }
+
+    if (cat.includes('rice') || cat.includes('pasta') || cat.includes('bread') || cat.includes('cereal') || cat.includes('grain') || cat.includes('tortilla') || cat.includes('potato') || cat.includes('starch') || cat.includes('yuca') || cat.includes('cassava') || cat.includes('camote') || cat.includes('sweet potato') || cat.includes('quinua') || cat.includes('quinoa') || cat.includes('kiwicha')) {
         return 'carb';
     }
 

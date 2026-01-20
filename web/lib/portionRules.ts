@@ -83,10 +83,11 @@ const FAT_THRESHOLDS = {
 } as const;
 
 const MEAL_CONTEXT_MULTIPLIERS = {
-  breakfast: 0.85,
-  lunch: 1.15,
+  // Already distributing calories by meal upstream; keep neutral multipliers here
+  breakfast: 1.0,
+  lunch: 1.0,
   dinner: 1.0,
-  snack: 0.6
+  snack: 1.0
 } as const;
 
 const DIET_TYPE_ADJUSTMENTS = {
@@ -392,7 +393,7 @@ export function isFoodAppropriateForMeal(
       if (hasAny(txt, SWEET_CEREAL) || (hasAny(txt, ['cereal']) && (food.sugar_g ?? 0) >= 10)) {
         return false;
       }
-      return ['protein', 'carb', 'vegetable', 'fat', 'fruit', 'dairy', 'condiment', 'beverage'].includes(food.category);
+      return ['protein', 'carb', 'vegetable', 'legume', 'fat', 'fruit', 'dairy', 'condiment', 'beverage'].includes(food.category);
     case 'snack':
       return ['fruit', 'fat', 'dairy'].includes(food.category) || (food.category === 'protein' && food.protein > 10 && food.kcal < 200);
     default:
@@ -529,7 +530,7 @@ export function calculateOptimalPortion(
 
   let dietMultiplier = 1.0;
 
-  if (food.category === 'carb' || food.carbs > 15) {
+  if (food.category === 'carb' || food.category === 'legume' || food.carbs > 15) {
     dietMultiplier *= dietAdjustment.carb_multiplier;
     appliedRules.push(`Diet carb adjustment (${context.dietType}): ${dietAdjustment.carb_multiplier}x`);
   }

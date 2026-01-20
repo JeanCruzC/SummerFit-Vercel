@@ -31,10 +31,14 @@ export function validateMealPlan(
     
     // 2. Validate protein (±15% acceptable)
     const protDev = ((plan.totals.protein - targetProtein) / targetProtein) * 100;
-    if (Math.abs(protDev) > 20) {
-        issues.push(`Proteína insuficiente: ${Math.round(plan.totals.protein)}g (${protDev > 0 ? '+' : ''}${protDev.toFixed(1)}%)`);
-    } else if (Math.abs(protDev) > 15) {
-        warnings.push(`Proteína ligeramente baja: ${protDev > 0 ? '+' : ''}${protDev.toFixed(1)}%`);
+    if (protDev < -20) {
+        issues.push(`Proteína baja: ${Math.round(plan.totals.protein)}g (${protDev.toFixed(1)}%)`);
+    } else if (protDev > 20) {
+        issues.push(`Proteína alta: ${Math.round(plan.totals.protein)}g (+${protDev.toFixed(1)}%)`);
+    } else if (protDev < -15) {
+        warnings.push(`Proteína ligeramente baja: ${protDev.toFixed(1)}%`);
+    } else if (protDev > 15) {
+        warnings.push(`Proteína ligeramente alta: +${protDev.toFixed(1)}%`);
     }
     
     // 3. Validate variety (no more than 2 repetitions)

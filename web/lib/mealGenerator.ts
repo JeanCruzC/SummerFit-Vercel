@@ -840,12 +840,40 @@ function generateMealFromFoods(
     };
 
     // Quality scoring function - lower is better
+    const getServingSize = (f: SimpleFoodItem): number => f.serving_size || f.portion_g || 100;
+    const isSnackLike = (f: SimpleFoodItem): boolean => {
+        const s = getServingSize(f);
+        return s <= 40 || f.category === 'condiment';
+    };
+    const isSweetCereal = (f: SimpleFoodItem): boolean =>
+        (f.sugar_g ?? 0) >= 10 && f.category === 'carb' && getServingSize(f) <= 60;
+    const isFishFood = (f: SimpleFoodItem): boolean => {
+        const nm = `${f.name} ${f.name_es}`.toLowerCase();
+        return ['fish', 'tuna', 'atún', 'salmón', 'salmon', 'tilapia', 'pescado'].some(k => nm.includes(k));
+    };
+    const hasFish = items.some(i => isFishFood(i.food));
+    const hasLegume = items.some(i => i.food.category === 'legume');
+
+    const culinaryPenalty = (f: SimpleFoodItem): number => {
+        let c = 0;
+        // Snack-like items are poor mains in lunch/dinner
+        if ((type === 'lunch' || type === 'dinner') && isSnackLike(f)) c += 6;
+        // Sweet cereals outside breakfast/snack are undesirable
+        if ((type === 'lunch' || type === 'dinner') && isSweetCereal(f)) c += 8;
+        // Avoid fish + legume pairing
+        if ((isFishFood(f) && hasLegume) || (f.category === 'legume' && hasFish)) c += 8;
+        // Carb with very small serving is likely a snack cereal/popcorn
+        if ((type === 'lunch' || type === 'dinner') && f.category === 'carb' && getServingSize(f) <= 50) c += 6;
+        return c;
+    };
+
     const qualityPenalty = (f: SimpleFoodItem): number => {
         let p = 0;
         if ((f.sodium_mg ?? 0) > 700) p += 3;
         if ((f.sugar_g ?? 0) > 12 && f.category !== 'fruit') p += 3;
         if ((f.sat_fat_g ?? 0) > 6) p += 2;
         if (isUltraProcessedFood(f)) p += 4;
+        p += culinaryPenalty(f);
         // Bonus: fiber and key micronutrients
         let bonus = 0;
         if ((f.fiber ?? 0) > 3) bonus += 1;

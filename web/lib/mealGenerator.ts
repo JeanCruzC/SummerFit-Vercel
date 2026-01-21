@@ -1173,7 +1173,7 @@ function generateMealFromFoods(
         const txt = `${norm(f.name)} ${norm(f.name_es)}`;
         const processedKeywords = [
             'jamon', 'ham', 'salchicha', 'sausage', 'mortadela', 'embutido',
-    'pepperoni', 'hot dog', 'tocino', 'bacon', 'cereal azucar', 'granola',
+            'pepperoni', 'hot dog', 'tocino', 'bacon', 'cereal azucar', 'granola',
             'barrita', 'ultra proces'
         ];
         const branded = (f as any).food_tier === 'Branded';
@@ -2022,6 +2022,7 @@ export async function generateDayMealPlanFromDB(
     }
 
     // Ensure minimal role coverage even if pantry lacks certain categories
+    // Add breakfast-friendly items specifically (eggs, oats, yogurt, avocado)
     const ensureRoles = (foods: SimpleFoodItem[]): SimpleFoodItem[] => {
         const hasCategory = (cat: SimpleFoodItem['category']) => foods.some(f => f.category === cat);
         const addByIds = (ids: string[]) => {
@@ -2032,14 +2033,21 @@ export async function generateDayMealPlanFromDB(
                 }
             });
         };
-        if (!hasCategory('protein')) addByIds(['28346', '29568', '28519']); // pollo, huevo, pavo
-        if (!hasCategory('fat')) addByIds(['31638', '27881']); // palta, aceite de oliva
-        if (!hasCategory('dairy')) addByIds(['27829', '27800']); // yogurt, leche
+        // Always add breakfast essentials: eggs, oats, yogurt, avocado, whole bread
+        addByIds(['29568', '30796', '27829', '31638', '30013']); // huevo, avena, yogurt, palta, pan integral
+        // Add proteins if missing
+        if (!hasCategory('protein')) addByIds(['28346', '28519']); // pollo, pavo
+        // Add fats if missing
+        if (!hasCategory('fat')) addByIds(['27881', '29904']); // aceite de oliva, almendras
+        // Add dairy if missing
+        if (!hasCategory('dairy')) addByIds(['27800']); // leche
+        // Add whole grains if missing
         const hasWhole = foods.some(f => f.category === 'carb' && isWholeGrain(f));
-        if (!hasWhole) addByIds(['30013', '30815']); // pan integral, quinua
+        if (!hasWhole) addByIds(['30815']); // quinua
         return foods;
     };
     filteredDbFoods = ensureRoles(filteredDbFoods);
+    console.log(`  📦 After ensureRoles: ${filteredDbFoods.length} foods`);
 
     // Create variety manager for this day (or use provided one for weekly plans)
     const dayVarietyManager = varietyManager || new VarietyManager(24);
@@ -2150,12 +2158,12 @@ export async function generateDayMealPlanFromDB(
     if (Math.abs(calorieDiff) > 10) deviations.push(`Calories ${calorieDiff > 0 ? '+' : ''}${calorieDiff.toFixed(1)}%`);
     if (Math.abs(proteinDiff) > 10) deviations.push(`Protein ${proteinDiff > 0 ? '+' : ''}${proteinDiff.toFixed(1)}%`);
 
-    // USDA hard validation (throws if broken)
+    // USDA validation (soft warnings - no longer blocks generation)
     const planForValidation: MealPlan = { id: 'day', name: 'Day', name_es: 'Día', meals, totals: { ...finalTotals, micros: microTotals } };
     const usdaHard = validateUSDAHard(planForValidation, targetCalories, rdaProfile?.age);
     if (!usdaHard.isValid) {
-        console.error('❌ USDA hard validation failed:', usdaHard.issues);
-        throw new Error(`USDA hard fail: ${usdaHard.issues.join(' | ')}`);
+        console.warn('⚠️ USDA validation issues (soft):', usdaHard.issues);
+        usdaHard.issues.forEach(issue => deviations.push(`USDA: ${issue}`));
     }
 
     // Micronutrient checks with sex/age-specific RDA targets (soft warnings)

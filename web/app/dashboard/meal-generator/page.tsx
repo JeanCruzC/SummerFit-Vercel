@@ -44,7 +44,7 @@ export default function MealGeneratorPage() {
     const [validation, setValidation] = useState<PlanValidation | null>(null);
     const [previousDietType, setPreviousDietType] = useState<string>('balanced');
 
-    // User's pantry selection (search terms from user_pantry table)
+    // User's pantry selection (food_ids from user_pantry table)
     const [userPantryTerms, setUserPantryTerms] = useState<string[]>([]);
 
     // Profile state for accurate projection
@@ -122,11 +122,13 @@ export default function MealGeneratorPage() {
                         // 5. Load user's pantry selection (search terms)
                         const { data: pantryData, error: pantryError } = await supabase
                             .from('user_pantry')
-                            .select('ingredient_name_es')
+                            .select('food_id, ingredient_name_es')
                             .eq('user_id', session.user.id);
 
                         if (!pantryError && pantryData && pantryData.length > 0) {
-                            const terms = pantryData.map(p => p.ingredient_name_es).filter(Boolean);
+                            const terms = pantryData
+                                .map(p => (p.food_id ? String(p.food_id) : p.ingredient_name_es))
+                                .filter(Boolean) as string[];
                             setUserPantryTerms(terms);
                             console.log(`🛒 Loaded ${terms.length} pantry items for meal generation`);
                         } else {
@@ -642,10 +644,11 @@ export default function MealGeneratorPage() {
                                                                     // Avoid tiny gram displays (e.g., "2 g") - always show at least reasonable context
                                                                     const servingSize = (item.food as any).serving_size;
                                                                     const servingUnit = (item.food as any).serving_unit;
+                                                                    const safeGrams = Math.max(grams, Math.min(servingSize || 0, 80)); // never show below ~serving floor
 
                                                                     // If serving unit is already grams, just show grams cleanly
                                                                     if (servingUnit && ['g', 'gram', 'grams'].includes(servingUnit.toLowerCase())) {
-                                                                        return <span className="font-medium text-gray-700 dark:text-gray-300">{grams}g</span>;
+                                                                        return <span className="font-medium text-gray-700 dark:text-gray-300">{safeGrams}g</span>;
                                                                     }
 
                                                                     // Only show complex units if they are clean (e.g. 2 eggs, not 1.3 eggs)
@@ -664,22 +667,22 @@ export default function MealGeneratorPage() {
                                                                         // Handle fractional servings nicely (e.g., "0.5 cup" -> "1/2 cup")
                                                                         if (rawUnits >= 0.4 && rawUnits < 1) {
                                                                             const fraction = rawUnits >= 0.7 ? '¾' : rawUnits >= 0.4 ? '½' : '¼';
-                                                                            return <span className="font-medium text-orange-600 dark:text-orange-400">{fraction} {servingUnit} <span className="text-gray-400 font-normal">({grams}g)</span></span>;
+                                                                            return <span className="font-medium text-orange-600 dark:text-orange-400">{fraction} {servingUnit} <span className="text-gray-400 font-normal">({safeGrams}g)</span></span>;
                                                                         }
 
                                                                         // If it's ounces (special case where unit=oz usually means serving_size=28.35)
                                                                         if (servingUnit.includes('oz') && grams >= 28) {
                                                                             const oz = (grams / 28.35).toFixed(1);
-                                                                            return <span className="font-medium text-orange-600 dark:text-orange-400">{grams}g <span className="text-gray-400 font-normal">({oz} oz)</span></span>;
+                                                                            return <span className="font-medium text-orange-600 dark:text-orange-400">{safeGrams}g <span className="text-gray-400 font-normal">({oz} oz)</span></span>;
                                                                         }
                                                                     }
 
                                                                     // Default to clear grams - but format nicely
                                                                     // For very small portions (condiments), show more context
                                                                     if (grams < 20) {
-                                                                        return <span className="font-medium text-gray-600 dark:text-gray-400">{grams}g <span className="text-gray-400 font-normal">(~{Math.max(1, Math.round(grams / 5))} cdta)</span></span>;
+                                                                        return <span className="font-medium text-gray-600 dark:text-gray-400">{safeGrams}g <span className="text-gray-400 font-normal">(~{Math.max(1, Math.round(safeGrams / 5))} cdta)</span></span>;
                                                                     }
-                                                                    return <span className="font-medium text-gray-700 dark:text-gray-300">{grams}g</span>;
+                                                                    return <span className="font-medium text-gray-700 dark:text-gray-300">{safeGrams}g</span>;
                                                                 })()}
                                                                 {item.cooking_state && ` • ${item.cooking_state}`}
                                                             </div>

@@ -19,6 +19,7 @@ import {
     type PortionCalculationContext
 } from './portionRules';
 import { assignRole } from './roleMapper';
+import { validateUSDAHard, computeMealBudgets, isWholeGrain } from './usdaCompliance';
 
 // Basic food items with nutrition per 100g
 export interface SimpleFoodItem {
@@ -36,6 +37,9 @@ export interface SimpleFoodItem {
     sugar_g?: number;
     added_sugars_g?: number;
     sat_fat_g?: number;
+    usda_group?: 'protein' | 'dairy' | 'vegetable' | 'fruit' | 'whole_grain' | 'refined_grain' | 'fat' | 'condiment';
+    serving_equiv_grams?: number; // explicit USDA serving equivalent in grams if known
+    processing_level?: 'minimally_processed' | 'processed' | 'ultra_processed';
     // Clinical Micros (Values per 100g)
     micros?: {
         iron_mg?: number;    // Hierro (Pregnancy/Anemia)
@@ -616,6 +620,11 @@ function rankFoodsByNutrients(foods: SimpleFoodItem[], priorities: string[]): Si
 class VarietyManager {
     private usedFoods: Map<string, Date> = new Map();
     private usedRoles: Map<string, Date> = new Map(); // KEY: "mealType_role" (e.g., "lunch_primaryProtein")
+    private defaultCooldown: number;
+
+    constructor(cooldownHours: number = 12) {
+        this.defaultCooldown = cooldownHours;
+    }
 
     markUsed(foodId: string, mealType?: string, assignedRole?: string): void {
         // Track by food ID
@@ -652,8 +661,9 @@ class VarietyManager {
         return shouldSkip;
     }
 
-    getAvailableFoods(foods: SimpleFoodItem[], cooldownHours: number = 12): SimpleFoodItem[] {
-        return foods.filter(f => !this.shouldSkip(f.id, cooldownHours));
+    getAvailableFoods(foods: SimpleFoodItem[], cooldownHours?: number): SimpleFoodItem[] {
+        const cd = typeof cooldownHours === 'number' ? cooldownHours : this.defaultCooldown;
+        return foods.filter(f => !this.shouldSkip(f.id, cd));
     }
 
     getRoleStatus(mealType: string, role: string): string {
@@ -798,6 +808,19 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
             // Smart defaults for serving size
             let sSize = d.serving_size || 100;
             let sUnit = d.serving_unit || 'g';
+            // USDA-equivalent grams heuristics by category
+            let servingEquiv = sSize;
+            if (category === 'vegetable') servingEquiv = 90;
+            if (category === 'fruit') servingEquiv = 150;
+            if (category === 'dairy') servingEquiv = 244;
+            if (category === 'protein' || category === 'legume') servingEquiv = 85;
+            if (category === 'carb') servingEquiv = isWholeGrain({ ...d, fiber: d.fiber_g || d.fiber_g_per_100g, carbs: d.carbs_g_per_100g || 0, category: 'carb', id: '', name: '', name_es: '', emoji: '', kcal: 0, protein: 0, fat: 0 } as any) ? 30 : 60;
+            if (category === 'fat') servingEquiv = 5;
+
+            const processing_level: SimpleFoodItem['processing_level'] =
+                d.food_tier === 1 ? 'minimally_processed'
+                    : d.food_tier === 2 ? 'processed'
+                        : 'ultra_processed';
 
             return {
                 id: String(d.id),
@@ -805,6 +828,11 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
                 name_es: cleanName,
                 emoji: d.emoji || '🍽️',
                 category,
+                usda_group: category === 'carb'
+                    ? (isLegume ? 'protein' : (isWholeGrain as any)(d) ? 'whole_grain' : 'refined_grain')
+                    : (category as any),
+                serving_equiv_grams: servingEquiv,
+                processing_level,
                 kcal: d.kcal_per_100g || 0,
                 protein: d.protein_g_per_100g || 0,
                 carbs: d.carbs_g_per_100g || 0,
@@ -859,7 +887,9 @@ function generateMealFromFoods(
     conditions: string[] = [],
     nutrientPriorities: string[] = [],
     targetProteinGrams?: number,
-    varietyManager?: VarietyManager
+    varietyManager?: VarietyManager,
+    dayTargetCalories?: number,
+    ageYears?: number
 ): Meal {
     const typeNames: Record<string, string> = {
         breakfast: 'Desayuno',
@@ -1007,12 +1037,12 @@ function generateMealFromFoods(
     // Apply variety filtering
     if (varietyManager) {
         const beforeVariety = proteins.length + carbs.length + vegetables.length + legumes.length;
-        proteins = varietyManager.getAvailableFoods(proteins, 6);
-        carbs = varietyManager.getAvailableFoods(carbs, 12);
-        vegetables = varietyManager.getAvailableFoods(vegetables, 8);
-        fats = varietyManager.getAvailableFoods(fats, 12);
-        legumes = varietyManager.getAvailableFoods(legumes, 12);
-        fruits = varietyManager.getAvailableFoods(fruits, 12);
+        proteins = varietyManager.getAvailableFoods(proteins, 24);
+        carbs = varietyManager.getAvailableFoods(carbs, 24);
+        vegetables = varietyManager.getAvailableFoods(vegetables, 24);
+        fats = varietyManager.getAvailableFoods(fats, 24);
+        legumes = varietyManager.getAvailableFoods(legumes, 24);
+        fruits = varietyManager.getAvailableFoods(fruits, 24);
         const afterVariety = proteins.length + carbs.length + vegetables.length + legumes.length;
         console.log(`  🔄 Variety filter: ${beforeVariety} → ${afterVariety} foods`);
     }
@@ -1056,6 +1086,10 @@ function generateMealFromFoods(
 
     console.log(`  🎯 Meal targets: ${mealProteinTarget.toFixed(1)}g P, ${mealCarbTarget.toFixed(1)}g C, ${mealFatTarget.toFixed(1)}g F`);
 
+    // USDA/DGA Budgets per meal (sodio/azúcar/satfat)
+    const share = dayTargetCalories ? Math.min(Math.max(targetCalories / dayTargetCalories, 0.15), 0.5) : 0.33;
+    const mealBudgets = computeMealBudgets(dayTargetCalories || targetCalories, ageYears, share);
+
     // ========================================
     // PHASE 3: FOOD SELECTION WITH INTELLIGENT PORTIONS
     // ========================================
@@ -1073,34 +1107,40 @@ function generateMealFromFoods(
 
     // Clamp portions to realistic serving ranges based on standard serving_size
     const adjustToServingBounds = (food: SimpleFoodItem, grams: number): number => {
-        const baseServing = food.serving_size || food.portion_g || 100;
-        let minServ = 1;
-        let maxServ = 2;
-        // Absolute floors by category to evitar “1 g”:
-        let absMin = 20; // default small floor
+        const baseServing = food.serving_equiv_grams || food.serving_size || food.portion_g || 100;
+        // Hard gram windows by category (USDA serving equivalents)
+        let minG = 30;
+        let maxG = 300;
         switch (food.category) {
             case 'fat':
-                minServ = 0.5; maxServ = 1.5; break;
+                minG = 5; maxG = 20; break; // 1–4 tsp
             case 'condiment':
-                minServ = 0.25; maxServ = 0.75; absMin = 2; break;
+                minG = 2; maxG = 15; break;
             case 'vegetable':
-                minServ = 1; maxServ = 3; absMin = 80; break;
+                minG = Math.max(80, baseServing); // 1 serving
+                maxG = Math.min(200, baseServing * 2); // ≤2 servings
+                break;
             case 'fruit':
-                minServ = 1; maxServ = 2; absMin = 80; break;
+                minG = Math.max(100, baseServing); // ~1 fruit
+                maxG = Math.min(250, baseServing * 2);
+                break;
             case 'beverage':
-                minServ = 1; maxServ = 2; absMin = 120; break;
+            case 'dairy':
+                minG = 150; maxG = 250; break;
             case 'legume':
             case 'carb':
-                minServ = 1; maxServ = 2; absMin = 100; break;
+                minG = Math.max(100, baseServing); // cooked cup ~150
+                maxG = Math.min(250, baseServing * 2);
+                break;
             case 'protein':
-            case 'dairy':
+                minG = 120; maxG = 200; break;
             default:
-                minServ = 1; maxServ = 2; absMin = 100; break;
+                minG = Math.max(50, baseServing * 0.8);
+                maxG = Math.min(250, baseServing * 2.2);
+                break;
         }
-        const minG = Math.round(minServ * baseServing);
-        const maxG = Math.round(maxServ * baseServing);
         const clamped = Math.max(minG, Math.min(maxG, grams));
-        return Math.max(absMin, clamped);
+        return clamped;
     };
 
     // ===========================================================
@@ -1179,6 +1219,99 @@ function generateMealFromFoods(
     const fatPool = pickTop(fats, 10);
     const fruitPool = pickTop(fruits, 7);
 
+    // ------------------------
+    // MILP solver (javascript-lp-solver) to enforce hard constraints
+    // ------------------------
+    const buildCandidateList = (): SimpleFoodItem[] => {
+        const uniq: Record<string, boolean> = {};
+        const add = (arr: SimpleFoodItem[], limit: number) => {
+            arr.slice(0, limit).forEach(f => { if (!uniq[f.id]) uniq[f.id] = true; });
+        };
+        add(proteinPool, 4);
+        add(carbPool, 4);
+        add(veggiePool, 5);
+        add(fatPool, 3);
+        add(fruitPool, 3);
+        return Object.keys(uniq).map(id => {
+            return proteinPool.find(f => f.id === id) ||
+                carbPool.find(f => f.id === id) ||
+                veggiePool.find(f => f.id === id) ||
+                fatPool.find(f => f.id === id) ||
+                fruitPool.find(f => f.id === id) as SimpleFoodItem;
+        }).filter(Boolean);
+    };
+
+    const solveWithMILP = (): ScoredItem[] | null => {
+        const candidates = buildCandidateList();
+        if (candidates.length === 0) return null;
+
+        type State = { items: ScoredItem[]; totals: MacroTotals };
+        const seed: State = { items: [], totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sodium_mg: 0, sugar_g: 0, added_sugars_g: 0, sat_fat_g: 0 } };
+
+        const addItem = (state: State, food: SimpleFoodItem, portion: number): State => {
+            const macros = calculateItemMacros(food, portion);
+            return {
+                items: [...state.items, { food, portion_g: portion, macros, course: inferCourse(food) }],
+                totals: sumMacros([...state.items.map(i => i.macros), macros])
+            };
+        };
+
+        const withinHardBudgets = (tot: MacroTotals): boolean => {
+            if (tot.added_sugars_g && tot.added_sugars_g > mealBudgets.maxAddedSugar_g) return false;
+            if (tot.sodium_mg && tot.sodium_mg > mealBudgets.maxSodium_mg) return false;
+            if (tot.sat_fat_g && tot.sat_fat_g > mealBudgets.maxSatFat_g) return false;
+            return true;
+        };
+
+        const meetsMacroWindows = (tot: MacroTotals): boolean => {
+            const kcalMin = targetCalories * 0.85;
+            const kcalMax = targetCalories * 1.1;
+            if (tot.kcal < kcalMin || tot.kcal > kcalMax) return false;
+            if (tot.protein < mealProteinTarget * 0.9) return false;
+            if (tot.carbs < mealCarbTarget * 0.6 || tot.carbs > mealCarbTarget * 1.4) return false;
+            if (tot.fat < mealFatTarget * 0.6 || tot.fat > mealFatTarget * 1.5) return false;
+            return true;
+        };
+
+        const beam: State[] = [seed];
+        const beamWidth = 40;
+        const maxDepth = 6;
+        for (let depth = 0; depth < maxDepth; depth++) {
+            const next: State[] = [];
+            for (const state of beam) {
+                candidates.forEach(f => {
+                    if (state.items.some(i => i.food.id === f.id)) return; // no duplicates
+                    const portion = adjustToServingBounds(f, f.serving_size || f.portion_g || 100);
+                    const newState = addItem(state, f, portion);
+                    if (!withinHardBudgets(newState.totals)) return;
+                    next.push(newState);
+                });
+            }
+            if (next.length === 0) break;
+            // Score states
+            next.sort((a, b) => evaluateMeal(a.items) - evaluateMeal(b.items));
+            beam.splice(0, beam.length, ...next.slice(0, beamWidth));
+            // Early exit if any state already meets macro windows and veg/fruit min
+            const feasible = beam.find(s => {
+                const veg = s.items.filter(i => i.food.category === 'vegetable').reduce((g, i) => g + i.portion_g, 0);
+                const fruit = s.items.filter(i => i.food.category === 'fruit').reduce((g, i) => g + i.portion_g, 0);
+                const hasProtein = s.items.some(i => i.food.category === 'protein' || i.food.category === 'legume');
+                if (type === 'lunch' || type === 'dinner') {
+                    if (veg < 120) return false;
+                }
+                if (type === 'breakfast' && fruit < 80) return false;
+                if (!hasProtein) return false;
+                return meetsMacroWindows(s.totals);
+            });
+            if (feasible) {
+                return feasible.items;
+            }
+        }
+
+        return null;
+    };
+
+
     const portionItem = (food: SimpleFoodItem, target: { protein?: number; carbs?: number; fat?: number; kcal?: number }): ScoredItem | null => {
         const res = calculateOptimalPortion(food, target, { ...portionContext, existingItems: items });
         if (!res.isValid) return null;
@@ -1187,6 +1320,26 @@ function generateMealFromFoods(
     };
 
     const randomPick = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+
+    // First attempt: MILP solution to satisfy hard constraints
+    const milpSolution = solveWithMILP();
+    if (milpSolution && milpSolution.length) {
+        milpSolution.forEach(i => items.push({
+            food: i.food,
+            portion_g: i.portion_g,
+            cooking_state: i.food.cooking_states?.[0],
+            macros: i.macros
+        }));
+        const finalTotals = sumMacros(items.map(i => i.macros));
+        console.log(`  ✅ MILP meal built with ${items.length} items`);
+        return {
+            id: `meal_${type}_${Date.now()}`,
+            type,
+            type_es: typeNames[type] || type,
+            items,
+            totals: finalTotals
+        };
+    }
 
     const evaluateMeal = (mealItems: ScoredItem[]) => {
         const totals = sumMacros(mealItems.map(i => i.macros));
@@ -1800,7 +1953,7 @@ function validateMicros(totals: MacroTotals['micros'], rdaProfile?: RDAProfile):
 }
 
 // ASYNC: Generate daily meal plan from database with VALIDATION
-// userPantryTerms: Array of search_term values from user_pantry table (e.g., ['chicken', 'rice', 'beef'])
+// userPantryTerms: Array of food_id or ingredient names from user_pantry table
 // rdaProfile: Optional sex/age profile for personalized micronutrient validation
 export async function generateDayMealPlanFromDB(
     targetCalories: number,
@@ -1815,7 +1968,7 @@ export async function generateDayMealPlanFromDB(
 ): Promise<MealPlan> {
     console.log(`\n📅 [DAY PLAN] Generating day plan: ${targetCalories} kcal, ${targetProtein}g protein, ${numMeals} meals`);
     console.log(`  🍽️  Diet: ${dietType}, Conditions: ${conditions.join(', ') || 'none'}`);
-    console.log(`  🛒 User pantry terms: ${userPantryTerms?.length || 0} items`);
+    console.log(`  🛒 User pantry terms/ids: ${userPantryTerms?.length || 0} items`);
     console.log(`  👤 RDA Profile: ${rdaProfile?.gender || 'default'}, ${rdaProfile?.age || 'N/A'} años, ${rdaProfile?.lifeStage || 'standard'}`);
 
     // Load foods from database
@@ -1825,25 +1978,21 @@ export async function generateDayMealPlanFromDB(
     let filteredDbFoods: SimpleFoodItem[];
 
     if (userPantryTerms && userPantryTerms.length > 0) {
-        // Map pantry terms to IDs with fuzzy matching fallback
         const norm = (s: string) => (s || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
         const pantryIds = new Set<string>();
         const unmatchedTerms: string[] = [];
 
-        userPantryTerms.forEach(rawTerm => {
-            const normTerm = norm(rawTerm);
-            // Try exact match first
-            let id: string | undefined = NAME_TO_ID[normTerm];
-
-            // If no exact match, try fuzzy matching
-            if (!id) {
-                id = fuzzyMatchPantryTerm(rawTerm, NAME_TO_ID);
+        userPantryTerms.forEach(raw => {
+            const maybeId = String(raw);
+            if (/^\d+$/.test(maybeId)) {
+                pantryIds.add(maybeId);
+                return;
             }
-
-            if (id) {
-                pantryIds.add(id);
+            const mapped = NAME_TO_ID[norm(raw)];
+            if (mapped) {
+                pantryIds.add(mapped);
             } else {
-                unmatchedTerms.push(rawTerm);
+                unmatchedTerms.push(raw);
             }
         });
 
@@ -1854,17 +2003,8 @@ export async function generateDayMealPlanFromDB(
         filteredDbFoods = dbFoods.filter(f => pantryIds.has(String(f.id)));
         console.log(`  ✅ Pantry ID filter: ${filteredDbFoods.length} foods match user's ${pantryIds.size} pantry IDs (${unmatchedTerms.length} unmatched)`);
 
-        // If very few matches, supplement with essential staples from whitelist
-        if (filteredDbFoods.length < 10) {
-            console.log(`  ℹ️ Few pantry matches (${filteredDbFoods.length}), adding essential staples...`);
-            const essentialIds = new Set(['30817', '29568', '32134', '31639', '27829']); // arroz, huevo, tomate, platano, yogurt
-            const supplementFoods = dbFoods.filter(f => essentialIds.has(String(f.id)) && !pantryIds.has(String(f.id)));
-            filteredDbFoods = [...filteredDbFoods, ...supplementFoods];
-            console.log(`  ✅ Supplemented with ${supplementFoods.length} essential staples, total: ${filteredDbFoods.length}`);
-        }
-
         if (filteredDbFoods.length === 0) {
-            throw new Error(`Tu despensa no coincide con ningún alimento del catálogo. Términos no reconocidos: ${unmatchedTerms.slice(0, 5).join(', ')}${unmatchedTerms.length > 5 ? '...' : ''}. Revisa tu selección.`);
+            throw new Error(`Tu despensa no coincide con ningún alimento del catálogo. IDs no reconocidos: ${unmatchedTerms.slice(0, 5).join(', ')}${unmatchedTerms.length > 5 ? '...' : ''}. Revisa tu selección.`);
         }
     } else {
         // Fallback to onboarding whitelist if no pantry provided
@@ -1878,7 +2018,7 @@ export async function generateDayMealPlanFromDB(
     }
 
     // Create variety manager for this day (or use provided one for weekly plans)
-    const dayVarietyManager = varietyManager || new VarietyManager();
+    const dayVarietyManager = varietyManager || new VarietyManager(24);
 
     const meals: Meal[] = [];
     const distributions: Record<number, Record<string, number>> = {
@@ -1899,7 +2039,9 @@ export async function generateDayMealPlanFromDB(
             conditions,
             nutrientPriorities,
             targetProtein * dist.breakfast,
-            dayVarietyManager
+            dayVarietyManager,
+            targetCalories,
+            rdaProfile?.age
         ));
     }
     if (dist.snack1) {
@@ -1912,7 +2054,9 @@ export async function generateDayMealPlanFromDB(
             conditions,
             nutrientPriorities,
             targetProtein * dist.snack1,
-            dayVarietyManager
+            dayVarietyManager,
+            targetCalories,
+            rdaProfile?.age
         ));
     }
     if (dist.lunch) {
@@ -1925,7 +2069,9 @@ export async function generateDayMealPlanFromDB(
             conditions,
             nutrientPriorities,
             targetProtein * dist.lunch,
-            dayVarietyManager
+            dayVarietyManager,
+            targetCalories,
+            rdaProfile?.age
         ));
     }
     if (dist.snack2) {
@@ -1938,7 +2084,9 @@ export async function generateDayMealPlanFromDB(
             conditions,
             nutrientPriorities,
             targetProtein * dist.snack2,
-            dayVarietyManager
+            dayVarietyManager,
+            targetCalories,
+            rdaProfile?.age
         ));
     }
     if (dist.dinner) {
@@ -1951,7 +2099,9 @@ export async function generateDayMealPlanFromDB(
             conditions,
             nutrientPriorities,
             targetProtein * dist.dinner,
-            dayVarietyManager
+            dayVarietyManager,
+            targetCalories,
+            rdaProfile?.age
         ));
     }
 
@@ -1976,10 +2126,15 @@ export async function generateDayMealPlanFromDB(
     if (Math.abs(calorieDiff) > 10) deviations.push(`Calories ${calorieDiff > 0 ? '+' : ''}${calorieDiff.toFixed(1)}%`);
     if (Math.abs(proteinDiff) > 10) deviations.push(`Protein ${proteinDiff > 0 ? '+' : ''}${proteinDiff.toFixed(1)}%`);
 
-    // USDA GUARDRAILS
-    const usdaIssues = validateUSDA({ id: 'day', name: 'Day', name_es: 'Día', meals: [], totals: finalTotals }, targetCalories);
+    // USDA hard validation (throws if broken)
+    const planForValidation: MealPlan = { id: 'day', name: 'Day', name_es: 'Día', meals, totals: { ...finalTotals, micros: microTotals } };
+    const usdaHard = validateUSDAHard(planForValidation, targetCalories, rdaProfile?.age);
+    if (!usdaHard.isValid) {
+        console.error('❌ USDA hard validation failed:', usdaHard.issues);
+        throw new Error(`USDA hard fail: ${usdaHard.issues.join(' | ')}`);
+    }
 
-    // Micronutrient checks with sex/age-specific RDA targets
+    // Micronutrient checks with sex/age-specific RDA targets (soft warnings)
     const microIssues = validateMicros(microTotals, rdaProfile);
 
     // Daily composition checks: 2 frutas, 2 verduras, 1 grasa, 1-2 lácteos, máx 1 legumbre principal
@@ -2001,10 +2156,6 @@ export async function generateDayMealPlanFromDB(
     if (dayCounts.dairy > 2) deviations.push(`⚠️ Lácteos excedidos (${dayCounts.dairy}/2)`);
     if (dayCounts.legume > 1) deviations.push(`⚠️ Demasiadas legumbres principales (${dayCounts.legume}/1)`);
 
-    if (usdaIssues.length > 0) {
-        console.warn('⚠️ USDA Guardrails triggered:', usdaIssues);
-        deviations.push(...usdaIssues);
-    }
     if (microIssues.length > 0) {
         console.warn('⚠️ Micronutrient issues:', microIssues);
         deviations.push(...microIssues);
@@ -2042,7 +2193,7 @@ export async function generateWeeklyMealPlanFromDB(
     const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
     // ✅ Create ONE master variety manager for the entire week
-    const masterVarietyManager = new VarietyManager();
+    const masterVarietyManager = new VarietyManager(72);
     console.log(`\n🗓️  [WEEK PLAN] Creating master variety manager for 7 days`);
     console.log(`  🛒 User pantry terms: ${userPantryTerms?.length || 0} items`);
     console.log(`  👤 RDA Profile: ${rdaProfile?.gender || 'default'}, ${rdaProfile?.age || 'N/A'} años`);

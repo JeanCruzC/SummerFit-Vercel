@@ -127,6 +127,7 @@ export default function OnboardingPage() {
       category: string;
       emoji: string;
       search_term: string;
+      food_id: string | null;
     }> = [];
     GROCERY_CATEGORIES.forEach(cat => {
       const selected = pantrySelections[cat.id];
@@ -139,6 +140,7 @@ export default function OnboardingPage() {
             category: cat.id,
             emoji: item.emoji,
             search_term: item.searchTerm,
+            food_id: item.foodId || null,
           });
         }
       });
@@ -146,7 +148,7 @@ export default function OnboardingPage() {
 
     const { error: pantryError } = await supabase
       .from("user_pantry")
-      .upsert(allItems, { onConflict: "user_id,ingredient_name" });
+      .upsert(allItems, { onConflict: "user_id,food_id" });
 
     if (pantryError) {
       console.error("Error pantry:", pantryError);

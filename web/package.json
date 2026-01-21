@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:usda": "tsx scripts/usda_smoke.ts",
+    "test:usda:property": "tsx scripts/usda_property.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
@@ -34,6 +36,7 @@
     "postcss": "8.4.39",
     "tailwindcss": "3.4.10",
     "ts-node": "^10.9.2",
+    "tsx": "^4.7.0",
     "typescript": "^5.5.4"
   }
 }

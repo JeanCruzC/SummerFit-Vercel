@@ -643,6 +643,11 @@ export default function MealGeneratorPage() {
                                                                     const servingSize = (item.food as any).serving_size;
                                                                     const servingUnit = (item.food as any).serving_unit;
 
+                                                                    // If serving unit is already grams, just show grams cleanly
+                                                                    if (servingUnit && ['g', 'gram', 'grams'].includes(servingUnit.toLowerCase())) {
+                                                                        return <span className="font-medium text-gray-700 dark:text-gray-300">{grams}g</span>;
+                                                                    }
+
                                                                     // Only show complex units if they are clean (e.g. 2 eggs, not 1.3 eggs)
                                                                     if (servingUnit && servingSize && servingSize > 0) {
                                                                         const rawUnits = item.portion_g / servingSize;

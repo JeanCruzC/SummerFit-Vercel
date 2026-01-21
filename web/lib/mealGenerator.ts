@@ -1076,28 +1076,31 @@ function generateMealFromFoods(
         const baseServing = food.serving_size || food.portion_g || 100;
         let minServ = 1;
         let maxServ = 2;
+        // Absolute floors by category to evitar “1 g”:
+        let absMin = 20; // default small floor
         switch (food.category) {
             case 'fat':
                 minServ = 0.5; maxServ = 1.5; break;
             case 'condiment':
-                minServ = 0.25; maxServ = 0.75; break;
+                minServ = 0.25; maxServ = 0.75; absMin = 2; break;
             case 'vegetable':
-                minServ = 1; maxServ = 3; break;
+                minServ = 1; maxServ = 3; absMin = 80; break;
             case 'fruit':
-                minServ = 1; maxServ = 2; break;
+                minServ = 1; maxServ = 2; absMin = 80; break;
             case 'beverage':
-                minServ = 1; maxServ = 2; break;
+                minServ = 1; maxServ = 2; absMin = 120; break;
             case 'legume':
             case 'carb':
-                minServ = 1; maxServ = 2; break;
+                minServ = 1; maxServ = 2; absMin = 100; break;
             case 'protein':
             case 'dairy':
             default:
-                minServ = 1; maxServ = 2; break;
+                minServ = 1; maxServ = 2; absMin = 100; break;
         }
         const minG = Math.round(minServ * baseServing);
         const maxG = Math.round(maxServ * baseServing);
-        return Math.max(minG, Math.min(maxG, grams));
+        const clamped = Math.max(minG, Math.min(maxG, grams));
+        return Math.max(absMin, clamped);
     };
 
     // ===========================================================

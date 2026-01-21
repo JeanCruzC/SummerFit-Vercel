@@ -1141,10 +1141,17 @@ function generateMealFromFoods(
             case 'dairy':
                 minG = 150; maxG = 250; break;
             case 'legume':
-            case 'carb':
-                minG = Math.max(100, baseServing); // cooked cup ~150
-                maxG = Math.min(220, baseServing * 1.6);
+            case 'carb': {
+                const whole = isWholeGrain(food);
+                if (whole) {
+                    minG = Math.max(30, baseServing);
+                    maxG = Math.min(90, baseServing * 2);
+                } else {
+                    minG = Math.max(80, baseServing);
+                    maxG = Math.min(220, baseServing * 1.6);
+                }
                 break;
+            }
             case 'protein':
                 minG = 120; maxG = 200; break;
             default:
@@ -1231,6 +1238,10 @@ function generateMealFromFoods(
     const veggiePool = pickTop(vegetables, 14);
     const fatPool = pickTop(fats, 10);
     const fruitPool = pickTop(fruits, 7);
+    const dairyPool = pickTop(
+        dairy.filter(d => type === 'breakfast' || type === 'snack' ? (d.protein >= 8 && (d.sugar_g ?? 0) <= 12) : true),
+        8
+    );
 
     // Scoring function for meal optimization - MUST be defined before solveWithMILP
     const evaluateMeal = (mealItems: ScoredItem[]): number => {
@@ -1306,12 +1317,14 @@ function generateMealFromFoods(
         add(veggiePool, 5);
         add(fatPool, 3);
         add(fruitPool, 3);
+        add(dairyPool, 3);
         return Object.keys(uniq).map(id => {
             return proteinPool.find(f => f.id === id) ||
                 carbPool.find(f => f.id === id) ||
                 veggiePool.find(f => f.id === id) ||
                 fatPool.find(f => f.id === id) ||
-                fruitPool.find(f => f.id === id) as SimpleFoodItem;
+                fruitPool.find(f => f.id === id) ||
+                dairyPool.find(f => f.id === id) as SimpleFoodItem;
         }).filter(Boolean);
     };
 
@@ -1337,13 +1350,17 @@ function generateMealFromFoods(
             return true;
         };
 
-        const meetsMacroWindows = (tot: MacroTotals): boolean => {
+        const requireDairy = dairyPool.length > 0 && (type === 'breakfast' || type === 'snack');
+        const requireFat = fatPool.length > 0 && (type === 'lunch' || type === 'dinner');
+        const meetsMacroWindows = (tot: MacroTotals, items: ScoredItem[]): boolean => {
             const kcalMin = targetCalories * 0.85;
             const kcalMax = targetCalories * 1.1;
             if (tot.kcal < kcalMin || tot.kcal > kcalMax) return false;
             if (tot.protein < mealProteinTarget * 0.9) return false;
             if (tot.carbs < mealCarbTarget * 0.6 || tot.carbs > mealCarbTarget * 1.4) return false;
             if (tot.fat < mealFatTarget * 0.6 || tot.fat > mealFatTarget * 1.5) return false;
+            if (requireDairy && !items.some(i => i.food.category === 'dairy')) return false;
+            if (requireFat && !items.some(i => i.food.category === 'fat')) return false;
             return true;
         };
 
@@ -1375,7 +1392,7 @@ function generateMealFromFoods(
                 }
                 if (type === 'breakfast' && fruit < 80) return false;
                 if (!hasProtein) return false;
-                return meetsMacroWindows(s.totals);
+                return meetsMacroWindows(s.totals, s.items);
             });
             if (feasible) {
                 return feasible.items;
@@ -1447,7 +1464,7 @@ function generateMealFromFoods(
         const iterations = 520;
         for (let it = 0; it < iterations; it++) {
             const candidate = [...current];
-            const roles = ['protein', 'carb', 'veg', 'veg', 'fat', 'fruit'] as const;
+        const roles = ['protein', 'carb', 'veg', 'veg', 'fat', 'fruit', 'dairy'] as const;
             const role = roles[Math.floor(Math.random() * roles.length)];
             if (role === 'protein' && proteinPool.length) {
                 const p = portionItem(randomPick(proteinPool), { protein: mealProteinTarget * 0.9 });
@@ -1478,6 +1495,12 @@ function generateMealFromFoods(
                 if (fr) {
                     const idx = candidate.findIndex(ci => ci.food.category === 'fruit');
                     if (idx >= 0) candidate[idx] = fr; else candidate.push(fr);
+                }
+            } else if (role === 'dairy' && dairyPool.length) {
+                const d = portionItem(randomPick(dairyPool), { protein: mealProteinTarget * 0.3, kcal: 120 });
+                if (d) {
+                    const idx = candidate.findIndex(ci => ci.food.category === 'dairy');
+                    if (idx >= 0) candidate[idx] = d; else candidate.push(d);
                 }
             }
 

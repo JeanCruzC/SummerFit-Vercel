@@ -1219,6 +1219,67 @@ function generateMealFromFoods(
     const fatPool = pickTop(fats, 10);
     const fruitPool = pickTop(fruits, 7);
 
+    // Scoring function for meal optimization - MUST be defined before solveWithMILP
+    const evaluateMeal = (mealItems: ScoredItem[]): number => {
+        const totals = sumMacros(mealItems.map(i => i.macros));
+        const parts: number[] = [];
+        const kcalDiff = (totals.kcal - targetCalories) / Math.max(targetCalories, 1);
+        const proteinDiff = (totals.protein - mealProteinTarget) / Math.max(mealProteinTarget, 1);
+        const proteinWeight = proteinDiff < 0 ? 1800 : 1200;
+        parts.push(Math.pow(kcalDiff, 2) * 900);
+        parts.push(Math.pow(proteinDiff, 2) * proteinWeight);
+
+        const fatPct = totals.kcal > 0 ? ((totals.fat || 0) * 9 / totals.kcal) * 100 : 0;
+        const satPct = totals.kcal > 0 ? ((totals.sat_fat_g || 0) * 9 / totals.kcal) * 100 : 0;
+        const sugarPct = totals.kcal > 0 ? ((totals.sugar_g || 0) * 4 / totals.kcal) * 100 : 0;
+        const addedPct = totals.kcal > 0 ? ((totals.added_sugars_g || 0) * 4 / totals.kcal) * 100 : 0;
+        const fiberTarget = Math.max(10, (totals.kcal / 1000) * 14);
+        const fiber = totals.fiber || 0;
+        if (satPct > 10) parts.push(Math.pow(satPct - 10, 1.2) * 18);
+        if (addedPct > 10) parts.push(Math.pow(addedPct - 10, 1.3) * 22);
+        if (sugarPct > 15) parts.push(Math.pow(sugarPct - 15, 1.1) * 10);
+        if (fatPct < 20) {
+            const gap = (20 - fatPct) / 20;
+            parts.push(Math.pow(gap, 2) * 1400);
+        } else if (fatPct > 35) {
+            const gap = (fatPct - 35) / 35;
+            parts.push(Math.pow(gap, 2) * 900);
+        }
+        if (fiber < fiberTarget) {
+            const gap = (fiberTarget - fiber) / fiberTarget;
+            parts.push(Math.pow(gap, 2) * 1600);
+        }
+        if ((totals.sodium_mg || 0) > 2300) parts.push(Math.pow(((totals.sodium_mg || 0) - 2300) / 1000, 2) * 900);
+
+        const hasFish = mealItems.some(i => isFishFood(i.food));
+        const hasLegume = mealItems.some(i => i.food.category === 'legume');
+        if (hasFish && hasLegume) parts.push(50);
+
+        mealItems.forEach(i => {
+            if ((type === 'lunch' || type === 'dinner') && i.course === 'snack') parts.push(20);
+            const sweetCereal = isSweetCereal(i.food);
+            if ((type === 'lunch' || type === 'dinner') && sweetCereal) parts.push(30);
+            if (varietyManager && varietyManager.shouldSkip(i.food.id, 24)) parts.push(10);
+        });
+
+        const vegCount = mealItems.filter(i => i.food.category === 'vegetable').length;
+        if ((type === 'lunch' || type === 'dinner') && vegCount === 0) parts.push(200);
+        if (type === 'breakfast') {
+            const fruitCount = mealItems.some(i => i.food.category === 'fruit');
+            if (!fruitCount) parts.push(80);
+        }
+
+        const seen: Record<string, number> = {};
+        mealItems.forEach(i => { seen[i.food.id] = (seen[i.food.id] || 0) + 1; });
+        Object.values(seen).forEach(count => {
+            if (count > 1) parts.push((count - 1) * 60);
+        });
+
+        const densityBonus = (fiber / Math.max(totals.kcal, 1)) * 1000;
+        parts.push(-densityBonus);
+        return parts.reduce((a, b) => a + b, 0);
+    };
+
     // ------------------------
     // MILP solver (javascript-lp-solver) to enforce hard constraints
     // ------------------------
@@ -1341,67 +1402,7 @@ function generateMealFromFoods(
         };
     }
 
-    const evaluateMeal = (mealItems: ScoredItem[]) => {
-        const totals = sumMacros(mealItems.map(i => i.macros));
-        const parts: number[] = [];
-        const kcalDiff = (totals.kcal - targetCalories) / Math.max(targetCalories, 1);
-        const proteinDiff = (totals.protein - mealProteinTarget) / Math.max(mealProteinTarget, 1);
-        const proteinWeight = proteinDiff < 0 ? 1800 : 1200; // penalize déficit más fuerte
-        parts.push(Math.pow(kcalDiff, 2) * 900); // 10% error ≈ 9 pts
-        parts.push(Math.pow(proteinDiff, 2) * proteinWeight);
-
-        const fatPct = totals.kcal > 0 ? ((totals.fat || 0) * 9 / totals.kcal) * 100 : 0;
-        const satPct = totals.kcal > 0 ? ((totals.sat_fat_g || 0) * 9 / totals.kcal) * 100 : 0;
-        const sugarPct = totals.kcal > 0 ? ((totals.sugar_g || 0) * 4 / totals.kcal) * 100 : 0;
-        const addedPct = totals.kcal > 0 ? ((totals.added_sugars_g || 0) * 4 / totals.kcal) * 100 : 0;
-        const fiberTarget = Math.max(10, (totals.kcal / 1000) * 14);
-        const fiber = totals.fiber || 0;
-        if (satPct > 10) parts.push(Math.pow(satPct - 10, 1.2) * 18);
-        if (addedPct > 10) parts.push(Math.pow(addedPct - 10, 1.3) * 22);
-        if (sugarPct > 15) parts.push(Math.pow(sugarPct - 15, 1.1) * 10);
-        if (fatPct < 20) {
-            const gap = (20 - fatPct) / 20;
-            parts.push(Math.pow(gap, 2) * 1400);
-        } else if (fatPct > 35) {
-            const gap = (fatPct - 35) / 35;
-            parts.push(Math.pow(gap, 2) * 900);
-        }
-        if (fiber < fiberTarget) {
-            const gap = (fiberTarget - fiber) / fiberTarget;
-            parts.push(Math.pow(gap, 2) * 1600);
-        }
-        if ((totals.sodium_mg || 0) > 2300) parts.push(Math.pow(((totals.sodium_mg || 0) - 2300) / 1000, 2) * 900);
-
-        const hasFish = mealItems.some(i => isFishFood(i.food));
-        const hasLegume = mealItems.some(i => i.food.category === 'legume');
-        if (hasFish && hasLegume) parts.push(50);
-
-        mealItems.forEach(i => {
-            if ((type === 'lunch' || type === 'dinner') && i.course === 'snack') parts.push(20);
-            const sweetCereal = isSweetCereal(i.food);
-            if ((type === 'lunch' || type === 'dinner') && sweetCereal) parts.push(30);
-            if (varietyManager && varietyManager.shouldSkip(i.food.id, 24)) parts.push(10);
-        });
-
-        // Coverage constraints (avoid meals sin verdura/fruit según tipo)
-        const vegCount = mealItems.filter(i => i.food.category === 'vegetable').length;
-        if ((type === 'lunch' || type === 'dinner') && vegCount === 0) parts.push(200);
-        if (type === 'breakfast') {
-            const fruitCount = mealItems.some(i => i.food.category === 'fruit');
-            if (!fruitCount) parts.push(80);
-        }
-
-        // Penalize duplicating the same food ID within the meal (variedad intra-meal)
-        const seen: Record<string, number> = {};
-        mealItems.forEach(i => { seen[i.food.id] = (seen[i.food.id] || 0) + 1; });
-        Object.values(seen).forEach(count => {
-            if (count > 1) parts.push((count - 1) * 60);
-        });
-
-        const densityBonus = (fiber / Math.max(totals.kcal, 1)) * 1000;
-        parts.push(-densityBonus);
-        return parts.reduce((a, b) => a + b, 0);
-    };
+    // evaluateMeal moved to line ~1222 before solveWithMILP to fix hoisting
 
     const initialMeal = (): ScoredItem[] => {
         const meal: ScoredItem[] = [];

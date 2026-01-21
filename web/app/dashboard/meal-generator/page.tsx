@@ -119,11 +119,29 @@ export default function MealGeneratorPage() {
                             setDietType(mappedType);
                         }
 
-                        // 5. Load user's pantry selection (search terms)
-                        const { data: pantryData, error: pantryError } = await supabase
+                        // 5. Load user's pantry selection - try with food_id, fallback to ingredient_name_es only
+                        let pantryData: any[] | null = null;
+                        let pantryError: any = null;
+
+                        // First try with food_id column
+                        const result1 = await supabase
                             .from('user_pantry')
                             .select('food_id, ingredient_name_es')
                             .eq('user_id', session.user.id);
+
+                        if (result1.error && result1.error.code === 'PGRST301') {
+                            // Column doesn't exist, fallback to just ingredient_name_es
+                            console.log('⚠️ food_id column not found, using ingredient_name_es only');
+                            const result2 = await supabase
+                                .from('user_pantry')
+                                .select('ingredient_name_es')
+                                .eq('user_id', session.user.id);
+                            pantryData = result2.data;
+                            pantryError = result2.error;
+                        } else {
+                            pantryData = result1.data;
+                            pantryError = result1.error;
+                        }
 
                         if (!pantryError && pantryData && pantryData.length > 0) {
                             const terms = pantryData

@@ -19,7 +19,16 @@ import {
     type PortionCalculationContext
 } from './portionRules';
 import { assignRole } from './roleMapper';
-import { validateUSDAHard, computeMealBudgets, isWholeGrain } from './usdaCompliance';
+import { validateUSDAHard, computeMealBudgets, isWholeGrain, getDailyServingTargets, countServingsByGroup } from './usdaCompliance';
+
+let glpkInstance: any | null = null;
+async function getGlpk() {
+    if (glpkInstance) return glpkInstance;
+    const mod: any = await import('glpk.js');
+    const glpk = mod.default || mod;
+    glpkInstance = await glpk();
+    return glpkInstance;
+}
 
 // Basic food items with nutrition per 100g
 export interface SimpleFoodItem {
@@ -810,15 +819,35 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
 
             // Smart defaults for serving size
             let sSize = d.serving_size || 100;
-            let sUnit = d.serving_unit || 'g';
+            const sUnitRaw = d.serving_unit || 'g';
+            const sUnit = sUnitRaw.toLowerCase();
             // USDA-equivalent grams heuristics by category
             let servingEquiv = sSize;
-            if (category === 'vegetable') servingEquiv = 90;
-            if (category === 'fruit') servingEquiv = 150;
-            if (category === 'dairy') servingEquiv = 244;
+            if (category === 'vegetable') {
+                servingEquiv = sUnit.includes('cup') ? 90 : 90;
+            }
+            if (category === 'fruit') {
+                servingEquiv = sUnit.includes('cup') ? 150 : 150;
+            }
+            if (category === 'dairy') {
+                if (sUnit.includes('cup')) servingEquiv = 244;
+                else if (sUnit.includes('container') && sSize >= 120) servingEquiv = sSize;
+                else servingEquiv = sSize >= 120 ? sSize : 244;
+            }
             if (category === 'protein' || category === 'legume') servingEquiv = 85;
-            if (category === 'carb') servingEquiv = isWholeGrain({ ...d, fiber: d.fiber_g || d.fiber_g_per_100g, carbs: d.carbs_g_per_100g || 0, category: 'carb', id: '', name: '', name_es: '', emoji: '', kcal: 0, protein: 0, fat: 0 } as any) ? 30 : 60;
-            if (category === 'fat') servingEquiv = 5;
+            if (category === 'carb') {
+                if (sUnit.includes('cup')) servingEquiv = 90;
+                else if (sUnit.includes('slice') || sUnit.includes('tortilla')) servingEquiv = 30;
+                else if (sUnit.includes('oz')) servingEquiv = 28;
+                else servingEquiv = sSize >= 40 ? sSize : 60;
+            }
+            if (category === 'fat') {
+                if (sUnit.includes('tbsp')) servingEquiv = 14;
+                else if (sUnit.includes('tsp')) servingEquiv = 5;
+                else if (catSearch.includes('avocado') || catSearch.includes('palta')) servingEquiv = 50;
+                else if (catSearch.includes('nut') || catSearch.includes('seed') || catSearch.includes('almond') || catSearch.includes('peanut') || catSearch.includes('chia') || catSearch.includes('flax')) servingEquiv = 14;
+                else servingEquiv = 20;
+            }
 
             const processing_level: SimpleFoodItem['processing_level'] =
                 d.food_tier === 1 ? 'minimally_processed'
@@ -842,7 +871,7 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
                 fat: d.fat_g_per_100g || 0,
                 portion_g: 100,
                 serving_size: sSize,
-                serving_unit: sUnit,
+                serving_unit: sUnitRaw,
                 meal_times: d.meal_times || [],
                 is_common_staple: d.is_common_staple || false,
                 cooking_states: d.cooking_states || [],
@@ -882,7 +911,7 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
 }
 
 // Generate meal using DB-loaded foods with INTELLIGENT PORTION CONTROL
-function generateMealFromFoods(
+async function generateMealFromFoods(
     type: Meal['type'],
     targetCalories: number,
     foods: SimpleFoodItem[],
@@ -892,8 +921,20 @@ function generateMealFromFoods(
     targetProteinGrams?: number,
     varietyManager?: VarietyManager,
     dayTargetCalories?: number,
-    ageYears?: number
-): Meal {
+    ageYears?: number,
+    groupTargets?: {
+        vegMinServings?: number;
+        fruitMinServings?: number;
+        dairyMinServings?: number;
+        fatMinServings?: number;
+        wholeGrainMinServings?: number;
+        vegMaxServings?: number;
+        fruitMaxServings?: number;
+        dairyMaxServings?: number;
+        fatMaxServings?: number;
+        wholeGrainMaxServings?: number;
+    }
+): Promise<Meal> {
     const typeNames: Record<string, string> = {
         breakfast: 'Desayuno',
         lunch: 'Almuerzo',
@@ -1118,23 +1159,21 @@ function generateMealFromFoods(
         targetFat: mealFatTarget
     };
 
-    // Clamp portions to realistic serving ranges based on standard serving_size
-    const adjustToServingBounds = (food: SimpleFoodItem, grams: number): number => {
+    const getPortionBounds = (food: SimpleFoodItem) => {
         const baseServing = food.serving_equiv_grams || food.serving_size || food.portion_g || 100;
-        // Hard gram windows by category (USDA serving equivalents)
         let minG = 30;
         let maxG = 300;
         switch (food.category) {
             case 'fat':
-                minG = 5; maxG = 20; break; // 1–4 tsp
+                minG = 5; maxG = 20; break;
             case 'condiment':
                 minG = 2; maxG = 15; break;
             case 'vegetable':
-                minG = Math.max(80, baseServing); // 1 serving
-                maxG = Math.min(150, baseServing * 1.7); // cap to ~1.5-1.7 servings per veg
+                minG = Math.max(80, baseServing);
+                maxG = Math.min(150, baseServing * 1.7);
                 break;
             case 'fruit':
-                minG = Math.max(100, baseServing); // ~1 fruit
+                minG = Math.max(100, baseServing);
                 maxG = Math.min(220, baseServing * 1.8);
                 break;
             case 'beverage':
@@ -1159,8 +1198,12 @@ function generateMealFromFoods(
                 maxG = Math.min(220, baseServing * 2);
                 break;
         }
-        const clamped = Math.max(minG, Math.min(maxG, grams));
-        return clamped;
+        return { minG, maxG };
+    };
+
+    const adjustToServingBounds = (food: SimpleFoodItem, grams: number): number => {
+        const { minG, maxG } = getPortionBounds(food);
+        return Math.max(minG, Math.min(maxG, grams));
     };
 
     // ===========================================================
@@ -1239,7 +1282,7 @@ function generateMealFromFoods(
     const fatPool = pickTop(fats, 10);
     const fruitPool = pickTop(fruits, 7);
     const dairyPool = pickTop(
-        dairy.filter(d => type === 'breakfast' || type === 'snack' ? (d.protein >= 8 && (d.sugar_g ?? 0) <= 12) : true),
+        dairy.filter(d => (d.sugar_g ?? 0) <= 12),
         8
     );
 
@@ -1305,19 +1348,19 @@ function generateMealFromFoods(
     };
 
     // ------------------------
-    // MILP solver (javascript-lp-solver) to enforce hard constraints
+    // MILP solver (glpk.js) to enforce hard constraints
     // ------------------------
     const buildCandidateList = (): SimpleFoodItem[] => {
         const uniq: Record<string, boolean> = {};
         const add = (arr: SimpleFoodItem[], limit: number) => {
             arr.slice(0, limit).forEach(f => { if (!uniq[f.id]) uniq[f.id] = true; });
         };
-        add(proteinPool, 4);
-        add(carbPool, 4);
-        add(veggiePool, 5);
-        add(fatPool, 3);
-        add(fruitPool, 3);
-        add(dairyPool, 3);
+        add(proteinPool, 6);
+        add(carbPool, 6);
+        add(veggiePool, 6);
+        add(fatPool, 5);
+        add(fruitPool, 5);
+        add(dairyPool, 5);
         return Object.keys(uniq).map(id => {
             return proteinPool.find(f => f.id === id) ||
                 carbPool.find(f => f.id === id) ||
@@ -1328,78 +1371,184 @@ function generateMealFromFoods(
         }).filter(Boolean);
     };
 
-    const solveWithMILP = (): ScoredItem[] | null => {
-        const candidates = buildCandidateList();
+    const solveWithMILP = async (): Promise<ScoredItem[] | null> => {
+        const candidates = buildCandidateList().filter(c => c.category !== 'condiment');
         if (candidates.length === 0) return null;
 
-        type State = { items: ScoredItem[]; totals: MacroTotals };
-        const seed: State = { items: [], totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sodium_mg: 0, sugar_g: 0, added_sugars_g: 0, sat_fat_g: 0 } };
+        const glpk = await getGlpk();
 
-        const addItem = (state: State, food: SimpleFoodItem, portion: number): State => {
-            const macros = calculateItemMacros(food, portion);
-            return {
-                items: [...state.items, { food, portion_g: portion, macros, course: inferCourse(food) }],
-                totals: sumMacros([...state.items.map(i => i.macros), macros])
+        const vars: any[] = [];
+        const subjectTo: any[] = [];
+        const bounds: any[] = [];
+        const binaries: string[] = [];
+
+        const addConstraint = (name: string, vars: any[], bnds: any) => {
+            subjectTo.push({ name, vars, bnds });
+        };
+
+        const kcalVars: any[] = [];
+        const proteinVars: any[] = [];
+        const carbsVars: any[] = [];
+        const fatVars: any[] = [];
+        const sugarVars: any[] = [];
+        const sodiumVars: any[] = [];
+        const satVars: any[] = [];
+        const vegServVars: any[] = [];
+        const fruitServVars: any[] = [];
+        const dairyServVars: any[] = [];
+        const fatServVars: any[] = [];
+        const wholeServVars: any[] = [];
+        const countVars: any[] = [];
+
+        candidates.forEach((f, idx) => {
+            const { minG, maxG } = getPortionBounds(f);
+            const xName = `x_${idx}`;
+            const yName = `y_${idx}`;
+            const perG = {
+                kcal: (f.kcal || 0) / 100,
+                protein: (f.protein || 0) / 100,
+                carbs: (f.carbs || 0) / 100,
+                fat: (f.fat || 0) / 100,
+                sugar: (f.added_sugars_g || 0) / 100,
+                sodium: (f.sodium_mg || 0) / 100,
+                sat: (f.sat_fat_g || 0) / 100
             };
-        };
 
-        const withinHardBudgets = (tot: MacroTotals): boolean => {
-            if (tot.added_sugars_g && tot.added_sugars_g > mealBudgets.maxAddedSugar_g) return false;
-            if (tot.sodium_mg && tot.sodium_mg > mealBudgets.maxSodium_mg) return false;
-            if (tot.sat_fat_g && tot.sat_fat_g > mealBudgets.maxSatFat_g) return false;
-            return true;
-        };
+            vars.push({ name: xName, coef: qualityPenalty(f) * 0.05 });
+            bounds.push({ name: xName, type: glpk.GLP_DB, lb: 0, ub: maxG });
 
-        const requireDairy = dairyPool.length > 0 && (type === 'breakfast' || type === 'snack');
-        const requireFat = fatPool.length > 0 && (type === 'lunch' || type === 'dinner');
-        const meetsMacroWindows = (tot: MacroTotals, items: ScoredItem[]): boolean => {
-            const kcalMin = targetCalories * 0.85;
-            const kcalMax = targetCalories * 1.1;
-            if (tot.kcal < kcalMin || tot.kcal > kcalMax) return false;
-            if (tot.protein < mealProteinTarget * 0.9) return false;
-            if (tot.carbs < mealCarbTarget * 0.6 || tot.carbs > mealCarbTarget * 1.4) return false;
-            if (tot.fat < mealFatTarget * 0.6 || tot.fat > mealFatTarget * 1.5) return false;
-            if (requireDairy && !items.some(i => i.food.category === 'dairy')) return false;
-            if (requireFat && !items.some(i => i.food.category === 'fat')) return false;
-            return true;
-        };
+            vars.push({ name: yName, coef: 5 }); // small penalty for too many items
+            bounds.push({ name: yName, type: glpk.GLP_DB, lb: 0, ub: 1 });
+            binaries.push(yName);
 
-        const beam: State[] = [seed];
-        const beamWidth = 40;
-        const maxDepth = 6;
-        for (let depth = 0; depth < maxDepth; depth++) {
-            const next: State[] = [];
-            for (const state of beam) {
-                candidates.forEach(f => {
-                    if (state.items.some(i => i.food.id === f.id)) return; // no duplicates
-                    const portion = adjustToServingBounds(f, f.serving_size || f.portion_g || 100);
-                    const newState = addItem(state, f, portion);
-                    if (!withinHardBudgets(newState.totals)) return;
-                    next.push(newState);
-                });
+            // link x_i to y_i
+            addConstraint(`min_${idx}`, [{ name: xName, coef: 1 }, { name: yName, coef: -minG }], { type: glpk.GLP_LO, lb: 0, ub: 0 });
+            addConstraint(`max_${idx}`, [{ name: xName, coef: 1 }, { name: yName, coef: -maxG }], { type: glpk.GLP_UP, ub: 0 });
+
+            kcalVars.push({ name: xName, coef: perG.kcal });
+            proteinVars.push({ name: xName, coef: perG.protein });
+            carbsVars.push({ name: xName, coef: perG.carbs });
+            fatVars.push({ name: xName, coef: perG.fat });
+            sugarVars.push({ name: xName, coef: perG.sugar });
+            sodiumVars.push({ name: xName, coef: perG.sodium });
+            satVars.push({ name: xName, coef: perG.sat });
+
+            if (f.category === 'vegetable') {
+                vegServVars.push({ name: xName, coef: 1 / (f.serving_equiv_grams || 90) });
             }
-            if (next.length === 0) break;
-            // Score states
-            next.sort((a, b) => evaluateMeal(a.items) - evaluateMeal(b.items));
-            beam.splice(0, beam.length, ...next.slice(0, beamWidth));
-            // Early exit if any state already meets macro windows and veg/fruit min
-            const feasible = beam.find(s => {
-                const veg = s.items.filter(i => i.food.category === 'vegetable').reduce((g, i) => g + i.portion_g, 0);
-                const fruit = s.items.filter(i => i.food.category === 'fruit').reduce((g, i) => g + i.portion_g, 0);
-                const hasProtein = s.items.some(i => i.food.category === 'protein' || i.food.category === 'legume');
-                if (type === 'lunch' || type === 'dinner') {
-                    if (veg < 120) return false;
-                }
-                if (type === 'breakfast' && fruit < 80) return false;
-                if (!hasProtein) return false;
-                return meetsMacroWindows(s.totals, s.items);
-            });
-            if (feasible) {
-                return feasible.items;
+            if (f.category === 'carb' && isWholeGrain(f)) {
+                const base = f.serving_equiv_grams || 90;
+                wholeServVars.push({ name: xName, coef: 1 / base });
             }
+            if (f.category === 'dairy') {
+                dairyServVars.push({ name: xName, coef: 1 / (f.serving_equiv_grams || 244) });
+            }
+            if (f.category === 'fat') {
+                fatServVars.push({ name: xName, coef: 1 / (f.serving_equiv_grams || 5) });
+            }
+            if (f.category === 'fruit') {
+                fruitServVars.push({ name: xName, coef: 1 / (f.serving_equiv_grams || 150) });
+            }
+            countVars.push({ name: yName, coef: 1 });
+        });
+
+        const missingGroups: string[] = [];
+        if ((groupTargets?.vegMinServings || 0) > 0 && vegServVars.length === 0) missingGroups.push('verduras');
+        if ((groupTargets?.fruitMinServings || 0) > 0 && fruitServVars.length === 0) missingGroups.push('frutas');
+        if ((groupTargets?.dairyMinServings || 0) > 0 && dairyServVars.length === 0) missingGroups.push('lácteos');
+        if ((groupTargets?.fatMinServings || 0) > 0 && fatServVars.length === 0) missingGroups.push('grasas saludables');
+        if ((groupTargets?.wholeGrainMinServings || 0) > 0 && wholeServVars.length === 0) missingGroups.push('granos integrales');
+        if (missingGroups.length > 0) {
+            throw new Error(`No hay opciones suficientes para: ${missingGroups.join(', ')}.`);
         }
 
-        return null;
+        // Calories equality with slack
+        const devKcalPos = 'dev_kcal_pos';
+        const devKcalNeg = 'dev_kcal_neg';
+        bounds.push({ name: devKcalPos, type: glpk.GLP_LO, lb: 0 });
+        bounds.push({ name: devKcalNeg, type: glpk.GLP_LO, lb: 0 });
+        vars.push({ name: devKcalPos, coef: 1000 });
+        vars.push({ name: devKcalNeg, coef: 1000 });
+        addConstraint('kcal_eq', [...kcalVars, { name: devKcalPos, coef: -1 }, { name: devKcalNeg, coef: 1 }], { type: glpk.GLP_FX, lb: targetCalories, ub: targetCalories });
+
+        // Protein equality with slack
+        const devProtPos = 'dev_prot_pos';
+        const devProtNeg = 'dev_prot_neg';
+        bounds.push({ name: devProtPos, type: glpk.GLP_LO, lb: 0 });
+        bounds.push({ name: devProtNeg, type: glpk.GLP_LO, lb: 0 });
+        vars.push({ name: devProtPos, coef: 800 });
+        vars.push({ name: devProtNeg, coef: 800 });
+        addConstraint('protein_eq', [...proteinVars, { name: devProtPos, coef: -1 }, { name: devProtNeg, coef: 1 }], { type: glpk.GLP_FX, lb: mealProteinTarget, ub: mealProteinTarget });
+
+        // Macro windows
+        addConstraint('carbs_min', carbsVars, { type: glpk.GLP_LO, lb: mealCarbTarget * 0.6 });
+        addConstraint('carbs_max', carbsVars, { type: glpk.GLP_UP, ub: mealCarbTarget * 1.4 });
+        addConstraint('fat_min', fatVars, { type: glpk.GLP_LO, lb: mealFatTarget * 0.6 });
+        addConstraint('fat_max', fatVars, { type: glpk.GLP_UP, ub: mealFatTarget * 1.5 });
+
+        // Hard budgets
+        addConstraint('sugar_max', sugarVars, { type: glpk.GLP_UP, ub: mealBudgets.maxAddedSugar_g });
+        addConstraint('sodium_max', sodiumVars, { type: glpk.GLP_UP, ub: mealBudgets.maxSodium_mg });
+        addConstraint('sat_max', satVars, { type: glpk.GLP_UP, ub: mealBudgets.maxSatFat_g });
+
+        // Servings constraints
+        if (groupTargets?.vegMaxServings && vegServVars.length) {
+            addConstraint('veg_max', vegServVars, { type: glpk.GLP_UP, ub: groupTargets.vegMaxServings });
+        }
+        if (groupTargets?.fruitMaxServings && fruitServVars.length) {
+            addConstraint('fruit_max', fruitServVars, { type: glpk.GLP_UP, ub: groupTargets.fruitMaxServings });
+        }
+        if (groupTargets?.dairyMaxServings && dairyServVars.length) {
+            addConstraint('dairy_max', dairyServVars, { type: glpk.GLP_UP, ub: groupTargets.dairyMaxServings });
+        }
+        if (groupTargets?.fatMaxServings && fatServVars.length) {
+            addConstraint('fat_max', fatServVars, { type: glpk.GLP_UP, ub: groupTargets.fatMaxServings });
+        }
+        if (groupTargets?.wholeGrainMaxServings && wholeServVars.length) {
+            addConstraint('whole_max', wholeServVars, { type: glpk.GLP_UP, ub: groupTargets.wholeGrainMaxServings });
+        }
+
+        // Required group minimum servings (per-meal share)
+        if (groupTargets?.vegMinServings && vegServVars.length) {
+            addConstraint('veg_min', vegServVars, { type: glpk.GLP_LO, lb: groupTargets.vegMinServings });
+        }
+        if (groupTargets?.fruitMinServings && fruitServVars.length) {
+            addConstraint('fruit_min', fruitServVars, { type: glpk.GLP_LO, lb: groupTargets.fruitMinServings });
+        }
+        if (groupTargets?.dairyMinServings && dairyServVars.length) {
+            addConstraint('dairy_min', dairyServVars, { type: glpk.GLP_LO, lb: groupTargets.dairyMinServings });
+        }
+        if (groupTargets?.fatMinServings && fatServVars.length) {
+            addConstraint('fat_min', fatServVars, { type: glpk.GLP_LO, lb: groupTargets.fatMinServings });
+        }
+        if (groupTargets?.wholeGrainMinServings && wholeServVars.length) {
+            addConstraint('whole_min', wholeServVars, { type: glpk.GLP_LO, lb: groupTargets.wholeGrainMinServings });
+        }
+
+        addConstraint('count_max', countVars, { type: glpk.GLP_UP, ub: 6 });
+
+        const lp = {
+            name: 'meal_milp',
+            objective: { direction: glpk.GLP_MIN, name: 'obj', vars },
+            subjectTo,
+            bounds,
+            binaries
+        };
+
+        const result = glpk.solve(lp, { msgLevel: glpk.GLP_MSG_OFF });
+        if (!result || result.result.status !== glpk.GLP_OPT) {
+            return null;
+        }
+
+        const chosen: ScoredItem[] = [];
+        candidates.forEach((f, idx) => {
+            const x = result.result.vars[`x_${idx}`] || 0;
+            if (x > 0) {
+                const portion = adjustToServingBounds(f, x);
+                chosen.push({ food: f, portion_g: portion, macros: calculateItemMacros(f, portion), course: inferCourse(f) });
+            }
+        });
+        return chosen;
     };
 
 
@@ -1413,7 +1562,12 @@ function generateMealFromFoods(
     const randomPick = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
     // First attempt: MILP solution to satisfy hard constraints
-    const milpSolution = solveWithMILP();
+    let milpSolution: ScoredItem[] | null = null;
+    try {
+        milpSolution = await solveWithMILP();
+    } catch (err) {
+        console.warn('  ⚠️ MILP solver failed, falling back to heuristic:', err);
+    }
     if (milpSolution && milpSolution.length) {
         milpSolution.forEach(i => items.push({
             food: i.food,
@@ -1430,6 +1584,15 @@ function generateMealFromFoods(
             items,
             totals: finalTotals
         };
+    }
+    if (groupTargets && (
+        (groupTargets.vegMinServings || 0) > 0 ||
+        (groupTargets.fruitMinServings || 0) > 0 ||
+        (groupTargets.dairyMinServings || 0) > 0 ||
+        (groupTargets.fatMinServings || 0) > 0 ||
+        (groupTargets.wholeGrainMinServings || 0) > 0
+    )) {
+        throw new Error('No se pudo construir una comida que cumpla USDA con la despensa actual. Añade más alimentos en el onboarding.');
     }
 
     // evaluateMeal moved to line ~1222 before solveWithMILP to fix hoisting
@@ -1792,7 +1955,8 @@ function generateMealFromFoods(
             .filter(({ it }) => it.food.category === 'vegetable');
         if (vegIdxs.length === 0) return;
         const totalVegGrams = vegIdxs.reduce((sum, v) => sum + v.it.portion_g, 0);
-        const maxVegGrams = 220; // ~2.4 servings
+        const maxServ = groupTargets?.vegMaxServings ?? 2.4;
+        const maxVegGrams = Math.round(maxServ * 90);
         if (totalVegGrams > maxVegGrams) {
             const factor = maxVegGrams / totalVegGrams;
             vegIdxs.forEach(v => {
@@ -1806,9 +1970,32 @@ function generateMealFromFoods(
         }
     };
 
+    const capWholeGrains = () => {
+        const grainIdxs = items
+            .map((it, idx) => ({ it, idx }))
+            .filter(({ it }) => it.food.category === 'carb' && isWholeGrain(it.food));
+        if (grainIdxs.length === 0) return;
+        const total = grainIdxs.reduce((sum, g) => sum + g.it.portion_g, 0);
+        const maxServ = groupTargets?.wholeGrainMaxServings ?? 1.5;
+        const base = grainIdxs[0].it.food.serving_equiv_grams || 90;
+        const maxGrams = Math.round(maxServ * base);
+        if (total > maxGrams) {
+            const factor = maxGrams / total;
+            grainIdxs.forEach(g => {
+                const newPortion = adjustToServingBounds(g.it.food, Math.max(40, g.it.portion_g * factor));
+                items[g.idx] = {
+                    ...g.it,
+                    portion_g: newPortion,
+                    macros: calculateItemMacros(g.it.food, newPortion)
+                };
+            });
+        }
+    };
+
     // Light post-adjustment to pull macros closer to targets
     let totals = recomputeTotals();
     capVegetables();
+    capWholeGrains();
     totals = recomputeTotals();
     const adjustItemPortion = (idx: number, factor: number) => {
         const item = items[idx];
@@ -2090,32 +2277,13 @@ export async function generateDayMealPlanFromDB(
         throw new Error('No foods available after applying onboarding selection. Please select more items in pantry setup.');
     }
 
-    // Ensure minimal role coverage even if pantry lacks certain categories
-    const ensureRoles = (foods: SimpleFoodItem[]): SimpleFoodItem[] => {
-        const hasCategory = (cat: SimpleFoodItem['category']) => foods.some(f => f.category === cat);
-        const addByIds = (ids: string[]) => {
-            ids.forEach(id => {
-                const item = dbFoods.find(f => String(f.id) === id);
-                if (item && !foods.some(f => f.id === item.id)) {
-                    foods.push(item);
-                }
-            });
-        };
-        if (!hasCategory('protein')) addByIds(['28346', '29568', '28519']); // pollo, huevo, pavo
-        if (!hasCategory('fat')) addByIds(['31638', '27881']); // palta, aceite de oliva
-        if (!hasCategory('dairy')) addByIds(['27829', '27800']); // yogurt, leche
-        const hasWhole = foods.some(f => f.category === 'carb' && isWholeGrain(f));
-        if (!hasWhole) addByIds(['30013', '30815']); // pan integral, quinua
-        return foods;
-    };
-    filteredDbFoods = ensureRoles(filteredDbFoods);
-
     // Hard check: ensure pantry covers core groups, otherwise abort with a clear message
-    const coverage = { protein: 0, carb: 0, vegetable: 0, fat: 0, dairy: 0, wholeGrain: 0 };
+    const coverage = { protein: 0, carb: 0, vegetable: 0, fruit: 0, fat: 0, dairy: 0, wholeGrain: 0 };
     filteredDbFoods.forEach(f => {
         if (f.category === 'protein' || f.category === 'legume') coverage.protein++;
         if (f.category === 'carb') coverage.carb++;
         if (f.category === 'vegetable') coverage.vegetable++;
+        if (f.category === 'fruit') coverage.fruit++;
         if (f.category === 'fat') coverage.fat++;
         if (f.category === 'dairy' || f.category === 'beverage') coverage.dairy++;
         if (f.category === 'carb' && isWholeGrain(f)) coverage.wholeGrain++;
@@ -2124,6 +2292,7 @@ export async function generateDayMealPlanFromDB(
     if (coverage.protein === 0) missing.push('proteínas');
     if (coverage.carb === 0) missing.push('carbohidratos');
     if (coverage.vegetable === 0) missing.push('verduras');
+    if (coverage.fruit === 0) missing.push('frutas');
     if (coverage.fat === 0) missing.push('grasas saludables');
     if (coverage.dairy === 0) missing.push('lácteos/bebidas');
     if (coverage.wholeGrain === 0) missing.push('granos integrales');
@@ -2142,10 +2311,65 @@ export async function generateDayMealPlanFromDB(
     };
     const dist = distributions[numMeals];
 
+    const servingTargets = getDailyServingTargets(targetCalories);
+    const remainingServings = servingTargets
+        ? {
+            vegetables: servingTargets.vegetables.min,
+            fruits: servingTargets.fruits.min,
+            dairy: servingTargets.dairy.min,
+            protein: servingTargets.protein.min,
+            wholeGrains: servingTargets.wholeGrains.min,
+            healthyFats: servingTargets.healthyFats.min
+        }
+        : null;
+
+    const totalMeals = Object.keys(dist).filter(k => (dist as any)[k]).length;
+    let mealsRemaining = totalMeals;
+
+    const buildGroupTargets = (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack', mealsLeft: number) => {
+        if (!servingTargets || !remainingServings) return undefined;
+        const perMealMax = (max: number) => (max > 0 ? max / Math.max(numMeals, 1) : 0);
+        const perMealMin = (remaining: number, maxPerMeal: number) => {
+            if (!remaining || remaining <= 0) return 0;
+            const raw = remaining / Math.max(mealsLeft, 1);
+            return maxPerMeal > 0 ? Math.min(raw, maxPerMeal) : raw;
+        };
+        const vegMax = perMealMax(servingTargets.vegetables.max);
+        const fruitMax = perMealMax(servingTargets.fruits.max);
+        const dairyMax = perMealMax(servingTargets.dairy.max);
+        const fatMax = perMealMax(servingTargets.healthyFats.max);
+        const wholeMax = perMealMax(servingTargets.wholeGrains.max);
+        return {
+            vegMinServings: mealType === 'breakfast' ? 0 : perMealMin(remainingServings.vegetables, vegMax),
+            fruitMinServings: mealType === 'breakfast' ? perMealMin(remainingServings.fruits, fruitMax) : perMealMin(remainingServings.fruits, fruitMax),
+            dairyMinServings: perMealMin(remainingServings.dairy, dairyMax),
+            fatMinServings: perMealMin(remainingServings.healthyFats, fatMax),
+            wholeGrainMinServings: perMealMin(remainingServings.wholeGrains, wholeMax),
+            vegMaxServings: vegMax,
+            fruitMaxServings: fruitMax,
+            dairyMaxServings: dairyMax,
+            fatMaxServings: fatMax,
+            wholeGrainMaxServings: wholeMax
+        };
+    };
+
+    const updateRemaining = (meal: Meal) => {
+        if (!remainingServings) return;
+        const mealPlan: MealPlan = { id: 'tmp', name: 'tmp', name_es: 'tmp', meals: [meal], totals: meal.totals };
+        const counts = countServingsByGroup(mealPlan);
+        remainingServings.vegetables = Math.max(0, remainingServings.vegetables - counts.vegetables);
+        remainingServings.fruits = Math.max(0, remainingServings.fruits - counts.fruits);
+        remainingServings.dairy = Math.max(0, remainingServings.dairy - counts.dairy);
+        remainingServings.protein = Math.max(0, remainingServings.protein - counts.protein);
+        remainingServings.wholeGrains = Math.max(0, remainingServings.wholeGrains - counts.wholeGrains);
+        remainingServings.healthyFats = Math.max(0, remainingServings.healthyFats - counts.healthyFats);
+    };
+
     // Generate each meal
     if (dist.breakfast) {
         console.log(`\n--- Generating Breakfast ---`);
-        meals.push(generateMealFromFoods(
+        const groupTargets = buildGroupTargets('breakfast', mealsRemaining);
+        const meal = await generateMealFromFoods(
             'breakfast',
             targetCalories * dist.breakfast,
             filteredDbFoods,
@@ -2155,12 +2379,17 @@ export async function generateDayMealPlanFromDB(
             targetProtein * dist.breakfast,
             dayVarietyManager,
             targetCalories,
-            rdaProfile?.age
-        ));
+            rdaProfile?.age,
+            groupTargets
+        );
+        meals.push(meal);
+        updateRemaining(meal);
+        mealsRemaining = Math.max(0, mealsRemaining - 1);
     }
     if (dist.snack1) {
         console.log(`\n--- Generating Snack 1 ---`);
-        meals.push(generateMealFromFoods(
+        const groupTargets = buildGroupTargets('snack', mealsRemaining);
+        const meal = await generateMealFromFoods(
             'snack',
             targetCalories * dist.snack1,
             filteredDbFoods,
@@ -2170,12 +2399,17 @@ export async function generateDayMealPlanFromDB(
             targetProtein * dist.snack1,
             dayVarietyManager,
             targetCalories,
-            rdaProfile?.age
-        ));
+            rdaProfile?.age,
+            groupTargets
+        );
+        meals.push(meal);
+        updateRemaining(meal);
+        mealsRemaining = Math.max(0, mealsRemaining - 1);
     }
     if (dist.lunch) {
         console.log(`\n--- Generating Lunch ---`);
-        meals.push(generateMealFromFoods(
+        const groupTargets = buildGroupTargets('lunch', mealsRemaining);
+        const meal = await generateMealFromFoods(
             'lunch',
             targetCalories * dist.lunch,
             filteredDbFoods,
@@ -2185,12 +2419,17 @@ export async function generateDayMealPlanFromDB(
             targetProtein * dist.lunch,
             dayVarietyManager,
             targetCalories,
-            rdaProfile?.age
-        ));
+            rdaProfile?.age,
+            groupTargets
+        );
+        meals.push(meal);
+        updateRemaining(meal);
+        mealsRemaining = Math.max(0, mealsRemaining - 1);
     }
     if (dist.snack2) {
         console.log(`\n--- Generating Snack 2 ---`);
-        meals.push(generateMealFromFoods(
+        const groupTargets = buildGroupTargets('snack', mealsRemaining);
+        const meal = await generateMealFromFoods(
             'snack',
             targetCalories * dist.snack2,
             filteredDbFoods,
@@ -2200,12 +2439,17 @@ export async function generateDayMealPlanFromDB(
             targetProtein * dist.snack2,
             dayVarietyManager,
             targetCalories,
-            rdaProfile?.age
-        ));
+            rdaProfile?.age,
+            groupTargets
+        );
+        meals.push(meal);
+        updateRemaining(meal);
+        mealsRemaining = Math.max(0, mealsRemaining - 1);
     }
     if (dist.dinner) {
         console.log(`\n--- Generating Dinner ---`);
-        meals.push(generateMealFromFoods(
+        const groupTargets = buildGroupTargets('dinner', mealsRemaining);
+        const meal = await generateMealFromFoods(
             'dinner',
             targetCalories * dist.dinner,
             filteredDbFoods,
@@ -2215,8 +2459,12 @@ export async function generateDayMealPlanFromDB(
             targetProtein * dist.dinner,
             dayVarietyManager,
             targetCalories,
-            rdaProfile?.age
-        ));
+            rdaProfile?.age,
+            groupTargets
+        );
+        meals.push(meal);
+        updateRemaining(meal);
+        mealsRemaining = Math.max(0, mealsRemaining - 1);
     }
 
     // Final Aggregation

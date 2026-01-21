@@ -18,6 +18,25 @@ const COLORS = {
   danger: "#EF4444",           // Red
 };
 
+const WHOLE_GRAIN_ITEMS = new Set(["Avena", "Quinua"]);
+const HEALTHY_FAT_ITEMS = new Set([
+  "Palta",
+  "Maní",
+  "Mantequilla de Maní",
+  "Almendras",
+  "Pecanas",
+  "Cashews",
+  "Nueces",
+  "Aceitunas",
+  "Aceite de Oliva",
+  "Chía",
+  "Linaza",
+  "Pistachos",
+  "Coco"
+]);
+const MIN_WHOLE_GRAINS = 1;
+const MIN_HEALTHY_FATS = 2;
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
@@ -73,7 +92,7 @@ export default function OnboardingPage() {
   const handleComplete = async () => {
     // Block completion if pantry coverage is insufficient
     if (!pantryValid()) {
-      alert('Selecciona los mínimos requeridos en cada categoría del pantry antes de continuar.');
+      alert('Selecciona los mínimos requeridos por categoría y asegúrate de incluir al menos 1 integral (Avena o Quinua) y 2 grasas saludables.');
       return;
     }
 
@@ -194,7 +213,12 @@ export default function OnboardingPage() {
   const TOTAL_STEPS = 7;
 
   const pantryValid = () => {
-    return GROCERY_CATEGORIES.every(cat => (pantrySelections[cat.id]?.size || 0) >= cat.minRequired);
+    const meetsCategoryMins = GROCERY_CATEGORIES.every(cat => (pantrySelections[cat.id]?.size || 0) >= cat.minRequired);
+    const carbSelections = pantrySelections["carbs"] || new Set<string>();
+    const fatSelections = pantrySelections["fats"] || new Set<string>();
+    const wholeGrainCount = Array.from(carbSelections).filter(name => WHOLE_GRAIN_ITEMS.has(name)).length;
+    const healthyFatCount = Array.from(fatSelections).filter(name => HEALTHY_FAT_ITEMS.has(name)).length;
+    return meetsCategoryMins && wholeGrainCount >= MIN_WHOLE_GRAINS && healthyFatCount >= MIN_HEALTHY_FATS;
   };
 
   const togglePantryItem = (categoryId: string, itemName: string) => {
@@ -635,17 +659,39 @@ function PantryStep({
         {GROCERY_CATEGORIES.map(cat => {
           const selectedCount = selections[cat.id]?.size || 0;
           const meetsMin = selectedCount >= cat.minRequired;
+          const carbSelections = selections["carbs"] || new Set<string>();
+          const fatSelections = selections["fats"] || new Set<string>();
+          const wholeGrainCount = Array.from(carbSelections).filter(name => WHOLE_GRAIN_ITEMS.has(name)).length;
+          const healthyFatCount = Array.from(fatSelections).filter(name => HEALTHY_FAT_ITEMS.has(name)).length;
+          const extraHint =
+            cat.id === "carbs"
+              ? `incluye ${MIN_WHOLE_GRAINS} integral`
+              : cat.id === "fats"
+                ? `incluye ${MIN_HEALTHY_FATS} saludables`
+                : "";
           return (
             <div key={cat.id} className="border border-gray-200 rounded-2xl p-4 bg-white shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
                     {cat.nameEs}{" "}
-                    <span className="text-sm text-gray-500">(mín. {cat.minRequired})</span>
+                    <span className="text-sm text-gray-500">
+                      (mín. {cat.minRequired}{extraHint ? `, ${extraHint}` : ""})
+                    </span>
                   </h3>
                   <p className={`text-sm ${meetsMin ? "text-green-600" : "text-amber-600"}`}>
                     {selectedCount} seleccionados
                   </p>
+                  {cat.id === "carbs" && (
+                    <p className={`text-xs ${wholeGrainCount >= MIN_WHOLE_GRAINS ? "text-green-600" : "text-amber-600"}`}>
+                      Integrales: {wholeGrainCount} seleccionados
+                    </p>
+                  )}
+                  {cat.id === "fats" && (
+                    <p className={`text-xs ${healthyFatCount >= MIN_HEALTHY_FATS ? "text-green-600" : "text-amber-600"}`}>
+                      Grasas saludables: {healthyFatCount} seleccionados
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={() => onSelectAll(cat)}
@@ -682,7 +728,7 @@ function PantryStep({
         })}
       </div>
       <div className="text-sm text-gray-500 text-center">
-        Debes cumplir el mínimo en cada categoría para continuar.
+        Debes cumplir el mínimo en cada categoría y elegir al menos 1 integral y 2 grasas saludables.
       </div>
     </div>
   );

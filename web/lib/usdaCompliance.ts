@@ -70,17 +70,41 @@ const SERVING_GRAMS: Record<keyof ServingCount, number> = {
     healthyFats: 5, // 1 tsp oil/butter
 };
 
-function gramsToServings(grams: number, group: keyof ServingCount): number {
-    const base = SERVING_GRAMS[group] || 100;
+function estimateServingGrams(food: SimpleFoodItem, group: keyof ServingCount): number {
+    if (food.serving_equiv_grams && food.serving_equiv_grams > 0) {
+        return food.serving_equiv_grams;
+    }
+    const unit = (food.serving_unit || '').toLowerCase();
+    if (group === 'wholeGrains') {
+        if (unit.includes('cup')) return 90;
+        if (unit.includes('slice') || unit.includes('tortilla')) return 30;
+        if (unit.includes('oz')) return 28;
+        return 60;
+    }
+    if (group === 'dairy') {
+        if (unit.includes('cup')) return 244;
+        if (unit.includes('container')) return food.serving_size || 170;
+    }
+    if (group === 'vegetables') {
+        if (unit.includes('cup')) return 90;
+    }
+    if (group === 'fruits') {
+        if (unit.includes('cup')) return 150;
+    }
+    return SERVING_GRAMS[group] || 100;
+}
+
+function gramsToServings(grams: number, group: keyof ServingCount, food: SimpleFoodItem): number {
+    const base = estimateServingGrams(food, group);
     return grams / base;
 }
 
 export function countServingsByGroup(plan: MealPlan): ServingCount {
     const totals: ServingCount = { vegetables: 0, fruits: 0, dairy: 0, protein: 0, wholeGrains: 0, healthyFats: 0 };
 
-    const addServings = (group: keyof ServingCount, grams: number) => {
+    const addServings = (group: keyof ServingCount, grams: number, food: SimpleFoodItem) => {
         if (!grams || grams <= 0) return;
-        totals[group] += gramsToServings(grams, group);
+        totals[group] += gramsToServings(grams, group, food);
     };
 
     plan.meals.forEach(meal => {
@@ -90,28 +114,26 @@ export function countServingsByGroup(plan: MealPlan): ServingCount {
 
             switch (f.category) {
                 case 'vegetable':
-                    addServings('vegetables', grams);
+                    totals.vegetables += gramsToServings(grams, 'vegetables', f);
                     break;
                 case 'fruit':
-                    addServings('fruits', grams);
+                    totals.fruits += gramsToServings(grams, 'fruits', f);
                     break;
                 case 'dairy':
                 case 'beverage':
-                    addServings('dairy', grams);
+                    totals.dairy += gramsToServings(grams, 'dairy', f);
                     break;
                 case 'protein':
                 case 'legume':
-                    addServings('protein', grams);
+                    totals.protein += gramsToServings(grams, 'protein', f);
                     break;
                 case 'carb':
                     if (isWholeGrain(f)) {
-                        // cooked grain? use 90g cooked if serving_size hints "cup"
-                        const base = f.serving_unit && f.serving_unit.toLowerCase().includes('cup') ? Math.max(90, f.serving_size || 90) : 30;
-                        totals.wholeGrains += grams / base;
+                        totals.wholeGrains += gramsToServings(grams, 'wholeGrains', f);
                     }
                     break;
                 case 'fat':
-                    addServings('healthyFats', grams);
+                    totals.healthyFats += gramsToServings(grams, 'healthyFats', f);
                     break;
                 default:
                     break;

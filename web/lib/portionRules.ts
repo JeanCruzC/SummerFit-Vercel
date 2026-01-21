@@ -332,14 +332,13 @@ export function isFoodAppropriateForMeal(
   if (food.meal_times && Array.isArray(food.meal_times) && food.meal_times.length > 0) {
     const isTagged = food.meal_times.includes(mealType);
 
-    // Special case: snacks can include fruits and nuts even without explicit tag
-    if (mealType === 'snack' && !isTagged) {
-      if (['fruit', 'fat', 'dairy'].includes(food.category)) {
-        return true;
-      }
-    }
+    if (isTagged) return true;
 
-    return isTagged;
+    // Special case: snacks can include fruits and nuts even without explicit tag
+    if (mealType === 'snack' && ['fruit', 'fat', 'dairy'].includes(food.category)) {
+      return true;
+    }
+    // Fall through to category-based rules if tags are missing/too strict.
   }
 
   // Helper utilities for keyword matching
@@ -381,11 +380,11 @@ export function isFoodAppropriateForMeal(
     case 'breakfast':
       if (hasAny(txt, LEGUMES)) return false;
       if (food.category === 'protein') {
-        // Only allow classic breakfast proteins (eggs, tofu, fresh/lean dairy proteins)
-        return hasAny(txt, BREAKFAST_PROTEIN);
+        // Allow classic breakfast proteins, but fall back to lean proteins if pantry lacks options
+        return hasAny(txt, BREAKFAST_PROTEIN) || (food.sodium_mg ?? 0) < 700;
       }
       if (food.category === 'dairy') {
-        return food.protein >= 8 && (food.sugar_g ?? 0) <= 12;
+        return (food.sugar_g ?? 0) <= 12;
       }
       return ['carb', 'fruit', 'fat', 'vegetable'].includes(food.category);
     case 'lunch':

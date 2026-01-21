@@ -1015,6 +1015,16 @@ function generateMealFromFoods(
         buckets[role].push(f);
     });
 
+    // If critical buckets are empty, supplement with staples (still respecting pantry whitelist via filteredFoods)
+    const findByIds = (ids: string[]) => ids
+        .map(id => filteredFoods.find(f => f.id === id))
+        .filter(Boolean) as SimpleFoodItem[];
+    if (buckets.protein.length === 0) buckets.protein.push(...findByIds(['28346', '28519', '29568'])); // pollo, pavo, huevo
+    if (buckets.fat.length === 0) buckets.fat.push(...findByIds(['31638', '27881'])); // palta, aceite
+    if (buckets.dairy.length === 0) buckets.dairy.push(...findByIds(['27829', '27800'])); // yogurt, leche
+    const hasWholeGrain = buckets.carb.some(c => isWholeGrain(c));
+    if (!hasWholeGrain) buckets.carb.push(...findByIds(['30013', '30815'])); // pan integral, quinua
+
     console.log(`  📊 Buckets: P=${buckets.protein.length}, C=${buckets.carb.length}, V=${buckets.veggie.length}, L=${buckets.legume.length}, F=${buckets.fat.length}, D=${buckets.dairy.length}, Cnd=${buckets.condiment.length}`);
 
     // Map old variable names to new buckets for compatibility with rest of function
@@ -1121,11 +1131,11 @@ function generateMealFromFoods(
                 minG = 2; maxG = 15; break;
             case 'vegetable':
                 minG = Math.max(80, baseServing); // 1 serving
-                maxG = Math.min(200, baseServing * 2); // ≤2 servings
+                maxG = Math.min(150, baseServing * 1.7); // cap to ~1.5-1.7 servings per veg
                 break;
             case 'fruit':
                 minG = Math.max(100, baseServing); // ~1 fruit
-                maxG = Math.min(250, baseServing * 2);
+                maxG = Math.min(220, baseServing * 1.8);
                 break;
             case 'beverage':
             case 'dairy':
@@ -1133,13 +1143,13 @@ function generateMealFromFoods(
             case 'legume':
             case 'carb':
                 minG = Math.max(100, baseServing); // cooked cup ~150
-                maxG = Math.min(250, baseServing * 2);
+                maxG = Math.min(220, baseServing * 1.6);
                 break;
             case 'protein':
                 minG = 120; maxG = 200; break;
             default:
                 minG = Math.max(50, baseServing * 0.8);
-                maxG = Math.min(250, baseServing * 2.2);
+                maxG = Math.min(220, baseServing * 2);
                 break;
         }
         const clamped = Math.max(minG, Math.min(maxG, grams));
@@ -1752,8 +1762,31 @@ function generateMealFromFoods(
 
     const recomputeTotals = () => sumMacros(items.map(i => i.macros));
 
+    // Cap total vegetable grams per meal to avoid USDA veg max breaches
+    const capVegetables = () => {
+        const vegIdxs = items
+            .map((it, idx) => ({ it, idx }))
+            .filter(({ it }) => it.food.category === 'vegetable');
+        if (vegIdxs.length === 0) return;
+        const totalVegGrams = vegIdxs.reduce((sum, v) => sum + v.it.portion_g, 0);
+        const maxVegGrams = 220; // ~2.4 servings
+        if (totalVegGrams > maxVegGrams) {
+            const factor = maxVegGrams / totalVegGrams;
+            vegIdxs.forEach(v => {
+                const newPortion = adjustToServingBounds(v.it.food, Math.max(60, v.it.portion_g * factor));
+                items[v.idx] = {
+                    ...v.it,
+                    portion_g: newPortion,
+                    macros: calculateItemMacros(v.it.food, newPortion)
+                };
+            });
+        }
+    };
+
     // Light post-adjustment to pull macros closer to targets
     let totals = recomputeTotals();
+    capVegetables();
+    totals = recomputeTotals();
     const adjustItemPortion = (idx: number, factor: number) => {
         const item = items[idx];
         const newPortion = adjustToServingBounds(item.food, Math.max(10, Math.round(item.portion_g * factor)));
@@ -1805,6 +1838,19 @@ function generateMealFromFoods(
                 });
                 totals = recomputeTotals();
             }
+        }
+    } else if (fatPct < 18 && fats.length === 0) {
+        // If no fat candidates, try to inject olive oil or avocado from available foods (ensured earlier)
+        const fallbackFat = filteredFoods.find(f => f.id === '27881' || f.id === '31638');
+        if (fallbackFat && preventRoleDuplication(items, fallbackFat)) {
+            const portion = adjustToServingBounds(fallbackFat, fallbackFat.serving_size || 15);
+            items.push({
+                food: fallbackFat,
+                portion_g: portion,
+                cooking_state: fallbackFat.cooking_states?.[0] || 'raw',
+                macros: calculateItemMacros(fallbackFat, portion)
+            });
+            totals = recomputeTotals();
         }
     }
 
@@ -2022,7 +2068,6 @@ export async function generateDayMealPlanFromDB(
     }
 
     // Ensure minimal role coverage even if pantry lacks certain categories
-    // Add breakfast-friendly items specifically (eggs, oats, yogurt, avocado)
     const ensureRoles = (foods: SimpleFoodItem[]): SimpleFoodItem[] => {
         const hasCategory = (cat: SimpleFoodItem['category']) => foods.some(f => f.category === cat);
         const addByIds = (ids: string[]) => {
@@ -2033,21 +2078,35 @@ export async function generateDayMealPlanFromDB(
                 }
             });
         };
-        // Always add breakfast essentials: eggs, oats, yogurt, avocado, whole bread
-        addByIds(['29568', '30796', '27829', '31638', '30013']); // huevo, avena, yogurt, palta, pan integral
-        // Add proteins if missing
-        if (!hasCategory('protein')) addByIds(['28346', '28519']); // pollo, pavo
-        // Add fats if missing
-        if (!hasCategory('fat')) addByIds(['27881', '29904']); // aceite de oliva, almendras
-        // Add dairy if missing
-        if (!hasCategory('dairy')) addByIds(['27800']); // leche
-        // Add whole grains if missing
+        if (!hasCategory('protein')) addByIds(['28346', '29568', '28519']); // pollo, huevo, pavo
+        if (!hasCategory('fat')) addByIds(['31638', '27881']); // palta, aceite de oliva
+        if (!hasCategory('dairy')) addByIds(['27829', '27800']); // yogurt, leche
         const hasWhole = foods.some(f => f.category === 'carb' && isWholeGrain(f));
-        if (!hasWhole) addByIds(['30815']); // quinua
+        if (!hasWhole) addByIds(['30013', '30815']); // pan integral, quinua
         return foods;
     };
     filteredDbFoods = ensureRoles(filteredDbFoods);
-    console.log(`  📦 After ensureRoles: ${filteredDbFoods.length} foods`);
+
+    // Hard check: ensure pantry covers core groups, otherwise abort with a clear message
+    const coverage = { protein: 0, carb: 0, vegetable: 0, fat: 0, dairy: 0, wholeGrain: 0 };
+    filteredDbFoods.forEach(f => {
+        if (f.category === 'protein' || f.category === 'legume') coverage.protein++;
+        if (f.category === 'carb') coverage.carb++;
+        if (f.category === 'vegetable') coverage.vegetable++;
+        if (f.category === 'fat') coverage.fat++;
+        if (f.category === 'dairy' || f.category === 'beverage') coverage.dairy++;
+        if (f.category === 'carb' && isWholeGrain(f)) coverage.wholeGrain++;
+    });
+    const missing: string[] = [];
+    if (coverage.protein === 0) missing.push('proteínas');
+    if (coverage.carb === 0) missing.push('carbohidratos');
+    if (coverage.vegetable === 0) missing.push('verduras');
+    if (coverage.fat === 0) missing.push('grasas saludables');
+    if (coverage.dairy === 0) missing.push('lácteos/bebidas');
+    if (coverage.wholeGrain === 0) missing.push('granos integrales');
+    if (missing.length > 0) {
+        throw new Error(`Tu selección de despensa no cubre grupos obligatorios: ${missing.join(', ')}. Añade al menos 3 proteínas, 2-3 carbos (incluyendo integrales), 3 lácteos, 2 grasas saludables, frutas y verduras.`);
+    }
 
     // Create variety manager for this day (or use provided one for weekly plans)
     const dayVarietyManager = varietyManager || new VarietyManager(24);
@@ -2158,12 +2217,12 @@ export async function generateDayMealPlanFromDB(
     if (Math.abs(calorieDiff) > 10) deviations.push(`Calories ${calorieDiff > 0 ? '+' : ''}${calorieDiff.toFixed(1)}%`);
     if (Math.abs(proteinDiff) > 10) deviations.push(`Protein ${proteinDiff > 0 ? '+' : ''}${proteinDiff.toFixed(1)}%`);
 
-    // USDA validation (soft warnings - no longer blocks generation)
+    // USDA hard validation (throws if broken)
     const planForValidation: MealPlan = { id: 'day', name: 'Day', name_es: 'Día', meals, totals: { ...finalTotals, micros: microTotals } };
     const usdaHard = validateUSDAHard(planForValidation, targetCalories, rdaProfile?.age);
     if (!usdaHard.isValid) {
-        console.warn('⚠️ USDA validation issues (soft):', usdaHard.issues);
-        usdaHard.issues.forEach(issue => deviations.push(`USDA: ${issue}`));
+        console.error('❌ USDA hard validation failed:', usdaHard.issues);
+        throw new Error(`USDA hard fail: ${usdaHard.issues.join(' | ')}`);
     }
 
     // Micronutrient checks with sex/age-specific RDA targets (soft warnings)

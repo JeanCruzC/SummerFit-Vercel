@@ -71,6 +71,12 @@ export default function OnboardingPage() {
   };
 
   const handleComplete = async () => {
+    // Block completion if pantry coverage is insufficient
+    if (!pantryValid()) {
+      alert('Selecciona los mínimos requeridos en cada categoría del pantry antes de continuar.');
+      return;
+    }
+
     setIsLoading(true);
     const supabase = createClient();
 
@@ -175,8 +181,9 @@ export default function OnboardingPage() {
 
   const TOTAL_STEPS = 7;
 
-  const pantryValid = () =>
-    GROCERY_CATEGORIES.every(cat => (pantrySelections[cat.id]?.size || 0) >= cat.minRequired);
+  const pantryValid = () => {
+    return GROCERY_CATEGORIES.every(cat => (pantrySelections[cat.id]?.size || 0) >= cat.minRequired);
+  };
 
   const togglePantryItem = (categoryId: string, itemName: string) => {
     setPantrySelections(prev => {

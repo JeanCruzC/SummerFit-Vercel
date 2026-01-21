@@ -54,7 +54,7 @@ export const GROCERY_CATEGORIES: GroceryCategory[] = [
         id: "proteins",
         name: "Proteins",
         nameEs: "Proteínas",
-        minRequired: 2,
+        minRequired: 3, // exigir al menos 3 proteínas para asegurar cobertura USDA
         items: [
             { name: "Pollo", searchTerm: "chicken", emoji: "🍗", foodId: GROCERY_ID_MAP['Pollo'] },
             { name: "Carne", searchTerm: "beef", emoji: "🥩", foodId: GROCERY_ID_MAP['Carne'] },
@@ -180,7 +180,7 @@ export const GROCERY_CATEGORIES: GroceryCategory[] = [
         id: "dairy",
         name: "Dairy",
         nameEs: "Lácteos",
-        minRequired: 1,
+        minRequired: 3, // asegurar al menos 3 lácteos disponibles
         items: [
             { name: "Leche", searchTerm: "milk", emoji: "🥛", foodId: GROCERY_ID_MAP['Leche'] },
             { name: "Yogurt", searchTerm: "yogurt", emoji: "🥛", foodId: GROCERY_ID_MAP['Yogurt'] },

@@ -154,10 +154,22 @@ export default function OnboardingPage() {
 
     const { error: pantryError } = await supabase
       .from("user_pantry")
-      .upsert(allItems, { onConflict: "user_id,food_id" });
+      .delete()
+      .eq("user_id", userId);
 
     if (pantryError) {
-      console.error("Error pantry:", pantryError);
+      console.error("Error deleting pantry:", pantryError);
+      alert("Error al guardar tu despensa");
+      setIsLoading(false);
+      return;
+    }
+
+    const { error: pantryInsertError } = await supabase
+      .from("user_pantry")
+      .insert(allItems);
+
+    if (pantryInsertError) {
+      console.error("Error pantry insert:", pantryInsertError);
       alert("Error al guardar tu despensa");
       setIsLoading(false);
       return;

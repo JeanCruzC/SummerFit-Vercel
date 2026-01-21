@@ -218,6 +218,7 @@ const NAME_TO_ID: Record<string, string> = {
     'vainitas': '32184', 'judias verdes': '32184', 'judías verdes': '32184', 'ejotes': '32184',
     'betarraga': '32185', 'remolacha': '32185', 'rabano': '32218', 'rábano': '32218',
     'berenjena': '32200', 'berenjenas': '32200', 'champiñones': '32208', 'hongos': '32208', 'champinones': '32208',
+    'ajo': '33240',
     // Fats / Nuts / Seeds
     'palta': '31638', 'aguacate': '31638', 'avocado': '31638', 'mani': '29934', 'maní': '29934', 'cacahuate': '29934',
     'mantequilla de mani': '29952', 'mantequilla de maní': '29952', 'crema de mani': '29952',
@@ -244,8 +245,10 @@ const NAME_TO_ID: Record<string, string> = {
     'melon': '31656', 'melón': '31656', 'datiles': '31618', 'dátiles': '31618', 'pitahaya': '31649',
     // Condiments
     'mostaza': '32500', 'sillao': '29857', 'salsa de soya': '29857', 'salsa de tomate': '32148', 'ketchup': '32148',
+    'vinagre': '32593',
     'curry': '32593', 'pimenton': '33241', 'pimentón': '33241', 'paprika': '33241',
-    'curcuma': '33242', 'cúrcuma': '33242', 'canela': '33243'
+    'curcuma': '33242', 'cúrcuma': '33242', 'canela': '33243',
+    'oregano': '32195', 'orégano': '32195'
 };
 
 // RDA Profile for sex/age-specific micronutrient targets
@@ -1170,7 +1173,7 @@ function generateMealFromFoods(
         const txt = `${norm(f.name)} ${norm(f.name_es)}`;
         const processedKeywords = [
             'jamon', 'ham', 'salchicha', 'sausage', 'mortadela', 'embutido',
-            'pepperoni', 'hot dog', 'tocino', 'bacon', 'cereal azucar', 'granola',
+    'pepperoni', 'hot dog', 'tocino', 'bacon', 'cereal azucar', 'granola',
             'barrita', 'ultra proces'
         ];
         const branded = (f as any).food_tier === 'Branded';
@@ -2017,6 +2020,26 @@ export async function generateDayMealPlanFromDB(
     if (filteredDbFoods.length === 0) {
         throw new Error('No foods available after applying onboarding selection. Please select more items in pantry setup.');
     }
+
+    // Ensure minimal role coverage even if pantry lacks certain categories
+    const ensureRoles = (foods: SimpleFoodItem[]): SimpleFoodItem[] => {
+        const hasCategory = (cat: SimpleFoodItem['category']) => foods.some(f => f.category === cat);
+        const addByIds = (ids: string[]) => {
+            ids.forEach(id => {
+                const item = dbFoods.find(f => String(f.id) === id);
+                if (item && !foods.some(f => f.id === item.id)) {
+                    foods.push(item);
+                }
+            });
+        };
+        if (!hasCategory('protein')) addByIds(['28346', '29568', '28519']); // pollo, huevo, pavo
+        if (!hasCategory('fat')) addByIds(['31638', '27881']); // palta, aceite de oliva
+        if (!hasCategory('dairy')) addByIds(['27829', '27800']); // yogurt, leche
+        const hasWhole = foods.some(f => f.category === 'carb' && isWholeGrain(f));
+        if (!hasWhole) addByIds(['30013', '30815']); // pan integral, quinua
+        return foods;
+    };
+    filteredDbFoods = ensureRoles(filteredDbFoods);
 
     // Create variety manager for this day (or use provided one for weekly plans)
     const dayVarietyManager = varietyManager || new VarietyManager(24);

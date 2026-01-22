@@ -49,6 +49,7 @@ export interface SimpleFoodItem {
     usda_group?: 'protein' | 'dairy' | 'vegetable' | 'fruit' | 'whole_grain' | 'refined_grain' | 'fat' | 'condiment';
     serving_equiv_grams?: number; // explicit USDA serving equivalent in grams if known
     processing_level?: 'minimally_processed' | 'processed' | 'ultra_processed';
+    is_whole_grain?: boolean;
     // Clinical Micros (Values per 100g)
     micros?: {
         iron_mg?: number;    // Hierro (Pregnancy/Anemia)
@@ -185,7 +186,7 @@ const ONBOARDING_FOOD_IDS: Set<string> = new Set([
     // Proteins
     '28346', '28237', '28639', '28726', '28775', '29568', '28519', '28277', '28293', '29891', '33146', '33238', '33239',
     // Carbs / Legumes
-    '30817', '29844', '32117', '31979', '29840', '29776', '29831', '32374', '30815', '30766', '32198', '30580', '30796', '30013', '30237', '30497',
+    '30817', '30829', '29844', '32117', '31979', '29840', '29776', '29831', '32374', '30815', '30766', '30773', '32198', '30580', '30796', '30013', '30124', '30237', '30240', '30497',
     // Vegetables
     '32204', '32134', '32058', '32075', '32029', '32210', '32199', '32223', '32188', '31989', '32182', '32193', '32181', '32195', '32192', '32108', '32216', '32184', '32185', '32218', '32200', '32208', '33240',
     // Fats / Nuts / Seeds
@@ -208,12 +209,13 @@ const NAME_TO_ID: Record<string, string> = {
     'pechuga': '28346', 'pechuga de pollo': '28346', 'pollo pechuga': '28346',
     'salmon': '28639', 'salmón': '28639', 'tilapia': '28639',
     // Carbs / Legumes
-    'arroz': '30817', 'arroz blanco': '30817', 'arroz integral': '30817', 'papa': '29844', 'papas': '29844',
+    'arroz': '30817', 'arroz blanco': '30817', 'arroz integral': '30829', 'brown rice': '30829', 'papa': '29844', 'papas': '29844',
     'camote': '32117', 'yuca': '31979', 'lentejas': '29840', 'lenteja': '29840', 'frijoles': '29776', 'frijol': '29776',
     'garbanzos': '29831', 'garbanzo': '29831', 'arvejas': '32374', 'arveja': '32374', 'quinua': '30815', 'quinoa': '30815',
-    'pasta': '30766', 'fideos': '30766', 'choclo': '32198', 'maiz': '32198', 'maíz': '32198',
-    'popcorn': '30580', 'palomitas': '30580', 'avena': '30796', 'pan': '30013', 'pan integral': '30013',
-    'tortilla': '30237', 'cereal': '30497',
+    'pasta': '30766', 'pasta integral': '30773', 'whole grain pasta': '30773', 'fideos': '30766',
+    'choclo': '32198', 'maiz': '32198', 'maíz': '32198',
+    'popcorn': '30580', 'palomitas': '30580', 'avena': '30796', 'pan': '30013', 'pan integral': '30124', 'whole wheat bread': '30124',
+    'tortilla': '30237', 'tortilla integral': '30240', 'whole wheat tortilla': '30240', 'cereal': '30497',
     // Vegetables
     'lechuga': '32204', 'tomate': '32134', 'tomates': '32134', 'brocoli': '32058', 'brócoli': '32058', 'brocolis': '32058',
     'zanahoria': '32075', 'zanahorias': '32075', 'espinaca': '32029', 'espinacas': '32029',
@@ -817,6 +819,9 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
             cleanName = cleanName.split(',')[0]; // Take first part
             if (cleanName.length > 30) cleanName = cleanName.substring(0, 30) + '...';
 
+            const wholeGrainDetected = Boolean(d.is_whole_grain) ||
+                /(integral|whole|bran|oat|avena|quinoa|quinua|trigo|centeno)/.test(catSearch);
+
             // Smart defaults for serving size
             let sSize = d.serving_size || 100;
             const sUnitRaw = d.serving_unit || 'g';
@@ -850,9 +855,10 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
             }
 
             const processing_level: SimpleFoodItem['processing_level'] =
-                d.food_tier === 1 ? 'minimally_processed'
+                d.processing_level ||
+                (d.food_tier === 1 ? 'minimally_processed'
                     : d.food_tier === 2 ? 'processed'
-                        : 'ultra_processed';
+                        : 'ultra_processed');
 
             return {
                 id: String(d.id),
@@ -861,10 +867,11 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
                 emoji: d.emoji || '🍽️',
                 category,
                 usda_group: category === 'carb'
-                    ? (isLegume ? 'protein' : (isWholeGrain as any)(d) ? 'whole_grain' : 'refined_grain')
+                    ? (isLegume ? 'protein' : wholeGrainDetected ? 'whole_grain' : 'refined_grain')
                     : (category as any),
-                serving_equiv_grams: servingEquiv,
+                serving_equiv_grams: d.serving_equiv_grams || servingEquiv,
                 processing_level,
+                is_whole_grain: Boolean(d.is_whole_grain) || wholeGrainDetected,
                 kcal: d.kcal_per_100g || 0,
                 protein: d.protein_g_per_100g || 0,
                 carbs: d.carbs_g_per_100g || 0,
@@ -1088,16 +1095,27 @@ async function generateMealFromFoods(
 
     console.log(`  📊 Categories: P=${proteins.length}, C=${carbs.length}, V=${vegetables.length}, L=${legumes.length}, F=${fats.length}, Fr=${fruits.length}, D=${dairy.length}`);
 
-    // Apply variety filtering
+    const applyVariety = (list: SimpleFoodItem[], cooldownHours: number, minUnique: number = 2) => {
+        if (!varietyManager) return list;
+        if (list.length <= minUnique) return list; // Allow repeats when pantry is small
+        return varietyManager.getAvailableFoods(list, cooldownHours);
+    };
+
+    // Apply variety filtering (but relax for scarce groups needed for USDA)
     if (varietyManager) {
-        const beforeVariety = proteins.length + carbs.length + vegetables.length + legumes.length;
-        proteins = varietyManager.getAvailableFoods(proteins, 24);
-        carbs = varietyManager.getAvailableFoods(carbs, 24);
-        vegetables = varietyManager.getAvailableFoods(vegetables, 24);
-        fats = varietyManager.getAvailableFoods(fats, 24);
-        legumes = varietyManager.getAvailableFoods(legumes, 24);
-        fruits = varietyManager.getAvailableFoods(fruits, 24);
-        const afterVariety = proteins.length + carbs.length + vegetables.length + legumes.length;
+        const beforeVariety = proteins.length + carbs.length + vegetables.length + legumes.length + fats.length + fruits.length + dairy.length;
+        const wholeGrainCount = carbs.filter(c => isWholeGrain(c)).length;
+        const carbMinUnique = wholeGrainCount <= 1 ? carbs.length : 2;
+
+        proteins = applyVariety(proteins, 24, 2);
+        carbs = applyVariety(carbs, 24, carbMinUnique);
+        vegetables = applyVariety(vegetables, 24, 2);
+        legumes = applyVariety(legumes, 24, 1);
+        fats = applyVariety(fats, 12, 2);
+        fruits = applyVariety(fruits, 12, 2);
+        dairy = applyVariety(dairy, 12, 2);
+
+        const afterVariety = proteins.length + carbs.length + vegetables.length + legumes.length + fats.length + fruits.length + dairy.length;
         console.log(`  🔄 Variety filter: ${beforeVariety} → ${afterVariety} foods`);
     }
 
@@ -2261,6 +2279,11 @@ export async function generateDayMealPlanFromDB(
         }
 
         filteredDbFoods = dbFoods.filter(f => pantryIds.has(String(f.id)));
+        const dbIdSet = new Set(dbFoods.map(f => String(f.id)));
+        const missingIds = Array.from(pantryIds).filter(id => !dbIdSet.has(id));
+        if (missingIds.length > 0) {
+            console.warn(`  ⚠️ Pantry IDs missing in foods table: ${missingIds.join(', ')}`);
+        }
         console.log(`  ✅ Pantry ID filter: ${filteredDbFoods.length} foods match user's ${pantryIds.size} pantry IDs (${unmatchedTerms.length} unmatched)`);
 
         if (filteredDbFoods.length === 0) {
@@ -2288,6 +2311,9 @@ export async function generateDayMealPlanFromDB(
         if (f.category === 'dairy' || f.category === 'beverage') coverage.dairy++;
         if (f.category === 'carb' && isWholeGrain(f)) coverage.wholeGrain++;
     });
+    const breakfastProteinCount = filteredDbFoods.filter(f =>
+        (f.category === 'protein' || f.category === 'dairy') && isFoodAppropriateForMeal(f, 'breakfast')
+    ).length;
     const missing: string[] = [];
     if (coverage.protein === 0) missing.push('proteínas');
     if (coverage.carb === 0) missing.push('carbohidratos');
@@ -2296,6 +2322,7 @@ export async function generateDayMealPlanFromDB(
     if (coverage.fat === 0) missing.push('grasas saludables');
     if (coverage.dairy === 0) missing.push('lácteos/bebidas');
     if (coverage.wholeGrain === 0) missing.push('granos integrales');
+    if (breakfastProteinCount === 0) missing.push('proteínas de desayuno (huevo/yogurt/tofu)');
     if (missing.length > 0) {
         throw new Error(`Tu selección de despensa no cubre grupos obligatorios: ${missing.join(', ')}. Añade al menos 3 proteínas, 2-3 carbos (incluyendo integrales), 3 lácteos, 2 grasas saludables, frutas y verduras.`);
     }

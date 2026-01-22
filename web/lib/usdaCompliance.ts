@@ -45,7 +45,25 @@ export function getSodiumLimitByAge(ageYears?: number): number {
     return 1200;
 }
 
+const WHOLE_GRAIN_ID_SET = new Set<string>([
+    '30815', // Quinua
+    '30796', // Avena
+    '30829', // Arroz integral (brown rice)
+    '30124', // Pan integral (whole wheat bread)
+    '30240', // Tortilla integral
+    '30773', // Pasta integral
+]);
+
 export function isWholeGrain(food: SimpleFoodItem): boolean {
+    if (!food) return false;
+    if (food.is_whole_grain === true) return true;
+    if (food.usda_group === 'whole_grain') return true;
+    const id = String((food as any).id || '');
+    if (WHOLE_GRAIN_ID_SET.has(id)) return true;
+
+    const nameMix = `${food.name || ''} ${food.name_es || ''}`.toLowerCase();
+    if (/(integral|whole|bran|oat|avena|quinoa|quinua|trigo|centeno)/.test(nameMix)) return true;
+
     const carbs = food.carbs || 0;
     const fiber = food.fiber || 0;
     if (carbs <= 0) return false;

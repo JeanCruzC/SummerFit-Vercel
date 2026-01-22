@@ -43,6 +43,7 @@ export default function MealGeneratorPage() {
     const [activeDay, setActiveDay] = useState(0);
     const [validation, setValidation] = useState<PlanValidation | null>(null);
     const [previousDietType, setPreviousDietType] = useState<string>('balanced');
+    const [generationError, setGenerationError] = useState<string | null>(null);
 
     // User's pantry selection (food_ids from user_pantry table)
     const [userPantryTerms, setUserPantryTerms] = useState<string[]>([]);
@@ -167,6 +168,13 @@ export default function MealGeneratorPage() {
     const handleGenerate = async () => {
         if (generating) return; // Prevent race condition
         setGenerating(true);
+        setGenerationError(null);
+
+        if (userPantryTerms.length === 0) {
+            setGenerationError('Tu despensa está vacía o incompleta. Completa el onboarding antes de generar un plan.');
+            setGenerating(false);
+            return;
+        }
 
         // Clear cache if diet changed
         if (dietType !== previousDietType) {
@@ -246,6 +254,8 @@ export default function MealGeneratorPage() {
             }
         } catch (error) {
             console.error('Error generating meal plan:', error);
+            const message = error instanceof Error ? error.message : 'Error al generar el plan';
+            setGenerationError(message);
         } finally {
             setGenerating(false);
         }
@@ -368,6 +378,28 @@ export default function MealGeneratorPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
                 >
+                    {generationError && (
+                        <Card className="p-4 mb-4 border-red-200 bg-red-50 text-red-700">
+                            <div className="flex items-start gap-3">
+                                <div className="mt-0.5">⚠️</div>
+                                <div className="flex-1 text-sm">
+                                    <p className="font-semibold">No se pudo generar el plan</p>
+                                    <p className="mt-1">{generationError}</p>
+                                    <div className="mt-3 flex gap-2">
+                                        <Button
+                                            onClick={() => router.push('/onboarding')}
+                                            className="bg-red-600 hover:bg-red-700 text-white"
+                                        >
+                                            Revisar despensa
+                                        </Button>
+                                        <Button variant="ghost" onClick={handleGenerate}>
+                                            Reintentar
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+                    )}
                     {/* Goal Stats Card */}
                     {profile && (
                         <Card className="p-4 mb-4 bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800">

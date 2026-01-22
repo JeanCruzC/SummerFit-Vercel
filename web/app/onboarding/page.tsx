@@ -18,7 +18,7 @@ const COLORS = {
   danger: "#EF4444",           // Red
 };
 
-const WHOLE_GRAIN_ITEMS = new Set(["Avena", "Quinua"]);
+const WHOLE_GRAIN_ITEMS = new Set(["Avena", "Quinua", "Arroz Integral", "Pan Integral", "Pasta Integral", "Tortilla Integral"]);
 const HEALTHY_FAT_ITEMS = new Set([
   "Palta",
   "Maní",
@@ -34,8 +34,18 @@ const HEALTHY_FAT_ITEMS = new Set([
   "Pistachos",
   "Coco"
 ]);
+const BREAKFAST_PROTEIN_ITEMS = new Set([
+  "Huevo",
+  "Yogurt",
+  "Queso Blanco",
+  "Leche",
+  "Leche de Soya",
+  "Tofu",
+  "Proteína en polvo"
+]);
 const MIN_WHOLE_GRAINS = 1;
 const MIN_HEALTHY_FATS = 2;
+const MIN_BREAKFAST_PROTEINS = 1;
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -216,9 +226,16 @@ export default function OnboardingPage() {
     const meetsCategoryMins = GROCERY_CATEGORIES.every(cat => (pantrySelections[cat.id]?.size || 0) >= cat.minRequired);
     const carbSelections = pantrySelections["carbs"] || new Set<string>();
     const fatSelections = pantrySelections["fats"] || new Set<string>();
+    const proteinSelections = pantrySelections["proteins"] || new Set<string>();
+    const dairySelections = pantrySelections["dairy"] || new Set<string>();
     const wholeGrainCount = Array.from(carbSelections).filter(name => WHOLE_GRAIN_ITEMS.has(name)).length;
     const healthyFatCount = Array.from(fatSelections).filter(name => HEALTHY_FAT_ITEMS.has(name)).length;
-    return meetsCategoryMins && wholeGrainCount >= MIN_WHOLE_GRAINS && healthyFatCount >= MIN_HEALTHY_FATS;
+    const breakfastProteinCount = Array.from(new Set([...proteinSelections, ...dairySelections]))
+      .filter(name => BREAKFAST_PROTEIN_ITEMS.has(name)).length;
+    return meetsCategoryMins &&
+      wholeGrainCount >= MIN_WHOLE_GRAINS &&
+      healthyFatCount >= MIN_HEALTHY_FATS &&
+      breakfastProteinCount >= MIN_BREAKFAST_PROTEINS;
   };
 
   const togglePantryItem = (categoryId: string, itemName: string) => {
@@ -653,6 +670,29 @@ function PantryStep({
         <div className="w-16 h-16 mx-auto rounded-full bg-amber-100 flex items-center justify-center text-2xl">🛒</div>
         <h1 className="text-2xl font-black text-center mt-2">Selecciona tus alimentos</h1>
         <p className="text-center text-zinc-500 text-sm">Tu plan dependerá de lo que marques aquí.</p>
+        {(() => {
+          const carbSelections = selections["carbs"] || new Set<string>();
+          const fatSelections = selections["fats"] || new Set<string>();
+          const proteinSelections = selections["proteins"] || new Set<string>();
+          const dairySelections = selections["dairy"] || new Set<string>();
+          const wholeGrainCount = Array.from(carbSelections).filter(name => WHOLE_GRAIN_ITEMS.has(name)).length;
+          const healthyFatCount = Array.from(fatSelections).filter(name => HEALTHY_FAT_ITEMS.has(name)).length;
+          const breakfastProteinCount = Array.from(new Set([...proteinSelections, ...dairySelections]))
+            .filter(name => BREAKFAST_PROTEIN_ITEMS.has(name)).length;
+          return (
+            <div className="mt-2 text-xs text-zinc-500 space-y-0.5">
+              <p className={wholeGrainCount >= MIN_WHOLE_GRAINS ? "text-green-600" : "text-amber-600"}>
+                Integrales: {wholeGrainCount} seleccionados
+              </p>
+              <p className={healthyFatCount >= MIN_HEALTHY_FATS ? "text-green-600" : "text-amber-600"}>
+                Grasas saludables: {healthyFatCount} seleccionados
+              </p>
+              <p className={breakfastProteinCount >= MIN_BREAKFAST_PROTEINS ? "text-green-600" : "text-amber-600"}>
+                Proteína desayuno: {breakfastProteinCount} seleccionados
+              </p>
+            </div>
+          );
+        })()}
       </div>
 
       <div className="space-y-6 max-h-[55vh] overflow-y-auto pr-2">
@@ -661,14 +701,28 @@ function PantryStep({
           const meetsMin = selectedCount >= cat.minRequired;
           const carbSelections = selections["carbs"] || new Set<string>();
           const fatSelections = selections["fats"] || new Set<string>();
+          const proteinSelections = selections["proteins"] || new Set<string>();
+          const dairySelections = selections["dairy"] || new Set<string>();
           const wholeGrainCount = Array.from(carbSelections).filter(name => WHOLE_GRAIN_ITEMS.has(name)).length;
           const healthyFatCount = Array.from(fatSelections).filter(name => HEALTHY_FAT_ITEMS.has(name)).length;
+          const breakfastProteinCount = Array.from(new Set([...proteinSelections, ...dairySelections]))
+            .filter(name => BREAKFAST_PROTEIN_ITEMS.has(name)).length;
           const extraHint =
             cat.id === "carbs"
               ? `incluye ${MIN_WHOLE_GRAINS} integral`
               : cat.id === "fats"
                 ? `incluye ${MIN_HEALTHY_FATS} saludables`
+                : cat.id === "proteins"
+                  ? `incluye ${MIN_BREAKFAST_PROTEINS} para desayuno`
                 : "";
+          const itemsToRender = cat.id === "carbs"
+            ? [...cat.items].sort((a, b) => {
+              const aWhole = WHOLE_GRAIN_ITEMS.has(a.name);
+              const bWhole = WHOLE_GRAIN_ITEMS.has(b.name);
+              if (aWhole === bWhole) return a.name.localeCompare(b.name);
+              return aWhole ? -1 : 1;
+            })
+            : cat.items;
           return (
             <div key={cat.id} className="border border-gray-200 rounded-2xl p-4 bg-white shadow-sm">
               <div className="flex items-center justify-between mb-3">
@@ -692,6 +746,11 @@ function PantryStep({
                       Grasas saludables: {healthyFatCount} seleccionados
                     </p>
                   )}
+                  {cat.id === "proteins" && (
+                    <p className={`text-xs ${breakfastProteinCount >= MIN_BREAKFAST_PROTEINS ? "text-green-600" : "text-amber-600"}`}>
+                      Proteína desayuno: {breakfastProteinCount} seleccionados
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={() => onSelectAll(cat)}
@@ -702,8 +761,10 @@ function PantryStep({
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {cat.items.map((item) => {
+                {itemsToRender.map((item) => {
                   const isSelected = selections[cat.id]?.has(item.name);
+                  const isWholeGrain = cat.id === "carbs" && WHOLE_GRAIN_ITEMS.has(item.name);
+                  const isHealthyFat = cat.id === "fats" && HEALTHY_FAT_ITEMS.has(item.name);
                   return (
                     <button
                       key={item.name}
@@ -718,6 +779,16 @@ function PantryStep({
                     >
                       <span>{item.emoji}</span>
                       <span>{item.name}</span>
+                      {isWholeGrain && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                          Integral
+                        </span>
+                      )}
+                      {isHealthyFat && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 border border-sky-200">
+                          Saludable
+                        </span>
+                      )}
                       {isSelected && <Check className="h-4 w-4 text-amber-600" />}
                     </button>
                   );

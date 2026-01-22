@@ -819,7 +819,9 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
             cleanName = cleanName.split(',')[0]; // Take first part
             if (cleanName.length > 30) cleanName = cleanName.substring(0, 30) + '...';
 
+            const dbUsdaGroup = d.usda_group || d.usda_food_group;
             const wholeGrainDetected = Boolean(d.is_whole_grain) ||
+                dbUsdaGroup === 'whole_grain' ||
                 /(integral|whole|bran|oat|avena|quinoa|quinua|trigo|centeno)/.test(catSearch);
 
             // Smart defaults for serving size
@@ -860,6 +862,30 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
                     : d.food_tier === 2 ? 'processed'
                         : 'ultra_processed');
 
+            const normalizeServingEquiv = (raw: number, fallback: number): number => {
+                if (!raw || raw <= 0) return fallback;
+                switch (category) {
+                    case 'vegetable':
+                        return raw >= 60 && raw <= 200 ? raw : fallback;
+                    case 'fruit':
+                        return raw >= 80 && raw <= 250 ? raw : fallback;
+                    case 'dairy':
+                        return raw >= 100 && raw <= 300 ? raw : fallback;
+                    case 'protein':
+                    case 'legume':
+                        return raw >= 60 && raw <= 150 ? raw : fallback;
+                    case 'carb':
+                        return raw >= 20 && raw <= 150 ? raw : fallback;
+                    case 'fat': {
+                        const isAvocado = catSearch.includes('avocado') || catSearch.includes('palta');
+                        if (isAvocado) return raw >= 30 && raw <= 120 ? raw : fallback;
+                        return raw >= 3 && raw <= 30 ? raw : fallback;
+                    }
+                    default:
+                        return fallback;
+                }
+            };
+
             return {
                 id: String(d.id),
                 name: d.name,
@@ -869,7 +895,7 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
                 usda_group: category === 'carb'
                     ? (isLegume ? 'protein' : wholeGrainDetected ? 'whole_grain' : 'refined_grain')
                     : (category as any),
-                serving_equiv_grams: d.serving_equiv_grams || servingEquiv,
+                serving_equiv_grams: normalizeServingEquiv(Number(d.serving_equiv_grams || 0), servingEquiv),
                 processing_level,
                 is_whole_grain: Boolean(d.is_whole_grain) || wholeGrainDetected,
                 kcal: d.kcal_per_100g || 0,

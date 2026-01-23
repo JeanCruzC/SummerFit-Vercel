@@ -1999,7 +1999,8 @@ async function generateMealFromFoods(
         ((groupTargets.fatMinServings || 0) > 0 && fatPool.length > 0) ||
         ((groupTargets.wholeGrainMinServings || 0) > 0 && wholeGrainPool.length > 0)
     ));
-    const hasMicroData = MICRO_KEYS.some(key => candidates.some(f => resolveMicroPer100g(f, key) > 0));
+    const microCandidates = buildCandidateList().filter(c => c.category !== 'condiment');
+    const hasMicroData = MICRO_KEYS.some(key => microCandidates.some(f => resolveMicroPer100g(f, key) > 0));
     const hasMicroMins = Boolean(microTargets && hasMicroData && MICRO_KEYS.some(key => (microTargets[key] || 0) > 0));
     if (hasGroupMins || hasMicroMins) {
         throw new Error('No se pudo construir una comida que cumpla USDA con la despensa actual. Añade más alimentos en el onboarding.');

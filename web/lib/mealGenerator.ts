@@ -3023,7 +3023,7 @@ const buildWeeklyAssignmentsMILP = async (
     const glpk = await getGlpk();
     const servingTargets = getDietAdjustedServingTargets(targetCalories, dietType, conditions);
 
-    const configs: Array<{
+    const baseConfigs: Array<{
         key: keyof WeeklyDayAssignments;
         label: string;
         baseMaxRepeat: number;
@@ -3035,7 +3035,9 @@ const buildWeeklyAssignmentsMILP = async (
         { key: 'fatId', label: 'grasas', baseMaxRepeat: 4, filter: f => f.category === 'fat' },
         { key: 'fruitId', label: 'frutas', baseMaxRepeat: 3, filter: f => f.category === 'fruit' },
         { key: 'dairyId', label: 'lácteos', baseMaxRepeat: 3, filter: f => f.category === 'dairy' || f.category === 'beverage' },
-    ].filter(cfg => {
+    ];
+
+    const configs = baseConfigs.filter(cfg => {
         if (dietType === 'keto' && cfg.key === 'wholeGrainId') return false;
         if (!servingTargets) return true;
         const targetKey = cfg.key === 'proteinId' ? 'protein'

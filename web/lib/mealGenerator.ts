@@ -1834,14 +1834,30 @@ async function generateMealFromFoods(
             countVars.push({ name: yName, coef: 1 });
         });
 
+        const effectiveGroupTargets = groupTargets ? { ...groupTargets } : undefined;
         const missingGroups: string[] = [];
-        if ((groupTargets?.vegMinServings || 0) > 0 && vegServVars.length === 0) missingGroups.push('verduras');
-        if ((groupTargets?.fruitMinServings || 0) > 0 && fruitServVars.length === 0) missingGroups.push('frutas');
-        if ((groupTargets?.dairyMinServings || 0) > 0 && dairyServVars.length === 0) missingGroups.push('lácteos');
-        if ((groupTargets?.fatMinServings || 0) > 0 && fatServVars.length === 0) missingGroups.push('grasas saludables');
-        if ((groupTargets?.wholeGrainMinServings || 0) > 0 && wholeServVars.length === 0) missingGroups.push('granos integrales');
+        if ((effectiveGroupTargets?.vegMinServings || 0) > 0 && vegServVars.length === 0) {
+            missingGroups.push('verduras');
+            effectiveGroupTargets!.vegMinServings = 0;
+        }
+        if ((effectiveGroupTargets?.fruitMinServings || 0) > 0 && fruitServVars.length === 0) {
+            missingGroups.push('frutas');
+            effectiveGroupTargets!.fruitMinServings = 0;
+        }
+        if ((effectiveGroupTargets?.dairyMinServings || 0) > 0 && dairyServVars.length === 0) {
+            missingGroups.push('lácteos');
+            effectiveGroupTargets!.dairyMinServings = 0;
+        }
+        if ((effectiveGroupTargets?.fatMinServings || 0) > 0 && fatServVars.length === 0) {
+            missingGroups.push('grasas saludables');
+            effectiveGroupTargets!.fatMinServings = 0;
+        }
+        if ((effectiveGroupTargets?.wholeGrainMinServings || 0) > 0 && wholeServVars.length === 0) {
+            missingGroups.push('granos integrales');
+            effectiveGroupTargets!.wholeGrainMinServings = 0;
+        }
         if (missingGroups.length > 0) {
-            throw new Error(`No hay opciones suficientes para: ${missingGroups.join(', ')}.`);
+            console.warn(`  ⚠️ Sin opciones en esta comida para: ${missingGroups.join(', ')}. Se difiere a otras comidas.`);
         }
 
         // Calories equality with slack
@@ -1874,37 +1890,37 @@ async function generateMealFromFoods(
         addConstraint('sat_max', satVars, { type: glpk.GLP_UP, ub: mealBudgets.maxSatFat_g });
 
         // Servings constraints
-        if (groupTargets?.vegMaxServings && vegServVars.length) {
-            addConstraint('veg_max', vegServVars, { type: glpk.GLP_UP, ub: groupTargets.vegMaxServings });
+        if (effectiveGroupTargets?.vegMaxServings && vegServVars.length) {
+            addConstraint('veg_max', vegServVars, { type: glpk.GLP_UP, ub: effectiveGroupTargets.vegMaxServings });
         }
-        if (groupTargets?.fruitMaxServings && fruitServVars.length) {
-            addConstraint('fruit_max', fruitServVars, { type: glpk.GLP_UP, ub: groupTargets.fruitMaxServings });
+        if (effectiveGroupTargets?.fruitMaxServings && fruitServVars.length) {
+            addConstraint('fruit_max', fruitServVars, { type: glpk.GLP_UP, ub: effectiveGroupTargets.fruitMaxServings });
         }
-        if (groupTargets?.dairyMaxServings && dairyServVars.length) {
-            addConstraint('dairy_max', dairyServVars, { type: glpk.GLP_UP, ub: groupTargets.dairyMaxServings });
+        if (effectiveGroupTargets?.dairyMaxServings && dairyServVars.length) {
+            addConstraint('dairy_max', dairyServVars, { type: glpk.GLP_UP, ub: effectiveGroupTargets.dairyMaxServings });
         }
-        if (groupTargets?.fatMaxServings && fatServVars.length) {
-            addConstraint('fat_max', fatServVars, { type: glpk.GLP_UP, ub: groupTargets.fatMaxServings });
+        if (effectiveGroupTargets?.fatMaxServings && fatServVars.length) {
+            addConstraint('fat_max', fatServVars, { type: glpk.GLP_UP, ub: effectiveGroupTargets.fatMaxServings });
         }
-        if (groupTargets?.wholeGrainMaxServings && wholeServVars.length) {
-            addConstraint('whole_max', wholeServVars, { type: glpk.GLP_UP, ub: groupTargets.wholeGrainMaxServings });
+        if (effectiveGroupTargets?.wholeGrainMaxServings && wholeServVars.length) {
+            addConstraint('whole_max', wholeServVars, { type: glpk.GLP_UP, ub: effectiveGroupTargets.wholeGrainMaxServings });
         }
 
         // Required group minimum servings (per-meal share)
-        if (groupTargets?.vegMinServings && vegServVars.length) {
-            addConstraint('veg_min', vegServVars, { type: glpk.GLP_LO, lb: groupTargets.vegMinServings });
+        if (effectiveGroupTargets?.vegMinServings && vegServVars.length) {
+            addConstraint('veg_min', vegServVars, { type: glpk.GLP_LO, lb: effectiveGroupTargets.vegMinServings });
         }
-        if (groupTargets?.fruitMinServings && fruitServVars.length) {
-            addConstraint('fruit_min', fruitServVars, { type: glpk.GLP_LO, lb: groupTargets.fruitMinServings });
+        if (effectiveGroupTargets?.fruitMinServings && fruitServVars.length) {
+            addConstraint('fruit_min', fruitServVars, { type: glpk.GLP_LO, lb: effectiveGroupTargets.fruitMinServings });
         }
-        if (groupTargets?.dairyMinServings && dairyServVars.length) {
-            addConstraint('dairy_min', dairyServVars, { type: glpk.GLP_LO, lb: groupTargets.dairyMinServings });
+        if (effectiveGroupTargets?.dairyMinServings && dairyServVars.length) {
+            addConstraint('dairy_min', dairyServVars, { type: glpk.GLP_LO, lb: effectiveGroupTargets.dairyMinServings });
         }
-        if (groupTargets?.fatMinServings && fatServVars.length) {
-            addConstraint('fat_min', fatServVars, { type: glpk.GLP_LO, lb: groupTargets.fatMinServings });
+        if (effectiveGroupTargets?.fatMinServings && fatServVars.length) {
+            addConstraint('fat_min', fatServVars, { type: glpk.GLP_LO, lb: effectiveGroupTargets.fatMinServings });
         }
-        if (groupTargets?.wholeGrainMinServings && wholeServVars.length) {
-            addConstraint('whole_min', wholeServVars, { type: glpk.GLP_LO, lb: groupTargets.wholeGrainMinServings });
+        if (effectiveGroupTargets?.wholeGrainMinServings && wholeServVars.length) {
+            addConstraint('whole_min', wholeServVars, { type: glpk.GLP_LO, lb: effectiveGroupTargets.wholeGrainMinServings });
         }
 
         addConstraint('count_max', countVars, { type: glpk.GLP_UP, ub: 6 });
@@ -1975,14 +1991,16 @@ async function generateMealFromFoods(
             totals: finalTotals
         };
     }
+    const wholeGrainPool = carbPool.filter(f => isWholeGrain(f));
     const hasGroupMins = Boolean(groupTargets && (
-        (groupTargets.vegMinServings || 0) > 0 ||
-        (groupTargets.fruitMinServings || 0) > 0 ||
-        (groupTargets.dairyMinServings || 0) > 0 ||
-        (groupTargets.fatMinServings || 0) > 0 ||
-        (groupTargets.wholeGrainMinServings || 0) > 0
+        ((groupTargets.vegMinServings || 0) > 0 && veggiePool.length > 0) ||
+        ((groupTargets.fruitMinServings || 0) > 0 && fruitPool.length > 0) ||
+        ((groupTargets.dairyMinServings || 0) > 0 && dairyPool.length > 0) ||
+        ((groupTargets.fatMinServings || 0) > 0 && fatPool.length > 0) ||
+        ((groupTargets.wholeGrainMinServings || 0) > 0 && wholeGrainPool.length > 0)
     ));
-    const hasMicroMins = Boolean(microTargets && MICRO_KEYS.some(key => (microTargets[key] || 0) > 0));
+    const hasMicroData = MICRO_KEYS.some(key => candidates.some(f => resolveMicroPer100g(f, key) > 0));
+    const hasMicroMins = Boolean(microTargets && hasMicroData && MICRO_KEYS.some(key => (microTargets[key] || 0) > 0));
     if (hasGroupMins || hasMicroMins) {
         throw new Error('No se pudo construir una comida que cumpla USDA con la despensa actual. Añade más alimentos en el onboarding.');
     }

@@ -2731,10 +2731,10 @@ export async function generateDayMealPlanFromDB(
         }
         : null;
     const remainingMicros: MacroTotals['micros'] | null = rdaTargets
-        ? MICRO_KEYS.reduce((acc, key) => {
+        ? MICRO_KEYS.reduce<NonNullable<MacroTotals['micros']>>((acc, key) => {
             acc[key] = rdaTargets[key] || 0;
             return acc;
-        }, {} as MacroTotals['micros'])
+        }, {})
         : null;
 
     const totalMeals = Object.keys(dist).filter(k => (dist as any)[k]).length;

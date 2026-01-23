@@ -109,18 +109,56 @@ const WHOLE_GRAIN_ID_SET = new Set<string>([
 
 export function isWholeGrain(food: SimpleFoodItem): boolean {
     if (!food) return false;
+
+    // 1. Explicit field takes priority
     if (food.is_whole_grain === true) return true;
+    if (food.is_whole_grain === false) return false;
+
+    // 2. USDA group field
     if (food.usda_group === 'whole_grain') return true;
+    if (food.usda_group === 'refined_grain') return false;
+
+    // 3. Known whole grain food IDs
     const id = String((food as any).id || '');
     if (WHOLE_GRAIN_ID_SET.has(id)) return true;
 
-    const nameMix = `${food.name || ''} ${food.name_es || ''}`.toLowerCase();
-    if (/(integral|whole|bran|oat|avena|quinoa|quinua|trigo|centeno)/.test(nameMix)) return true;
+    // 4. Name pattern detection (comprehensive)
+    const nameMix = `${food.name || ''} ${food.name_es || ''} ${(food as any).category || ''}`.toLowerCase();
 
+    // Whole grain keywords (English + Spanish)
+    const WHOLE_GRAIN_PATTERNS = [
+        'whole wheat', 'whole grain', '100% wheat', 'multigrain',
+        'integral', 'pan integral', 'arroz integral', 'trigo integral',
+        'oat', 'avena', 'oatmeal', 'hojuelas de avena',
+        'quinoa', 'quinua',
+        'brown rice', 'arroz integral', 'wild rice', 'arroz salvaje',
+        'bran', 'salvado',
+        'farro', 'bulgur', 'barley', 'cebada',
+        'buckwheat', 'trigo sarraceno', 'alforfón',
+        'millet', 'mijo',
+        'spelt', 'espelta',
+        'rye', 'centeno',
+        'sorghum', 'sorgo',
+        'teff', 'amaranth', 'amaranto',
+        'whole corn', 'maíz integral'
+    ];
+
+    if (WHOLE_GRAIN_PATTERNS.some(p => nameMix.includes(p))) return true;
+
+    // 5. Refined grain patterns - explicitly return false
+    const REFINED_PATTERNS = [
+        'white bread', 'white rice', 'pan blanco', 'arroz blanco',
+        'refined', 'refinado', 'bleached', 'enriched flour',
+        'all-purpose flour', 'harina de trigo'
+    ];
+    if (REFINED_PATTERNS.some(p => nameMix.includes(p))) return false;
+
+    // 6. Fiber ratio heuristic (only if carbs > 0)
     const carbs = food.carbs || 0;
     const fiber = food.fiber || 0;
-    if (carbs <= 0) return false;
-    return fiber >= carbs / 8;
+    if (carbs > 0 && fiber >= carbs / 8) return true;
+
+    return false;
 }
 
 export type ServingCount = {

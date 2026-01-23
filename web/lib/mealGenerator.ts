@@ -637,13 +637,13 @@ const assessPantryFeasibility = (
             filter: (f: SimpleFoodItem) => boolean;
             group: 'vegetables' | 'fruits' | 'dairy' | 'protein' | 'wholeGrains' | 'healthyFats';
         }> = [
-            { key: 'vegetables', label: 'verduras', filter: f => f.category === 'vegetable', group: 'vegetables' },
-            { key: 'fruits', label: 'frutas', filter: f => f.category === 'fruit', group: 'fruits' },
-            { key: 'dairy', label: 'lácteos', filter: f => f.category === 'dairy' || f.category === 'beverage', group: 'dairy' },
-            { key: 'protein', label: 'proteínas', filter: f => f.category === 'protein' || f.category === 'legume', group: 'protein' },
-            { key: 'wholeGrains', label: 'granos integrales', filter: f => isWholeGrain(f), group: 'wholeGrains' },
-            { key: 'healthyFats', label: 'grasas saludables', filter: f => f.category === 'fat', group: 'healthyFats' },
-        ];
+                { key: 'vegetables', label: 'verduras', filter: f => f.category === 'vegetable', group: 'vegetables' },
+                { key: 'fruits', label: 'frutas', filter: f => f.category === 'fruit', group: 'fruits' },
+                { key: 'dairy', label: 'lácteos', filter: f => f.category === 'dairy' || f.category === 'beverage', group: 'dairy' },
+                { key: 'protein', label: 'proteínas', filter: f => f.category === 'protein' || f.category === 'legume', group: 'protein' },
+                { key: 'wholeGrains', label: 'granos integrales', filter: f => isWholeGrain(f), group: 'wholeGrains' },
+                { key: 'healthyFats', label: 'grasas saludables', filter: f => f.category === 'fat', group: 'healthyFats' },
+            ];
 
         groupDefs.forEach(def => {
             if (servingTargets[def.key].min <= 0) return;
@@ -1941,8 +1941,31 @@ async function generateMealFromFoods(
             binaries
         };
 
-        const result = glpk.solve(lp, { msgLevel: glpk.GLP_MSG_OFF });
-        if (!result || result.result.status !== glpk.GLP_OPT) {
+        // Diagnostic: log constraint summary
+        console.log(`  📐 MILP: ${candidates.length} candidates, ${subjectTo.length} constraints, ${binaries.length} binaries`);
+
+        let result: any;
+        try {
+            result = glpk.solve(lp, { msgLevel: glpk.GLP_MSG_OFF });
+        } catch (glpkError) {
+            console.warn('  ⚠️ glpk.solve threw exception:', glpkError);
+            return null;
+        }
+
+        if (!result) {
+            console.warn('  ⚠️ glpk.solve returned null/undefined');
+            return null;
+        }
+        if (!result.result) {
+            console.warn('  ⚠️ glpk.solve result missing .result property:', JSON.stringify(result).slice(0, 200));
+            return null;
+        }
+        if (result.result.status !== glpk.GLP_OPT) {
+            const statusName = result.result.status === glpk.GLP_INFEAS ? 'INFEASIBLE'
+                : result.result.status === glpk.GLP_UNBND ? 'UNBOUNDED'
+                    : result.result.status === glpk.GLP_UNDEF ? 'UNDEFINED'
+                        : `STATUS_${result.result.status}`;
+            console.warn(`  ⚠️ MILP no encontró solución óptima: ${statusName}`);
             return null;
         }
 
@@ -2003,7 +2026,7 @@ async function generateMealFromFoods(
     const hasMicroData = MICRO_KEYS.some(key => microCandidates.some(f => resolveMicroPer100g(f, key) > 0));
     const hasMicroMins = Boolean(microTargets && hasMicroData && MICRO_KEYS.some(key => (microTargets[key] || 0) > 0));
     if (hasGroupMins || hasMicroMins) {
-        throw new Error('No se pudo construir una comida que cumpla USDA con la despensa actual. Añade más alimentos en el onboarding.');
+        console.warn('  ⚠️ MILP no pudo cumplir mínimos USDA por comida; continuando con heurística y validación diaria.');
     }
 
     // evaluateMeal moved to line ~1222 before solveWithMILP to fix hoisting
@@ -2038,7 +2061,7 @@ async function generateMealFromFoods(
         const iterations = 520;
         for (let it = 0; it < iterations; it++) {
             const candidate = [...current];
-        const roles = ['protein', 'carb', 'veg', 'veg', 'fat', 'fruit', 'dairy'] as const;
+            const roles = ['protein', 'carb', 'veg', 'veg', 'fat', 'fruit', 'dairy'] as const;
             const role = roles[Math.floor(Math.random() * roles.length)];
             if (role === 'protein' && proteinPool.length) {
                 const p = portionItem(randomPick(proteinPool), { protein: mealProteinTarget * 0.9 });
@@ -3096,13 +3119,13 @@ const buildWeeklyAssignmentsMILP = async (
         baseMaxRepeat: number;
         filter: (f: SimpleFoodItem) => boolean;
     }> = [
-        { key: 'proteinId', label: 'proteínas', baseMaxRepeat: 2, filter: f => ['protein', 'legume'].includes(f.category) },
-        { key: 'vegetableId', label: 'verduras', baseMaxRepeat: 3, filter: f => f.category === 'vegetable' },
-        { key: 'wholeGrainId', label: 'integrales', baseMaxRepeat: 4, filter: f => f.category === 'carb' && isWholeGrain(f) },
-        { key: 'fatId', label: 'grasas', baseMaxRepeat: 4, filter: f => f.category === 'fat' },
-        { key: 'fruitId', label: 'frutas', baseMaxRepeat: 3, filter: f => f.category === 'fruit' },
-        { key: 'dairyId', label: 'lácteos', baseMaxRepeat: 3, filter: f => f.category === 'dairy' || f.category === 'beverage' },
-    ];
+            { key: 'proteinId', label: 'proteínas', baseMaxRepeat: 2, filter: f => ['protein', 'legume'].includes(f.category) },
+            { key: 'vegetableId', label: 'verduras', baseMaxRepeat: 3, filter: f => f.category === 'vegetable' },
+            { key: 'wholeGrainId', label: 'integrales', baseMaxRepeat: 4, filter: f => f.category === 'carb' && isWholeGrain(f) },
+            { key: 'fatId', label: 'grasas', baseMaxRepeat: 4, filter: f => f.category === 'fat' },
+            { key: 'fruitId', label: 'frutas', baseMaxRepeat: 3, filter: f => f.category === 'fruit' },
+            { key: 'dairyId', label: 'lácteos', baseMaxRepeat: 3, filter: f => f.category === 'dairy' || f.category === 'beverage' },
+        ];
 
     const configs = baseConfigs.filter(cfg => {
         if (dietType === 'keto' && cfg.key === 'wholeGrainId') return false;

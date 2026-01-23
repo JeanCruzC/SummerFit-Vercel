@@ -322,8 +322,9 @@ export function isFoodAppropriateForMeal(
 
   // Ultra‑processed detection (food_tier or extreme nutrient combo)
   const isBranded = (food as any).food_tier === 'Branded';
+  const isUltraProcessed = (food as any).processing_level === 'ultra_processed';
   const ultraHighSodiumSugar = (food.sodium_mg ?? 0) > 900 && (food.sugar_g ?? 0) > 20;
-  if (isBranded || ultraHighSodiumSugar) {
+  if (isBranded || isUltraProcessed || ultraHighSodiumSugar) {
     // Block ultraprocessed foods from any meal
     return false;
   }

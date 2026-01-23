@@ -19,7 +19,7 @@ import {
     type PortionCalculationContext
 } from './portionRules';
 import { assignRole } from './roleMapper';
-import { validateUSDAHard, computeMealBudgets, isWholeGrain, getDailyServingTargets, countServingsByGroup } from './usdaCompliance';
+import { validateUSDAHard, computeMealBudgets, isWholeGrain, getDietAdjustedServingTargets, countServingsByGroup } from './usdaCompliance';
 
 let glpkInstance: any | null = null;
 async function getGlpk() {
@@ -50,6 +50,7 @@ export interface SimpleFoodItem {
     serving_equiv_grams?: number; // explicit USDA serving equivalent in grams if known
     processing_level?: 'minimally_processed' | 'processed' | 'ultra_processed';
     is_whole_grain?: boolean;
+    data_quality_flags?: Record<string, unknown> | string;
     // Clinical Micros (Values per 100g)
     micros?: {
         iron_mg?: number;    // Hierro (Pregnancy/Anemia)
@@ -74,6 +75,20 @@ export interface SimpleFoodItem {
     meal_times?: string[];
     is_common_staple?: boolean;
 }
+
+const MICRO_KEYS = [
+    'calcium_mg',
+    'iron_mg',
+    'potassium_mg',
+    'magnesium_mg',
+    'folate_mcg',
+    'vitamin_b12_ug',
+    'vitamin_a_iu',
+    'vitamin_c_mg',
+    'vitamin_d_iu'
+] as const;
+type MicroKey = typeof MICRO_KEYS[number];
+const MICRO_MIN_RATIO = 1.0;
 
 // Basic groceries database - simple foods only
 // ENRICHED WITH CLINICAL DATA + PORTION UNITS (Approx USDA values)
@@ -156,6 +171,15 @@ export interface MealItem {
     cooking_state?: string;
     macros: MacroTotals;
 }
+
+export type WeeklyDayAssignments = {
+    proteinId?: string;
+    vegetableId?: string;
+    wholeGrainId?: string;
+    fatId?: string;
+    fruitId?: string;
+    dairyId?: string;
+};
 
 export interface MacroTotals {
     kcal: number;
@@ -444,6 +468,242 @@ function calculateItemMacros(food: SimpleFoodItem, portion_g: number): MacroTota
         }
     };
 }
+
+const getPortionBoundsForFood = (food: SimpleFoodItem) => {
+    const baseServing = food.serving_equiv_grams || food.serving_size || food.portion_g || 100;
+    let minG = 30;
+    let maxG = 300;
+    const ensureBounds = () => {
+        if (maxG < minG) maxG = minG;
+    };
+    switch (food.category) {
+        case 'fat': {
+            const base = Math.max(5, Math.round(baseServing));
+            minG = Math.max(5, Math.round(base * 0.6));
+            maxG = Math.min(120, Math.round(base * 2));
+            break;
+        }
+        case 'condiment':
+            minG = 2; maxG = 15; break;
+        case 'vegetable': {
+            const base = Math.round(baseServing);
+            minG = Math.max(60, Math.round(base * 0.8));
+            maxG = Math.min(250, Math.round(base * 3));
+            break;
+        }
+        case 'fruit': {
+            const base = Math.round(baseServing);
+            minG = Math.max(100, Math.round(base * 0.8));
+            maxG = Math.min(250, Math.round(base * 2));
+            break;
+        }
+        case 'beverage':
+        case 'dairy':
+            minG = 150; maxG = 300; break;
+        case 'legume':
+        case 'carb': {
+            const whole = isWholeGrain(food);
+            const base = Math.round(baseServing);
+            if (whole) {
+                minG = Math.max(60, Math.round(base * 0.6));
+                maxG = Math.min(250, Math.round(base * 1.8));
+            } else {
+                minG = Math.max(80, Math.round(base * 0.7));
+                maxG = Math.min(260, Math.round(base * 1.6));
+            }
+            break;
+        }
+        case 'protein':
+            minG = 120; maxG = 200; break;
+        default:
+            minG = Math.max(50, Math.round(baseServing * 0.8));
+            maxG = Math.min(240, Math.round(baseServing * 2));
+            break;
+    }
+    ensureBounds();
+    return { minG, maxG };
+};
+
+const adjustToServingBounds = (food: SimpleFoodItem, grams: number): number => {
+    const { minG, maxG } = getPortionBoundsForFood(food);
+    return Math.max(minG, Math.min(maxG, grams));
+};
+
+const resolveMicroPer100g = (food: SimpleFoodItem, key: MicroKey): number => {
+    const micros = food.micros || {};
+    switch (key) {
+        case 'vitamin_b12_ug':
+            return micros.vit_b12_mcg || (micros as any).vitamin_b12_ug || 0;
+        case 'vitamin_a_iu':
+            return micros.vit_a_iu || 0;
+        case 'vitamin_c_mg':
+            return micros.vit_c_mg || 0;
+        case 'vitamin_d_iu':
+            return micros.vit_d_iu || 0;
+        default:
+            return (micros as any)[key] || 0;
+    }
+};
+
+const estimateServingGramsForGroup = (
+    food: SimpleFoodItem,
+    group: 'vegetables' | 'fruits' | 'dairy' | 'protein' | 'wholeGrains' | 'healthyFats'
+): number => {
+    if (food.serving_equiv_grams && food.serving_equiv_grams > 0) {
+        return food.serving_equiv_grams;
+    }
+    const unit = (food.serving_unit || '').toLowerCase();
+    if (group === 'wholeGrains') {
+        if (unit.includes('cup')) return 90;
+        if (unit.includes('slice') || unit.includes('tortilla')) return 30;
+        if (unit.includes('oz')) return 28;
+        return 60;
+    }
+    if (group === 'dairy') {
+        if (unit.includes('cup')) return 244;
+        if (unit.includes('container')) return food.serving_size || 170;
+    }
+    if (group === 'vegetables') {
+        if (unit.includes('cup')) return 90;
+    }
+    if (group === 'fruits') {
+        if (unit.includes('cup')) return 150;
+    }
+    const defaults: Record<string, number> = {
+        vegetables: 90,
+        fruits: 150,
+        dairy: 244,
+        protein: 85,
+        wholeGrains: 30,
+        healthyFats: 5,
+    };
+    return defaults[group] || 100;
+};
+
+const servingsForGroup = (
+    food: SimpleFoodItem,
+    grams: number,
+    group: 'vegetables' | 'fruits' | 'dairy' | 'protein' | 'wholeGrains' | 'healthyFats'
+): number => {
+    if (group === 'healthyFats') {
+        const fatGrams = (food.fat || 0) * grams / 100;
+        return fatGrams > 0 ? fatGrams / 5 : 0;
+    }
+    const base = estimateServingGramsForGroup(food, group);
+    return grams / base;
+};
+
+const assessPantryFeasibility = (
+    foods: SimpleFoodItem[],
+    numMeals: number,
+    targetCalories: number,
+    dietType: string,
+    conditions: string[],
+    rdaProfile?: RDAProfile
+): { ok: boolean; issues: string[] } => {
+    const issues: string[] = [];
+    const servingTargets = getDietAdjustedServingTargets(targetCalories, dietType, conditions);
+    if (servingTargets) {
+        const maxItemsPerMeal = 6;
+        const groupDefs: Array<{
+            key: keyof typeof servingTargets;
+            label: string;
+            filter: (f: SimpleFoodItem) => boolean;
+            group: 'vegetables' | 'fruits' | 'dairy' | 'protein' | 'wholeGrains' | 'healthyFats';
+        }> = [
+            { key: 'vegetables', label: 'verduras', filter: f => f.category === 'vegetable', group: 'vegetables' },
+            { key: 'fruits', label: 'frutas', filter: f => f.category === 'fruit', group: 'fruits' },
+            { key: 'dairy', label: 'lácteos', filter: f => f.category === 'dairy' || f.category === 'beverage', group: 'dairy' },
+            { key: 'protein', label: 'proteínas', filter: f => f.category === 'protein' || f.category === 'legume', group: 'protein' },
+            { key: 'wholeGrains', label: 'granos integrales', filter: f => isWholeGrain(f), group: 'wholeGrains' },
+            { key: 'healthyFats', label: 'grasas saludables', filter: f => f.category === 'fat', group: 'healthyFats' },
+        ];
+
+        groupDefs.forEach(def => {
+            if (servingTargets[def.key].min <= 0) return;
+            const candidates = foods.filter(def.filter);
+            if (candidates.length === 0) {
+                issues.push(`No hay alimentos para ${def.label}`);
+                return;
+            }
+            const servingsPerFood = candidates.map(f => {
+                const maxG = getPortionBoundsForFood(f).maxG;
+                return servingsForGroup(f, maxG, def.group);
+            }).sort((a, b) => b - a);
+            const maxPerMeal = servingsPerFood.slice(0, maxItemsPerMeal).reduce((sum, v) => sum + v, 0);
+            const maxDaily = maxPerMeal * Math.max(numMeals, 1);
+            if (maxDaily < servingTargets[def.key].min) {
+                issues.push(`No alcanzan ${def.label}: máximo ${maxDaily.toFixed(1)} vs objetivo ${servingTargets[def.key].min}`);
+            }
+        });
+    }
+
+    if (rdaProfile) {
+        const targets = getRDATargets(rdaProfile);
+        const maxItemsPerMeal = 6;
+        MICRO_KEYS.forEach(key => {
+            const target = targets[key] || 0;
+            if (!target) return;
+            const perFood = foods.map(f => {
+                const maxG = getPortionBoundsForFood(f).maxG;
+                const per100 = resolveMicroPer100g(f, key);
+                return (per100 * maxG) / 100;
+            }).filter(v => v > 0).sort((a, b) => b - a);
+            if (perFood.length === 0) {
+                issues.push(`Sin datos de ${key} en la despensa`);
+                return;
+            }
+            const maxPerMeal = perFood.slice(0, maxItemsPerMeal).reduce((sum, v) => sum + v, 0);
+            const maxDaily = maxPerMeal * Math.max(numMeals, 1);
+            if (maxDaily < target * MICRO_MIN_RATIO) {
+                issues.push(`No alcanza ${key}: máximo ${Math.round(maxDaily)} < objetivo ${target}`);
+            }
+        });
+    }
+
+    return { ok: issues.length === 0, issues };
+};
+
+const applyDietFiltersForFeasibility = (
+    foods: SimpleFoodItem[],
+    dietType: string,
+    conditions: string[]
+): SimpleFoodItem[] => {
+    let filtered = [...foods];
+    if (dietType === 'keto') {
+        filtered = filtered.filter(f =>
+            f.category !== 'carb' &&
+            f.category !== 'legume' &&
+            !(f.category === 'fruit' && (f.carbs || 0) > 10) &&
+            !(f.category === 'dairy' && (f.carbs || 0) > 5)
+        );
+    }
+    if (dietType === 'vegan') {
+        filtered = filtered.filter(f =>
+            !['protein', 'dairy'].includes(f.category) ||
+            f.category === 'legume' ||
+            f.name.toLowerCase().includes('bean') ||
+            f.name.toLowerCase().includes('lentil') ||
+            f.name.toLowerCase().includes('tofu') ||
+            f.name.toLowerCase().includes('chickpea')
+        );
+    }
+    if (dietType === 'vegetarian') {
+        filtered = filtered.filter(f => {
+            if (f.category === 'protein') {
+                const nm = f.name.toLowerCase();
+                return nm.includes('egg') || nm.includes('tofu') || nm.includes('bean') || nm.includes('lentil') || nm.includes('chickpea');
+            }
+            return true;
+        });
+    }
+    if (dietType === 'diabetes_friendly' || conditions.includes('diabetes_type_2')) {
+        filtered = filtered.filter(f =>
+            !(f.category === 'carb' && (f.carbs || 0) > 25 && !f.fiber)
+        );
+    }
+    return filtered;
+};
 
 const hasDuplicateIds = (mealItems: { food: SimpleFoodItem }[]): boolean => {
     const seen = new Set<string>();
@@ -762,11 +1022,28 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
 
         console.log(`✅ Loaded ${data.length} foods in 1 unified query (vs 6 separate)`);
 
+        const resolveCategoryFromUsdaGroup = (groupRaw: string): SimpleFoodItem['category'] | null => {
+            const g = (groupRaw || '').toLowerCase();
+            if (!g) return null;
+            if (g.includes('whole_grain') || g.includes('refined_grain') || g.includes('grain')) return 'carb';
+            if (g.includes('vegetable')) return 'vegetable';
+            if (g.includes('fruit')) return 'fruit';
+            if (g.includes('dairy')) return 'dairy';
+            if (g.includes('legume') || g.includes('bean') || g.includes('pulse')) return 'legume';
+            if (g.includes('protein') || g.includes('meat') || g.includes('seafood') || g.includes('poultry')) return 'protein';
+            if (g.includes('fat') || g.includes('oil')) return 'fat';
+            if (g.includes('condiment') || g.includes('sauce')) return 'condiment';
+            if (g.includes('beverage')) return 'beverage';
+            return null;
+        };
+
         // Transform raw DB data to SimpleFoodItem format
         const transformed: SimpleFoodItem[] = data.map(d => {
             // Detect category based on culinary_category field
             // Detect category based on MULTIPLE fields (category, category_es, culinary_category)
             let category: SimpleFoodItem['category'] | 'other' = 'other'; // Change default to 'other' to avoid protein pollution
+            const dbUsdaGroup = d.usda_group || d.usda_food_group || '';
+            const usdaCategory = resolveCategoryFromUsdaGroup(dbUsdaGroup);
 
             // Combine all category fields for search
             const catSearch = (
@@ -779,7 +1056,12 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
 
             const isLegume = catSearch.includes('legumbre') || catSearch.includes('bean') || catSearch.includes('lentil') || catSearch.includes('chickpea') || catSearch.includes('garbanzo') || catSearch.includes('frijol') || catSearch.includes('frejol') || catSearch.includes('alubia') || catSearch.includes('haba') || catSearch.includes('pallar');
 
-            if (catSearch.includes('proteina') || catSearch.includes('carne') || catSearch.includes('pescado') || catSearch.includes('mariscos') || catSearch.includes('huevo') || catSearch.includes('chicken') || catSearch.includes('beef') || catSearch.includes('pork') || catSearch.includes('turkey') || catSearch.includes('fish') || catSearch.includes('meat') || catSearch.includes('egg') || catSearch.includes('tofu')) {
+            if (usdaCategory) {
+                category = usdaCategory;
+                if (usdaCategory === 'carb' && isLegume) {
+                    category = 'legume';
+                }
+            } else if (catSearch.includes('proteina') || catSearch.includes('carne') || catSearch.includes('pescado') || catSearch.includes('mariscos') || catSearch.includes('huevo') || catSearch.includes('chicken') || catSearch.includes('beef') || catSearch.includes('pork') || catSearch.includes('turkey') || catSearch.includes('fish') || catSearch.includes('meat') || catSearch.includes('egg') || catSearch.includes('tofu')) {
                 category = 'protein';
             } else if (isLegume) {
                 category = 'legume';
@@ -819,9 +1101,10 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
             cleanName = cleanName.split(',')[0]; // Take first part
             if (cleanName.length > 30) cleanName = cleanName.substring(0, 30) + '...';
 
-            const dbUsdaGroup = d.usda_group || d.usda_food_group;
+            const dbGroupNorm = String(dbUsdaGroup || '').toLowerCase();
             const wholeGrainDetected = Boolean(d.is_whole_grain) ||
                 dbUsdaGroup === 'whole_grain' ||
+                (dbGroupNorm.includes('whole') && dbGroupNorm.includes('grain')) ||
                 /(integral|whole|bran|oat|avena|quinoa|quinua|trigo|centeno)/.test(catSearch);
 
             // Smart defaults for serving size
@@ -878,13 +1161,31 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
                         return raw >= 20 && raw <= 150 ? raw : fallback;
                     case 'fat': {
                         const isAvocado = catSearch.includes('avocado') || catSearch.includes('palta');
-                        if (isAvocado) return raw >= 30 && raw <= 120 ? raw : fallback;
-                        return raw >= 3 && raw <= 30 ? raw : fallback;
+                        const isOil = catSearch.includes('oil') || catSearch.includes('aceite');
+                        const isNutSeed = /(nut|seed|almond|peanut|chia|linaza|pecan|cashew|pistach)/.test(catSearch);
+                        if (isOil) return raw >= 3 && raw <= 15 ? raw : fallback;
+                        if (isAvocado) return raw >= 30 && raw <= 80 ? raw : fallback;
+                        if (isNutSeed) return raw >= 8 && raw <= 30 ? raw : fallback;
+                        return raw >= 5 && raw <= 30 ? raw : fallback;
                     }
                     default:
                         return fallback;
                 }
             };
+
+            const qualityFlags = (() => {
+                const raw = (d as any).data_quality_flags;
+                if (!raw) return undefined;
+                if (typeof raw === 'string') {
+                    try {
+                        return JSON.parse(raw) as Record<string, unknown>;
+                    } catch {
+                        return raw;
+                    }
+                }
+                if (typeof raw === 'object') return raw as Record<string, unknown>;
+                return undefined;
+            })();
 
             return {
                 id: String(d.id),
@@ -898,6 +1199,7 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
                 serving_equiv_grams: normalizeServingEquiv(Number(d.serving_equiv_grams || 0), servingEquiv),
                 processing_level,
                 is_whole_grain: Boolean(d.is_whole_grain) || wholeGrainDetected,
+                data_quality_flags: qualityFlags,
                 kcal: d.kcal_per_100g || 0,
                 protein: d.protein_g_per_100g || 0,
                 carbs: d.carbs_g_per_100g || 0,
@@ -955,6 +1257,7 @@ async function generateMealFromFoods(
     varietyManager?: VarietyManager,
     dayTargetCalories?: number,
     ageYears?: number,
+    microTargets?: MacroTotals['micros'],
     groupTargets?: {
         vegMinServings?: number;
         fruitMinServings?: number;
@@ -966,7 +1269,8 @@ async function generateMealFromFoods(
         dairyMaxServings?: number;
         fatMaxServings?: number;
         wholeGrainMaxServings?: number;
-    }
+    },
+    requiredFoodIds?: string[]
 ): Promise<Meal> {
     const typeNames: Record<string, string> = {
         breakfast: 'Desayuno',
@@ -1065,6 +1369,15 @@ async function generateMealFromFoods(
             !(f.category === 'carb' && f.carbs > 25 && !f.fiber)
         );
         console.log(`  💉 Diabetes filter: ${filteredFoods.length} foods`);
+    }
+
+    const requiredSet = new Set((requiredFoodIds || []).map(id => String(id)));
+    const requiredFoods = requiredSet.size
+        ? filteredFoods.filter(f => requiredSet.has(String(f.id)))
+        : [];
+    if (requiredSet.size && requiredFoods.length < requiredSet.size) {
+        const missing = Array.from(requiredSet).filter(id => !requiredFoods.find(f => String(f.id) === id));
+        throw new Error(`No se pudieron aplicar alimentos requeridos para ${type}: ${missing.join(', ')}`);
     }
 
     // Categorize foods by ROLE (Strong Typing)
@@ -1187,6 +1500,9 @@ async function generateMealFromFoods(
     // USDA/DGA Budgets per meal (sodio/azúcar/satfat)
     const share = dayTargetCalories ? Math.min(Math.max(targetCalories / dayTargetCalories, 0.15), 0.5) : 0.33;
     const mealBudgets = computeMealBudgets(dayTargetCalories || targetCalories, ageYears, share);
+    if (type === 'snack') {
+        mealBudgets.maxAddedSugar_g = Math.min(mealBudgets.maxAddedSugar_g, 5);
+    }
 
     // ========================================
     // PHASE 3: FOOD SELECTION WITH INTELLIGENT PORTIONS
@@ -1201,53 +1517,6 @@ async function generateMealFromFoods(
         targetProtein: mealProteinTarget,
         targetCarbs: mealCarbTarget,
         targetFat: mealFatTarget
-    };
-
-    const getPortionBounds = (food: SimpleFoodItem) => {
-        const baseServing = food.serving_equiv_grams || food.serving_size || food.portion_g || 100;
-        let minG = 30;
-        let maxG = 300;
-        switch (food.category) {
-            case 'fat':
-                minG = 5; maxG = 20; break;
-            case 'condiment':
-                minG = 2; maxG = 15; break;
-            case 'vegetable':
-                minG = Math.max(80, baseServing);
-                maxG = Math.min(150, baseServing * 1.7);
-                break;
-            case 'fruit':
-                minG = Math.max(100, baseServing);
-                maxG = Math.min(220, baseServing * 1.8);
-                break;
-            case 'beverage':
-            case 'dairy':
-                minG = 150; maxG = 250; break;
-            case 'legume':
-            case 'carb': {
-                const whole = isWholeGrain(food);
-                if (whole) {
-                    minG = Math.max(30, baseServing);
-                    maxG = Math.min(90, baseServing * 2);
-                } else {
-                    minG = Math.max(80, baseServing);
-                    maxG = Math.min(220, baseServing * 1.6);
-                }
-                break;
-            }
-            case 'protein':
-                minG = 120; maxG = 200; break;
-            default:
-                minG = Math.max(50, baseServing * 0.8);
-                maxG = Math.min(220, baseServing * 2);
-                break;
-        }
-        return { minG, maxG };
-    };
-
-    const adjustToServingBounds = (food: SimpleFoodItem, grams: number): number => {
-        const { minG, maxG } = getPortionBounds(food);
-        return Math.max(minG, Math.min(maxG, grams));
     };
 
     // ===========================================================
@@ -1293,6 +1562,10 @@ async function generateMealFromFoods(
         if ((f.sugar_g ?? 0) > 12 && f.category !== 'fruit') p += 3;
         if ((f.sat_fat_g ?? 0) > 6) p += 2;
         if (isUltraProcessedFood(f)) p += 4;
+        if (f.data_quality_flags && typeof f.data_quality_flags === 'object') {
+            const confidence = (f.data_quality_flags as any).confidence;
+            if (typeof confidence === 'number' && confidence < 0.7) p += 2;
+        }
         const course = inferCourse(f);
         const hasFish = items.some(i => isFishFood(i.food));
         const hasLegume = items.some(i => i.food.category === 'legume');
@@ -1399,14 +1672,16 @@ async function generateMealFromFoods(
         const add = (arr: SimpleFoodItem[], limit: number) => {
             arr.slice(0, limit).forEach(f => { if (!uniq[f.id]) uniq[f.id] = true; });
         };
-        add(proteinPool, 6);
-        add(carbPool, 6);
-        add(veggiePool, 6);
-        add(fatPool, 5);
-        add(fruitPool, 5);
-        add(dairyPool, 5);
+        add(proteinPool, 10);
+        add(carbPool, 10);
+        add(veggiePool, 10);
+        add(fatPool, 8);
+        add(fruitPool, 8);
+        add(dairyPool, 8);
+        if (requiredFoods.length) add(requiredFoods, requiredFoods.length);
         return Object.keys(uniq).map(id => {
-            return proteinPool.find(f => f.id === id) ||
+            return requiredFoods.find(f => f.id === id) ||
+                proteinPool.find(f => f.id === id) ||
                 carbPool.find(f => f.id === id) ||
                 veggiePool.find(f => f.id === id) ||
                 fatPool.find(f => f.id === id) ||
@@ -1418,6 +1693,7 @@ async function generateMealFromFoods(
     const solveWithMILP = async (): Promise<ScoredItem[] | null> => {
         const candidates = buildCandidateList().filter(c => c.category !== 'condiment');
         if (candidates.length === 0) return null;
+        const requiredIdSet = new Set(requiredFoods.map(f => String(f.id)));
 
         const glpk = await getGlpk();
 
@@ -1443,9 +1719,12 @@ async function generateMealFromFoods(
         const fatServVars: any[] = [];
         const wholeServVars: any[] = [];
         const countVars: any[] = [];
-
+        const microVars: Record<MicroKey, any[]> = MICRO_KEYS.reduce((acc, key) => {
+            acc[key] = [];
+            return acc;
+        }, {} as Record<MicroKey, any[]>);
         candidates.forEach((f, idx) => {
-            const { minG, maxG } = getPortionBounds(f);
+            const { minG, maxG } = getPortionBoundsForFood(f);
             const xName = `x_${idx}`;
             const yName = `y_${idx}`;
             const perG = {
@@ -1457,6 +1736,12 @@ async function generateMealFromFoods(
                 sodium: (f.sodium_mg || 0) / 100,
                 sat: (f.sat_fat_g || 0) / 100
             };
+            MICRO_KEYS.forEach(key => {
+                const microVal = resolveMicroPer100g(f, key);
+                if (microVal > 0) {
+                    microVars[key].push({ name: xName, coef: microVal / 100 });
+                }
+            });
 
             vars.push({ name: xName, coef: qualityPenalty(f) * 0.05 });
             bounds.push({ name: xName, type: glpk.GLP_DB, lb: 0, ub: maxG });
@@ -1468,6 +1753,9 @@ async function generateMealFromFoods(
             // link x_i to y_i
             addConstraint(`min_${idx}`, [{ name: xName, coef: 1 }, { name: yName, coef: -minG }], { type: glpk.GLP_LO, lb: 0, ub: 0 });
             addConstraint(`max_${idx}`, [{ name: xName, coef: 1 }, { name: yName, coef: -maxG }], { type: glpk.GLP_UP, ub: 0 });
+            if (requiredIdSet.has(String(f.id))) {
+                addConstraint(`req_${idx}`, [{ name: yName, coef: 1 }], { type: glpk.GLP_FX, lb: 1, ub: 1 });
+            }
 
             kcalVars.push({ name: xName, coef: perG.kcal });
             proteinVars.push({ name: xName, coef: perG.protein });
@@ -1488,7 +1776,10 @@ async function generateMealFromFoods(
                 dairyServVars.push({ name: xName, coef: 1 / (f.serving_equiv_grams || 244) });
             }
             if (f.category === 'fat') {
-                fatServVars.push({ name: xName, coef: 1 / (f.serving_equiv_grams || 5) });
+                const fatPerG = perG.fat || 0;
+                if (fatPerG > 0) {
+                    fatServVars.push({ name: xName, coef: fatPerG / 5 });
+                }
             }
             if (f.category === 'fruit') {
                 fruitServVars.push({ name: xName, coef: 1 / (f.serving_equiv_grams || 150) });
@@ -1571,6 +1862,14 @@ async function generateMealFromFoods(
 
         addConstraint('count_max', countVars, { type: glpk.GLP_UP, ub: 6 });
 
+        if (microTargets) {
+            MICRO_KEYS.forEach(key => {
+                const target = microTargets[key] || 0;
+                if (!target || microVars[key].length === 0) return;
+                addConstraint(`${key}_min`, microVars[key], { type: glpk.GLP_LO, lb: target });
+            });
+        }
+
         const lp = {
             name: 'meal_milp',
             objective: { direction: glpk.GLP_MIN, name: 'obj', vars },
@@ -1629,13 +1928,15 @@ async function generateMealFromFoods(
             totals: finalTotals
         };
     }
-    if (groupTargets && (
+    const hasGroupMins = Boolean(groupTargets && (
         (groupTargets.vegMinServings || 0) > 0 ||
         (groupTargets.fruitMinServings || 0) > 0 ||
         (groupTargets.dairyMinServings || 0) > 0 ||
         (groupTargets.fatMinServings || 0) > 0 ||
         (groupTargets.wholeGrainMinServings || 0) > 0
-    )) {
+    ));
+    const hasMicroMins = Boolean(microTargets && MICRO_KEYS.some(key => (microTargets[key] || 0) > 0));
+    if (hasGroupMins || hasMicroMins) {
         throw new Error('No se pudo construir una comida que cumpla USDA con la despensa actual. Añade más alimentos en el onboarding.');
     }
 
@@ -1774,9 +2075,9 @@ async function generateMealFromFoods(
 
     let proteinSourceList = proteins;
     if (type === 'breakfast') {
-        // Only HIGH-PROTEIN dairy (≥8g protein, ≤12g sugar) qualifies for breakfast
-        const highProteinDairy = dairy.filter(d => d.protein >= 8 && (d.sugar_g ?? 0) <= 12);
-        proteinSourceList = [...proteins, ...highProteinDairy];
+        // Prefer high-protein dairy but allow regular dairy to avoid protein scarcity
+        const breakfastDairy = dairy.filter(d => (d.sugar_g ?? 0) <= 12);
+        proteinSourceList = [...proteins, ...breakfastDairy];
     } else if (type === 'snack') {
         const highProteinDairy = dairy.filter(d => d.protein >= 8 && (d.sugar_g ?? 0) <= 12);
         proteinSourceList = [...highProteinDairy, ...proteins, ...fats];
@@ -2223,7 +2524,7 @@ function aggregateMicrosFromMeals(meals: Meal[]): MacroTotals['micros'] {
 }
 
 function validateMicros(totals: MacroTotals['micros'], rdaProfile?: RDAProfile): string[] {
-    if (!totals) return ['⚠️ Micronutrient data missing'];
+    if (!totals) return ['Micronutrient data missing'];
     const issues: string[] = [];
 
     // Get sex/age-specific RDA targets
@@ -2237,9 +2538,9 @@ function validateMicros(totals: MacroTotals['micros'], rdaProfile?: RDAProfile):
     const check = (key: string, label: string, unit: string) => {
         const val = Math.round((totals as any)[key] || 0);
         const target = targets[key] || 0;
-        if (target > 0 && val < target * 0.7) {
+        if (target > 0 && val < target * MICRO_MIN_RATIO) {
             const percent = Math.round((val / target) * 100);
-            issues.push(`⚠️ Bajo en ${label}: ${val}${unit} (${percent}% del objetivo ${target}${unit})`);
+            issues.push(`Bajo en ${label}: ${val}${unit} (${percent}% del objetivo ${target}${unit})`);
         }
     };
 
@@ -2268,7 +2569,8 @@ export async function generateDayMealPlanFromDB(
     conditions: string[] = [],
     nutrientPriorities: string[] = [],
     varietyManager?: VarietyManager,
-    rdaProfile?: RDAProfile
+    rdaProfile?: RDAProfile,
+    dayAssignments?: WeeklyDayAssignments
 ): Promise<MealPlan> {
     console.log(`\n📅 [DAY PLAN] Generating day plan: ${targetCalories} kcal, ${targetProtein}g protein, ${numMeals} meals`);
     console.log(`  🍽️  Diet: ${dietType}, Conditions: ${conditions.join(', ') || 'none'}`);
@@ -2326,6 +2628,8 @@ export async function generateDayMealPlanFromDB(
         throw new Error('No foods available after applying onboarding selection. Please select more items in pantry setup.');
     }
 
+    const servingTargets = getDietAdjustedServingTargets(targetCalories, dietType, conditions);
+
     // Hard check: ensure pantry covers core groups, otherwise abort with a clear message
     const coverage = { protein: 0, carb: 0, vegetable: 0, fruit: 0, fat: 0, dairy: 0, wholeGrain: 0 };
     filteredDbFoods.forEach(f => {
@@ -2335,7 +2639,7 @@ export async function generateDayMealPlanFromDB(
         if (f.category === 'fruit') coverage.fruit++;
         if (f.category === 'fat') coverage.fat++;
         if (f.category === 'dairy' || f.category === 'beverage') coverage.dairy++;
-        if (f.category === 'carb' && isWholeGrain(f)) coverage.wholeGrain++;
+        if (isWholeGrain(f)) coverage.wholeGrain++;
     });
     const breakfastProteinCount = filteredDbFoods.filter(f =>
         (f.category === 'protein' || f.category === 'dairy') && isFoodAppropriateForMeal(f, 'breakfast')
@@ -2343,14 +2647,21 @@ export async function generateDayMealPlanFromDB(
     const missing: string[] = [];
     if (coverage.protein === 0) missing.push('proteínas');
     if (coverage.carb === 0) missing.push('carbohidratos');
-    if (coverage.vegetable === 0) missing.push('verduras');
-    if (coverage.fruit === 0) missing.push('frutas');
-    if (coverage.fat === 0) missing.push('grasas saludables');
-    if (coverage.dairy === 0) missing.push('lácteos/bebidas');
-    if (coverage.wholeGrain === 0) missing.push('granos integrales');
+    if (coverage.vegetable === 0 && (servingTargets?.vegetables.min || 0) > 0) missing.push('verduras');
+    if (coverage.fruit === 0 && (servingTargets?.fruits.min || 0) > 0) missing.push('frutas');
+    if (coverage.fat === 0 && (servingTargets?.healthyFats.min || 0) > 0) missing.push('grasas saludables');
+    if (coverage.dairy === 0 && (servingTargets?.dairy.min || 0) > 0) missing.push('lácteos/bebidas');
+    if (coverage.wholeGrain === 0 && (servingTargets?.wholeGrains.min || 0) > 0) missing.push('granos integrales');
     if (breakfastProteinCount === 0) missing.push('proteínas de desayuno (huevo/yogurt/tofu)');
     if (missing.length > 0) {
-        throw new Error(`Tu selección de despensa no cubre grupos obligatorios: ${missing.join(', ')}. Añade al menos 3 proteínas, 2-3 carbos (incluyendo integrales), 3 lácteos, 2 grasas saludables, frutas y verduras.`);
+        const dietLabel = dietType || 'estándar';
+        throw new Error(`Tu selección de despensa no cubre grupos obligatorios para la dieta ${dietLabel}: ${missing.join(', ')}. Agrega más opciones en esas categorías.`);
+    }
+
+    const feasibilityFoods = applyDietFiltersForFeasibility(filteredDbFoods, dietType, conditions);
+    const feasibility = assessPantryFeasibility(feasibilityFoods, numMeals, targetCalories, dietType, conditions, rdaProfile);
+    if (!feasibility.ok) {
+        throw new Error(`Tu despensa no puede cumplir USDA/RDA con porciones reales. Ajusta tu selección: ${feasibility.issues.join(' | ')}`);
     }
 
     // Create variety manager for this day (or use provided one for weekly plans)
@@ -2363,8 +2674,52 @@ export async function generateDayMealPlanFromDB(
         5: { breakfast: 0.20, snack1: 0.10, lunch: 0.30, snack2: 0.10, dinner: 0.30 },
     };
     const dist = distributions[numMeals];
+    const dayAssignment = dayAssignments || {};
+    const foodById = new Map(filteredDbFoods.map(f => [String(f.id), f]));
+    const hasSnack = Boolean(dist.snack1 || dist.snack2);
+    const wholeGrainMeal: Meal['type'] = hasSnack ? 'lunch' : 'breakfast';
 
-    const servingTargets = getDailyServingTargets(targetCalories);
+    const resolveRequiredIds = (mealType: Meal['type']): string[] => {
+        const ids: string[] = [];
+        const add = (id?: string) => { if (id) ids.push(String(id)); };
+        const requireWhole = (servingTargets?.wholeGrains.min || 0) > 0;
+        const requireFruit = (servingTargets?.fruits.min || 0) > 0;
+        const requireDairy = (servingTargets?.dairy.min || 0) > 0;
+        const requireFat = (servingTargets?.healthyFats.min || 0) > 0;
+        const allowWhole = Boolean(dayAssignment.wholeGrainId) && requireWhole;
+
+        if (mealType === 'breakfast') {
+            if (requireDairy) add(dayAssignment.dairyId);
+            if (!hasSnack && requireFruit) add(dayAssignment.fruitId);
+            if (allowWhole && wholeGrainMeal === 'breakfast') add(dayAssignment.wholeGrainId);
+        }
+        if (mealType === 'snack') {
+            if (hasSnack && requireFruit) add(dayAssignment.fruitId);
+        }
+        if (mealType === 'lunch') {
+            add(dayAssignment.proteinId);
+            add(dayAssignment.vegetableId);
+            if (allowWhole && wholeGrainMeal === 'lunch') add(dayAssignment.wholeGrainId);
+        }
+        if (mealType === 'dinner') {
+            if (requireFat) add(dayAssignment.fatId);
+        }
+
+        const unique = Array.from(new Set(ids)).filter(Boolean);
+        if (unique.length === 0) return [];
+        const resolved = unique.filter(id => {
+            const food = foodById.get(id);
+            if (!food) return false;
+            return isFoodAppropriateForMeal(food, mealType);
+        });
+        if (resolved.length !== unique.length) {
+            const missing = unique.filter(id => !resolved.includes(id));
+            console.warn(`  ⚠️ Required IDs skipped for ${mealType}: ${missing.join(', ')}`);
+        }
+        return resolved;
+    };
+
+    const rdaTargets = rdaProfile ? getRDATargets(rdaProfile) : null;
     const remainingServings = servingTargets
         ? {
             vegetables: servingTargets.vegetables.min,
@@ -2374,6 +2729,12 @@ export async function generateDayMealPlanFromDB(
             wholeGrains: servingTargets.wholeGrains.min,
             healthyFats: servingTargets.healthyFats.min
         }
+        : null;
+    const remainingMicros: MacroTotals['micros'] | null = rdaTargets
+        ? MICRO_KEYS.reduce((acc, key) => {
+            acc[key] = rdaTargets[key] || 0;
+            return acc;
+        }, {} as MacroTotals['micros'])
         : null;
 
     const totalMeals = Object.keys(dist).filter(k => (dist as any)[k]).length;
@@ -2418,10 +2779,34 @@ export async function generateDayMealPlanFromDB(
         remainingServings.healthyFats = Math.max(0, remainingServings.healthyFats - counts.healthyFats);
     };
 
+    const buildMicroTargets = (mealsLeft: number): MacroTotals['micros'] | undefined => {
+        if (!remainingMicros) return undefined;
+        const targets: MacroTotals['micros'] = {};
+        MICRO_KEYS.forEach(key => {
+            const remaining = (remainingMicros[key] || 0);
+            if (remaining > 0) {
+                targets[key] = remaining / Math.max(mealsLeft, 1);
+            }
+        });
+        return targets;
+    };
+
+    const updateRemainingMicros = (meal: Meal) => {
+        if (!remainingMicros) return;
+        const micros = meal.totals.micros;
+        if (!micros) return;
+        MICRO_KEYS.forEach(key => {
+            const val = micros[key] || 0;
+            remainingMicros[key] = Math.max(0, (remainingMicros[key] || 0) - val);
+        });
+    };
+
     // Generate each meal
     if (dist.breakfast) {
         console.log(`\n--- Generating Breakfast ---`);
         const groupTargets = buildGroupTargets('breakfast', mealsRemaining);
+        const microTargets = buildMicroTargets(mealsRemaining);
+        const requiredIds = resolveRequiredIds('breakfast');
         const meal = await generateMealFromFoods(
             'breakfast',
             targetCalories * dist.breakfast,
@@ -2433,15 +2818,20 @@ export async function generateDayMealPlanFromDB(
             dayVarietyManager,
             targetCalories,
             rdaProfile?.age,
-            groupTargets
+            microTargets,
+            groupTargets,
+            requiredIds
         );
         meals.push(meal);
         updateRemaining(meal);
+        updateRemainingMicros(meal);
         mealsRemaining = Math.max(0, mealsRemaining - 1);
     }
     if (dist.snack1) {
         console.log(`\n--- Generating Snack 1 ---`);
         const groupTargets = buildGroupTargets('snack', mealsRemaining);
+        const microTargets = buildMicroTargets(mealsRemaining);
+        const requiredIds = resolveRequiredIds('snack');
         const meal = await generateMealFromFoods(
             'snack',
             targetCalories * dist.snack1,
@@ -2453,15 +2843,20 @@ export async function generateDayMealPlanFromDB(
             dayVarietyManager,
             targetCalories,
             rdaProfile?.age,
-            groupTargets
+            microTargets,
+            groupTargets,
+            requiredIds
         );
         meals.push(meal);
         updateRemaining(meal);
+        updateRemainingMicros(meal);
         mealsRemaining = Math.max(0, mealsRemaining - 1);
     }
     if (dist.lunch) {
         console.log(`\n--- Generating Lunch ---`);
         const groupTargets = buildGroupTargets('lunch', mealsRemaining);
+        const microTargets = buildMicroTargets(mealsRemaining);
+        const requiredIds = resolveRequiredIds('lunch');
         const meal = await generateMealFromFoods(
             'lunch',
             targetCalories * dist.lunch,
@@ -2473,15 +2868,20 @@ export async function generateDayMealPlanFromDB(
             dayVarietyManager,
             targetCalories,
             rdaProfile?.age,
-            groupTargets
+            microTargets,
+            groupTargets,
+            requiredIds
         );
         meals.push(meal);
         updateRemaining(meal);
+        updateRemainingMicros(meal);
         mealsRemaining = Math.max(0, mealsRemaining - 1);
     }
     if (dist.snack2) {
         console.log(`\n--- Generating Snack 2 ---`);
         const groupTargets = buildGroupTargets('snack', mealsRemaining);
+        const microTargets = buildMicroTargets(mealsRemaining);
+        const requiredIds = resolveRequiredIds('snack');
         const meal = await generateMealFromFoods(
             'snack',
             targetCalories * dist.snack2,
@@ -2493,15 +2893,20 @@ export async function generateDayMealPlanFromDB(
             dayVarietyManager,
             targetCalories,
             rdaProfile?.age,
-            groupTargets
+            microTargets,
+            groupTargets,
+            requiredIds
         );
         meals.push(meal);
         updateRemaining(meal);
+        updateRemainingMicros(meal);
         mealsRemaining = Math.max(0, mealsRemaining - 1);
     }
     if (dist.dinner) {
         console.log(`\n--- Generating Dinner ---`);
         const groupTargets = buildGroupTargets('dinner', mealsRemaining);
+        const microTargets = buildMicroTargets(mealsRemaining);
+        const requiredIds = resolveRequiredIds('dinner');
         const meal = await generateMealFromFoods(
             'dinner',
             targetCalories * dist.dinner,
@@ -2513,10 +2918,13 @@ export async function generateDayMealPlanFromDB(
             dayVarietyManager,
             targetCalories,
             rdaProfile?.age,
-            groupTargets
+            microTargets,
+            groupTargets,
+            requiredIds
         );
         meals.push(meal);
         updateRemaining(meal);
+        updateRemainingMicros(meal);
         mealsRemaining = Math.max(0, mealsRemaining - 1);
     }
 
@@ -2543,7 +2951,7 @@ export async function generateDayMealPlanFromDB(
 
     // USDA hard validation (throws if broken)
     const planForValidation: MealPlan = { id: 'day', name: 'Day', name_es: 'Día', meals, totals: { ...finalTotals, micros: microTotals } };
-    const usdaHard = validateUSDAHard(planForValidation, targetCalories, rdaProfile?.age);
+    const usdaHard = validateUSDAHard(planForValidation, targetCalories, rdaProfile?.age, dietType, conditions);
     if (!usdaHard.isValid) {
         console.error('❌ USDA hard validation failed:', usdaHard.issues);
         throw new Error(`USDA hard fail: ${usdaHard.issues.join(' | ')}`);
@@ -2572,8 +2980,8 @@ export async function generateDayMealPlanFromDB(
     if (dayCounts.legume > 1) deviations.push(`⚠️ Demasiadas legumbres principales (${dayCounts.legume}/1)`);
 
     if (microIssues.length > 0) {
-        console.warn('⚠️ Micronutrient issues:', microIssues);
-        deviations.push(...microIssues);
+        console.error('❌ Micronutrient targets not met:', microIssues);
+        throw new Error(`Micronutrientes insuficientes: ${microIssues.join(' | ')}`);
     }
 
     console.log(`\n🎉 [DAY PLAN COMPLETE]`);
@@ -2590,6 +2998,144 @@ export async function generateDayMealPlanFromDB(
         deviations
     };
 }
+
+const weeklyPenalty = (f: SimpleFoodItem): number => {
+    let p = 0;
+    if ((f.sodium_mg ?? 0) > 700) p += 3;
+    if ((f.sugar_g ?? 0) > 12 && f.category !== 'fruit') p += 3;
+    if ((f.sat_fat_g ?? 0) > 6) p += 2;
+    if (f.processing_level === 'ultra_processed') p += 8;
+    if (f.category === 'carb' && !isWholeGrain(f) && (f.fiber ?? 0) < 2) p += 2;
+    if (f.data_quality_flags && typeof f.data_quality_flags === 'object') {
+        const confidence = (f.data_quality_flags as any).confidence;
+        if (typeof confidence === 'number' && confidence < 0.7) p += 2;
+    }
+    return p;
+};
+
+const buildWeeklyAssignmentsMILP = async (
+    foods: SimpleFoodItem[],
+    dietType: string,
+    targetCalories: number,
+    conditions: string[] = [],
+    days: number = 7
+): Promise<WeeklyDayAssignments[] | null> => {
+    const glpk = await getGlpk();
+    const servingTargets = getDietAdjustedServingTargets(targetCalories, dietType, conditions);
+
+    const configs: Array<{
+        key: keyof WeeklyDayAssignments;
+        label: string;
+        baseMaxRepeat: number;
+        filter: (f: SimpleFoodItem) => boolean;
+    }> = [
+        { key: 'proteinId', label: 'proteínas', baseMaxRepeat: 2, filter: f => ['protein', 'legume'].includes(f.category) },
+        { key: 'vegetableId', label: 'verduras', baseMaxRepeat: 3, filter: f => f.category === 'vegetable' },
+        { key: 'wholeGrainId', label: 'integrales', baseMaxRepeat: 4, filter: f => f.category === 'carb' && isWholeGrain(f) },
+        { key: 'fatId', label: 'grasas', baseMaxRepeat: 4, filter: f => f.category === 'fat' },
+        { key: 'fruitId', label: 'frutas', baseMaxRepeat: 3, filter: f => f.category === 'fruit' },
+        { key: 'dairyId', label: 'lácteos', baseMaxRepeat: 3, filter: f => f.category === 'dairy' || f.category === 'beverage' },
+    ].filter(cfg => {
+        if (dietType === 'keto' && cfg.key === 'wholeGrainId') return false;
+        if (!servingTargets) return true;
+        const targetKey = cfg.key === 'proteinId' ? 'protein'
+            : cfg.key === 'vegetableId' ? 'vegetables'
+                : cfg.key === 'wholeGrainId' ? 'wholeGrains'
+                    : cfg.key === 'fatId' ? 'healthyFats'
+                        : cfg.key === 'fruitId' ? 'fruits'
+                            : 'dairy';
+        return servingTargets[targetKey].min > 0;
+    });
+
+    const selectCandidates = (filter: (f: SimpleFoodItem) => boolean) => {
+        return foods
+            .filter(filter)
+            .filter(f => f.category !== 'condiment')
+            .filter(f => f.processing_level !== 'ultra_processed')
+            .sort((a, b) => weeklyPenalty(a) - weeklyPenalty(b))
+            .slice(0, 14);
+    };
+
+    const candidatesByKey = new Map<keyof WeeklyDayAssignments, SimpleFoodItem[]>();
+    configs.forEach(cfg => {
+        const list = selectCandidates(cfg.filter);
+        if (list.length > 0) {
+            candidatesByKey.set(cfg.key, list);
+        } else {
+            console.warn(`  ⚠️ Sin candidatos semanales para ${cfg.label}`);
+        }
+    });
+
+    if (candidatesByKey.size === 0) return null;
+
+    const vars: any[] = [];
+    const subjectTo: any[] = [];
+    const bounds: any[] = [];
+    const binaries: string[] = [];
+
+    const addConstraint = (name: string, vars: any[], bnds: any) => {
+        subjectTo.push({ name, vars, bnds });
+    };
+
+    configs.forEach(cfg => {
+        const list = candidatesByKey.get(cfg.key);
+        if (!list || list.length === 0) return;
+        const minNeeded = Math.ceil(days / list.length);
+        const maxRepeat = Math.max(cfg.baseMaxRepeat, minNeeded);
+
+        for (let d = 0; d < days; d++) {
+            const dayVars: any[] = [];
+            list.forEach((food, idx) => {
+                const vName = `w_${cfg.key}_${d}_${idx}`;
+                vars.push({ name: vName, coef: weeklyPenalty(food) });
+                bounds.push({ name: vName, type: glpk.GLP_DB, lb: 0, ub: 1 });
+                binaries.push(vName);
+                dayVars.push({ name: vName, coef: 1 });
+            });
+            addConstraint(`${cfg.key}_day_${d}`, dayVars, { type: glpk.GLP_FX, lb: 1, ub: 1 });
+        }
+
+        list.forEach((_, idx) => {
+            const repVars: any[] = [];
+            for (let d = 0; d < days; d++) {
+                repVars.push({ name: `w_${cfg.key}_${d}_${idx}`, coef: 1 });
+            }
+            addConstraint(`${cfg.key}_repeat_${idx}`, repVars, { type: glpk.GLP_UP, ub: maxRepeat });
+        });
+    });
+
+    const lp = {
+        name: 'weekly_milp',
+        objective: { direction: glpk.GLP_MIN, name: 'obj', vars },
+        subjectTo,
+        bounds,
+        binaries
+    };
+
+    const result = glpk.solve(lp, { msgLevel: glpk.GLP_MSG_OFF });
+    if (!result || result.result.status !== glpk.GLP_OPT) {
+        console.warn('  ⚠️ Weekly MILP solver failed');
+        return null;
+    }
+
+    const assignments: WeeklyDayAssignments[] = Array.from({ length: days }, () => ({} as WeeklyDayAssignments));
+    configs.forEach(cfg => {
+        const list = candidatesByKey.get(cfg.key);
+        if (!list || list.length === 0) return;
+        for (let d = 0; d < days; d++) {
+            for (let idx = 0; idx < list.length; idx++) {
+                const vName = `w_${cfg.key}_${d}_${idx}`;
+                const chosen = result.result.vars[vName] || 0;
+                if (chosen >= 0.5) {
+                    assignments[d][cfg.key] = list[idx].id;
+                    break;
+                }
+            }
+        }
+    });
+
+    return assignments;
+};
 
 // ASYNC: Generate weekly meal plan from database
 // userPantryTerms: Array of search_term values from user_pantry table
@@ -2613,8 +3159,58 @@ export async function generateWeeklyMealPlanFromDB(
     console.log(`  🛒 User pantry terms: ${userPantryTerms?.length || 0} items`);
     console.log(`  👤 RDA Profile: ${rdaProfile?.gender || 'default'}, ${rdaProfile?.age || 'N/A'} años`);
 
+    const dbFoods = await loadFoodsFromDB(nutrientPriorities);
+    let filteredDbFoods: SimpleFoodItem[];
+
+    if (userPantryTerms && userPantryTerms.length > 0) {
+        const norm = (s: string) => (s || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        const pantryIds = new Set<string>();
+        const unmatchedTerms: string[] = [];
+
+        userPantryTerms.forEach(raw => {
+            const maybeId = String(raw);
+            if (/^\d+$/.test(maybeId)) {
+                pantryIds.add(maybeId);
+                return;
+            }
+            const mapped = NAME_TO_ID[norm(raw)];
+            if (mapped) {
+                pantryIds.add(mapped);
+            } else {
+                unmatchedTerms.push(raw);
+            }
+        });
+
+        if (unmatchedTerms.length > 0) {
+            console.warn(`  ⚠️ Unmatched pantry terms (no IDs found): ${unmatchedTerms.join(', ')}`);
+        }
+
+        filteredDbFoods = dbFoods.filter(f => pantryIds.has(String(f.id)));
+        const dbIdSet = new Set(dbFoods.map(f => String(f.id)));
+        const missingIds = Array.from(pantryIds).filter(id => !dbIdSet.has(id));
+        if (missingIds.length > 0) {
+            console.warn(`  ⚠️ Pantry IDs missing in foods table: ${missingIds.join(', ')}`);
+        }
+    } else {
+        filteredDbFoods = dbFoods.filter(f => ONBOARDING_FOOD_IDS.has(String(f.id)));
+    }
+
+    const weeklyFoods = applyDietFiltersForFeasibility(filteredDbFoods, dietType, conditions);
+    const weeklyAssignments = await buildWeeklyAssignmentsMILP(weeklyFoods, dietType, targetCalories, conditions, 7);
+
     for (let i = 0; i < 7; i++) {
-        const plan = await generateDayMealPlanFromDB(targetCalories, targetProtein, numMeals, userPantryTerms, dietType, conditions, nutrientPriorities, masterVarietyManager, rdaProfile);
+        const plan = await generateDayMealPlanFromDB(
+            targetCalories,
+            targetProtein,
+            numMeals,
+            userPantryTerms,
+            dietType,
+            conditions,
+            nutrientPriorities,
+            masterVarietyManager,
+            rdaProfile,
+            weeklyAssignments ? weeklyAssignments[i] : undefined
+        );
         plan.id = `day_${i}_${Date.now()}_${Math.random()}`;
         plan.name_es = `Día ${i + 1} - ${dayNames[i]}`;
         days.push(plan);

@@ -38,6 +38,59 @@ export function getDailyServingTargets(targetKcal: number): ServingTargets | nul
     return nearest.targets;
 }
 
+export function getDietAdjustedServingTargets(
+    targetKcal: number,
+    dietType?: string,
+    conditions: string[] = []
+): ServingTargets | null {
+    const base = getDailyServingTargets(targetKcal);
+    if (!base) return null;
+
+    const targets: ServingTargets = {
+        vegetables: { ...base.vegetables },
+        fruits: { ...base.fruits },
+        dairy: { ...base.dairy },
+        protein: { ...base.protein },
+        wholeGrains: { ...base.wholeGrains },
+        healthyFats: { ...base.healthyFats },
+    };
+
+    const diet = (dietType || '').toLowerCase();
+    const setRange = (key: keyof ServingTargets, min: number, max: number) => {
+        const safeMin = Math.max(0, min);
+        const safeMax = Math.max(safeMin, max);
+        targets[key] = { min: safeMin, max: safeMax };
+    };
+
+    if (diet === 'keto') {
+        setRange('wholeGrains', 0, 0);
+        setRange('fruits', 0, Math.min(1, targets.fruits.max));
+        targets.healthyFats.max = Math.max(targets.healthyFats.max, base.healthyFats.max * 1.5);
+    } else if (diet === 'low_carb') {
+        setRange('wholeGrains', 0, Math.max(1, Math.round(base.wholeGrains.max * 0.6)));
+        targets.fruits.min = Math.max(0, base.fruits.min - 0.5);
+        targets.fruits.max = Math.max(targets.fruits.min, base.fruits.max - 0.5);
+        targets.healthyFats.max = Math.max(targets.healthyFats.max, base.healthyFats.max * 1.2);
+    } else if (diet === 'paleo') {
+        setRange('wholeGrains', 0, 0);
+        setRange('dairy', 0, 0);
+    } else if (diet === 'vegan') {
+        setRange('dairy', 0, 0);
+    } else if (diet === 'high_protein') {
+        targets.protein.min = Math.max(targets.protein.min, base.protein.min + 0.5);
+        targets.protein.max = Math.max(targets.protein.max, base.protein.max + 1);
+    } else if (diet === 'mediterranean') {
+        targets.healthyFats.min = Math.max(targets.healthyFats.min, base.healthyFats.min + 0.5);
+        targets.healthyFats.max = Math.max(targets.healthyFats.max, base.healthyFats.max + 1);
+    }
+
+    if (diet === 'diabetes_friendly' || conditions.includes('diabetes_type_2')) {
+        targets.fruits.max = Math.max(targets.fruits.min, base.fruits.max - 0.5);
+    }
+
+    return targets;
+}
+
 export function getSodiumLimitByAge(ageYears?: number): number {
     if (!ageYears || ageYears >= 14) return 2300;
     if (ageYears >= 9) return 1800;
@@ -150,9 +203,15 @@ export function countServingsByGroup(plan: MealPlan): ServingCount {
                         totals.wholeGrains += gramsToServings(grams, 'wholeGrains', f);
                     }
                     break;
-                case 'fat':
-                    totals.healthyFats += gramsToServings(grams, 'healthyFats', f);
+                case 'fat': {
+                    const fatGrams = item.macros?.fat ?? ((f.fat || 0) * grams / 100);
+                    if (fatGrams > 0) {
+                        totals.healthyFats += fatGrams / 5; // 1 serving ≈ 1 tsp oil = 5g fat
+                    } else {
+                        totals.healthyFats += gramsToServings(grams, 'healthyFats', f);
+                    }
                     break;
+                }
                 default:
                     break;
             }
@@ -164,7 +223,13 @@ export function countServingsByGroup(plan: MealPlan): ServingCount {
 
 export type USDAValidation = { isValid: boolean; issues: string[] };
 
-export function validateUSDAHard(plan: MealPlan, targetKcal: number, ageYears?: number): USDAValidation {
+export function validateUSDAHard(
+    plan: MealPlan,
+    targetKcal: number,
+    ageYears?: number,
+    dietType?: string,
+    conditions: string[] = []
+): USDAValidation {
     const issues: string[] = [];
     const totals = plan.totals;
 
@@ -181,11 +246,14 @@ export function validateUSDAHard(plan: MealPlan, targetKcal: number, ageYears?: 
         issues.push(`Sodio ${Math.round(totals.sodium_mg || 0)}mg > ${sodiumLimit}mg`);
     }
 
-    // Added sugar per meal <=10g
+    // Added sugar per meal <=10g (snacks stricter)
     plan.meals.forEach(meal => {
         const addSug = meal.totals.added_sugars_g || 0;
-        if (addSug > USDA_DGA_LIMITS.maxAddedSugarPerMeal_g) {
-            issues.push(`${meal.type}: azúcares añadidos ${addSug.toFixed(1)}g > 10g`);
+        const maxAllowed = meal.type === 'snack'
+            ? Math.min(USDA_DGA_LIMITS.maxAddedSugarPerMeal_g, 5)
+            : USDA_DGA_LIMITS.maxAddedSugarPerMeal_g;
+        if (addSug > maxAllowed) {
+            issues.push(`${meal.type}: azúcares añadidos ${addSug.toFixed(1)}g > ${maxAllowed}g`);
         }
     });
 
@@ -196,7 +264,7 @@ export function validateUSDAHard(plan: MealPlan, targetKcal: number, ageYears?: 
     }
 
     // Servings by group
-    const targets = getDailyServingTargets(targetKcal);
+    const targets = getDietAdjustedServingTargets(targetKcal, dietType, conditions);
     if (targets) {
         const s = countServingsByGroup(plan);
         const check = (key: keyof ServingTargets, val: number) => {

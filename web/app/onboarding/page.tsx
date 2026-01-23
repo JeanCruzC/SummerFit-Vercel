@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ChevronLeft, Check, TrendingDown, TrendingUp, Minus, Target, Flame, Scale, Ruler, AlertCircle, Users, MapPin, Smartphone } from "lucide-react";
@@ -43,9 +43,114 @@ const BREAKFAST_PROTEIN_ITEMS = new Set([
   "Tofu",
   "Proteína en polvo"
 ]);
-const MIN_WHOLE_GRAINS = 1;
-const MIN_HEALTHY_FATS = 2;
-const MIN_BREAKFAST_PROTEINS = 1;
+
+type DietKey =
+  | "balanced"
+  | "keto"
+  | "low_carb"
+  | "diabetes_friendly"
+  | "vegan"
+  | "vegetarian"
+  | "mediterranean"
+  | "high_protein"
+  | "paleo";
+
+const DIET_OPTIONS: Array<{ value: string; key: DietKey; label: string; desc: string }> = [
+  { value: "Estándar", key: "balanced", label: "Estándar", desc: "Equilibrada y flexible" },
+  { value: "Keto", key: "keto", label: "Keto", desc: "Muy baja en carbohidratos" },
+  { value: "Low-Carb", key: "low_carb", label: "Low-Carb", desc: "Baja en carbohidratos" },
+  { value: "Diabéticos", key: "diabetes_friendly", label: "Diabetes Friendly", desc: "Control de carga glucémica" },
+  { value: "Vegana", key: "vegan", label: "Vegana", desc: "Plant-based sin lácteos/carne" },
+  { value: "Vegetariana", key: "vegetarian", label: "Vegetariana", desc: "Sin carnes" },
+  { value: "Mediterránea", key: "mediterranean", label: "Mediterránea", desc: "Grasas saludables y vegetales" },
+  { value: "Alta Proteína", key: "high_protein", label: "Alta Proteína", desc: "Más proteína diaria" },
+  { value: "Paleo", key: "paleo", label: "Paleo", desc: "Sin lácteos ni granos" },
+];
+
+const DIET_PANTRY_RULES: Record<
+  DietKey,
+  {
+    categoryMins: Record<string, number>;
+    minWholeGrains: number;
+    minHealthyFats: number;
+    minBreakfastProteins: number;
+  }
+> = {
+  balanced: {
+    categoryMins: { proteins: 3, carbs: 2, fats: 2, vegetables: 3, fruits: 2, dairy: 3, condiments: 0 },
+    minWholeGrains: 1,
+    minHealthyFats: 2,
+    minBreakfastProteins: 1,
+  },
+  keto: {
+    categoryMins: { proteins: 3, carbs: 0, fats: 3, vegetables: 2, fruits: 0, dairy: 2, condiments: 0 },
+    minWholeGrains: 0,
+    minHealthyFats: 3,
+    minBreakfastProteins: 1,
+  },
+  low_carb: {
+    categoryMins: { proteins: 3, carbs: 1, fats: 2, vegetables: 3, fruits: 1, dairy: 2, condiments: 0 },
+    minWholeGrains: 1,
+    minHealthyFats: 2,
+    minBreakfastProteins: 1,
+  },
+  diabetes_friendly: {
+    categoryMins: { proteins: 3, carbs: 1, fats: 2, vegetables: 3, fruits: 1, dairy: 2, condiments: 0 },
+    minWholeGrains: 1,
+    minHealthyFats: 2,
+    minBreakfastProteins: 1,
+  },
+  vegan: {
+    categoryMins: { proteins: 3, carbs: 2, fats: 2, vegetables: 3, fruits: 2, dairy: 0, condiments: 0 },
+    minWholeGrains: 1,
+    minHealthyFats: 2,
+    minBreakfastProteins: 1,
+  },
+  vegetarian: {
+    categoryMins: { proteins: 3, carbs: 2, fats: 2, vegetables: 3, fruits: 2, dairy: 2, condiments: 0 },
+    minWholeGrains: 1,
+    minHealthyFats: 2,
+    minBreakfastProteins: 1,
+  },
+  mediterranean: {
+    categoryMins: { proteins: 3, carbs: 2, fats: 3, vegetables: 3, fruits: 2, dairy: 2, condiments: 0 },
+    minWholeGrains: 1,
+    minHealthyFats: 3,
+    minBreakfastProteins: 1,
+  },
+  high_protein: {
+    categoryMins: { proteins: 4, carbs: 2, fats: 2, vegetables: 3, fruits: 2, dairy: 3, condiments: 0 },
+    minWholeGrains: 1,
+    minHealthyFats: 2,
+    minBreakfastProteins: 1,
+  },
+  paleo: {
+    categoryMins: { proteins: 3, carbs: 1, fats: 2, vegetables: 3, fruits: 1, dairy: 0, condiments: 0 },
+    minWholeGrains: 0,
+    minHealthyFats: 2,
+    minBreakfastProteins: 1,
+  },
+};
+
+const getDietKey = (dietType: string): DietKey => {
+  const found = DIET_OPTIONS.find(option => option.value === dietType);
+  return found?.key || "balanced";
+};
+
+const getDietRules = (dietType: string) => {
+  const key = getDietKey(dietType);
+  return DIET_PANTRY_RULES[key] || DIET_PANTRY_RULES.balanced;
+};
+
+const getBreakfastProteinSet = (dietKey: DietKey) => {
+  if (dietKey === "vegan") {
+    return new Set(["Tofu", "Carne de Soya", "Tempeh", "Seitán", "Proteína en polvo", "Leche de Soya"]);
+  }
+  if (dietKey === "paleo") {
+    return new Set(["Huevo", "Pescado", "Pollo", "Pavo", "Carne"]);
+  }
+  return BREAKFAST_PROTEIN_ITEMS;
+};
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -53,6 +158,7 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [pantrySelections, setPantrySelections] = useState<Record<string, Set<string>>>({});
+  const profileLoadedRef = useRef(false);
 
   const [formData, setFormData] = useState({
     goal: "",
@@ -69,6 +175,56 @@ export default function OnboardingPage() {
     location_name: "",
   });
 
+  const normalizeKey = (value: string) =>
+    (value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+  const resolveFoodIds = async (
+    supabaseClient: ReturnType<typeof createClient>,
+    items: Array<{ name: string; searchTerm: string; foodId?: string | null }>
+  ) => {
+    const namesEs = Array.from(new Set(items.map(i => i.name).filter(Boolean)));
+    const namesEn = Array.from(new Set(items.map(i => i.searchTerm).filter(Boolean)));
+
+    const [esRes, enRes] = await Promise.all([
+      namesEs.length
+        ? supabaseClient.from("foods").select("id,name,name_es").in("name_es", namesEs)
+        : Promise.resolve({ data: [], error: null }),
+      namesEn.length
+        ? supabaseClient.from("foods").select("id,name,name_es").in("name", namesEn)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (esRes.error || enRes.error) {
+      console.error("Error resolving food IDs:", esRes.error || enRes.error);
+      return { idMap: new Map<string, string>(), unresolved: items.map(i => i.name) };
+    }
+
+    const idMap = new Map<string, string>();
+    const addMapping = (name: string | null, id: string | number | null) => {
+      if (!name || id === null || id === undefined) return;
+      idMap.set(normalizeKey(name), String(id));
+    };
+
+    [...(esRes.data || []), ...(enRes.data || [])].forEach((row: any) => {
+      addMapping(row.name_es, row.id);
+      addMapping(row.name, row.id);
+    });
+
+    const unresolved = items
+      .filter(item => {
+        const keyEs = normalizeKey(item.name);
+        const keyEn = normalizeKey(item.searchTerm);
+        return !idMap.get(keyEs) && !idMap.get(keyEn) && !item.foodId;
+      })
+      .map(item => item.name);
+
+    return { idMap, unresolved };
+  };
+
   useEffect(() => {
     const getUser = async () => {
       const supabase = createClient();
@@ -77,6 +233,46 @@ export default function OnboardingPage() {
         router.push("/login");
       } else {
         setUserId(user.id);
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (!error && profile && !profileLoadedRef.current) {
+          profileLoadedRef.current = true;
+          const goalMap: Record<string, string> = {
+            "Definir": "lose_weight",
+            "Mantener": "maintain",
+            "Volumen": "gain_muscle",
+          };
+          const activityMap: Record<string, string> = {
+            "Sedentario": "sedentary",
+            "Ligero": "light",
+            "Moderado": "moderate",
+            "Activo": "active",
+            "Muy activo": "very_active",
+          };
+          const genderMap: Record<string, string> = {
+            "M": "Masculino",
+            "F": "Femenino",
+          };
+
+          setFormData(prev => ({
+            ...prev,
+            goal: goalMap[profile.goal] || prev.goal,
+            gender: genderMap[profile.gender] || prev.gender,
+            age: profile.age ? String(profile.age) : prev.age,
+            height: profile.height_cm ? String(profile.height_cm) : prev.height,
+            weight: profile.weight_kg ? String(profile.weight_kg) : prev.weight,
+            target_weight: profile.target_weight_kg ? String(profile.target_weight_kg) : prev.target_weight,
+            activity_level: activityMap[profile.activity_level] || prev.activity_level,
+            diet_type: profile.diet_type || prev.diet_type,
+            goal_speed: profile.goal_speed || prev.goal_speed,
+            phone: profile.phone || prev.phone,
+            location_name: profile.location_name || prev.location_name,
+          }));
+        }
       }
     };
     getUser();
@@ -102,7 +298,7 @@ export default function OnboardingPage() {
   const handleComplete = async () => {
     // Block completion if pantry coverage is insufficient
     if (!pantryValid()) {
-      alert('Selecciona los mínimos requeridos por categoría y asegúrate de incluir al menos 1 integral (Avena o Quinua) y 2 grasas saludables.');
+      alert('Selecciona los mínimos requeridos por categoría según tu dieta y completa los extras (integrales, grasas saludables y proteína de desayuno).');
       return;
     }
 
@@ -138,7 +334,7 @@ export default function OnboardingPage() {
       target_weight_kg: parseFloat(formData.target_weight),
       goal: goalMap[formData.goal] || "Mantener",
       activity_level: activityMap[formData.activity_level] || "Moderado",
-      diet_type: "Estándar",
+      diet_type: formData.diet_type || "Estándar",
       goal_speed: formData.goal_speed,
       phone: formData.phone,
       location_name: formData.location_name,
@@ -164,10 +360,17 @@ export default function OnboardingPage() {
       search_term: string;
       food_id: string | null;
     }> = [];
+    const selectedGroceryItems: Array<{ name: string; searchTerm: string; foodId?: string | null; category: string }> = [];
     GROCERY_CATEGORIES.forEach(cat => {
       const selected = pantrySelections[cat.id];
       cat.items.forEach(item => {
         if (selected?.has(item.name)) {
+          selectedGroceryItems.push({
+            name: item.name,
+            searchTerm: item.searchTerm,
+            foodId: item.foodId || null,
+            category: cat.id,
+          });
           allItems.push({
             user_id: userId!,
             ingredient_name: item.searchTerm,
@@ -179,6 +382,35 @@ export default function OnboardingPage() {
           });
         }
       });
+    });
+
+    const { idMap, unresolved } = await resolveFoodIds(supabase, selectedGroceryItems);
+    if (unresolved.length > 0) {
+      console.warn("Unresolved pantry items (no ID match):", unresolved.join(", "));
+    }
+    const criticalUnresolved = selectedGroceryItems
+      .filter(item => item.category !== "condiments")
+      .filter(item => {
+        const keyEs = normalizeKey(item.name);
+        const keyEn = normalizeKey(item.searchTerm);
+        return !idMap.get(keyEs) && !idMap.get(keyEn) && !item.foodId;
+      })
+      .map(item => item.name);
+
+    if (criticalUnresolved.length > 0) {
+      console.error("Unresolved pantry items (missing food_id):", criticalUnresolved);
+      alert(`No se pudo resolver food_id para: ${criticalUnresolved.join(", ")}. Por favor vuelve a intentarlo.`);
+      setIsLoading(false);
+      return;
+    }
+
+    const resolvedItems = allItems.map(item => {
+      const keyEs = normalizeKey(item.ingredient_name_es);
+      const keyEn = normalizeKey(item.ingredient_name);
+      return {
+        ...item,
+        food_id: idMap.get(keyEs) || idMap.get(keyEn) || item.food_id || null,
+      };
     });
 
     const { error: pantryError } = await supabase
@@ -195,7 +427,7 @@ export default function OnboardingPage() {
 
     const { error: pantryInsertError } = await supabase
       .from("user_pantry")
-      .insert(allItems);
+      .insert(resolvedItems);
 
     if (pantryInsertError) {
       console.error("Error pantry insert:", pantryInsertError);
@@ -213,29 +445,35 @@ export default function OnboardingPage() {
       case 2: return formData.gender && formData.age;
       case 3: return formData.height && formData.weight && formData.target_weight;
       case 4: return formData.activity_level;
-      case 5: return formData.goal_speed;
-      case 6: return true; // Optional step (social)
-      case 7: return pantryValid();
+      case 5: return formData.diet_type;
+      case 6: return formData.goal_speed;
+      case 7: return true; // Optional step (social)
+      case 8: return pantryValid();
       default: return false;
     }
   };
 
-  const TOTAL_STEPS = 7;
+  const TOTAL_STEPS = 8;
 
   const pantryValid = () => {
-    const meetsCategoryMins = GROCERY_CATEGORIES.every(cat => (pantrySelections[cat.id]?.size || 0) >= cat.minRequired);
+    const rules = getDietRules(formData.diet_type);
+    const meetsCategoryMins = GROCERY_CATEGORIES.every(cat => {
+      const minRequired = rules.categoryMins[cat.id] ?? cat.minRequired;
+      return (pantrySelections[cat.id]?.size || 0) >= minRequired;
+    });
     const carbSelections = pantrySelections["carbs"] || new Set<string>();
     const fatSelections = pantrySelections["fats"] || new Set<string>();
     const proteinSelections = pantrySelections["proteins"] || new Set<string>();
     const dairySelections = pantrySelections["dairy"] || new Set<string>();
+    const breakfastSet = getBreakfastProteinSet(getDietKey(formData.diet_type));
     const wholeGrainCount = Array.from(carbSelections).filter(name => WHOLE_GRAIN_ITEMS.has(name)).length;
     const healthyFatCount = Array.from(fatSelections).filter(name => HEALTHY_FAT_ITEMS.has(name)).length;
     const breakfastProteinCount = Array.from(new Set([...proteinSelections, ...dairySelections]))
-      .filter(name => BREAKFAST_PROTEIN_ITEMS.has(name)).length;
+      .filter(name => breakfastSet.has(name)).length;
     return meetsCategoryMins &&
-      wholeGrainCount >= MIN_WHOLE_GRAINS &&
-      healthyFatCount >= MIN_HEALTHY_FATS &&
-      breakfastProteinCount >= MIN_BREAKFAST_PROTEINS;
+      wholeGrainCount >= rules.minWholeGrains &&
+      healthyFatCount >= rules.minHealthyFats &&
+      breakfastProteinCount >= rules.minBreakfastProteins;
   };
 
   const togglePantryItem = (categoryId: string, itemName: string) => {
@@ -291,11 +529,13 @@ export default function OnboardingPage() {
               {currentStep === 2 && <PersonalStep formData={formData} onChange={handleChange} />}
               {currentStep === 3 && <MeasurementsStep formData={formData} onChange={handleChange} />}
               {currentStep === 4 && <ActivityStep formData={formData} onChange={handleChange} />}
-              {currentStep === 5 && <SpeedStep formData={formData} onChange={handleChange} />}
-              {currentStep === 6 && <SocialStep formData={formData} onChange={handleChange} />}
-              {currentStep === 7 && (
+              {currentStep === 5 && <DietStep formData={formData} onChange={handleChange} />}
+              {currentStep === 6 && <SpeedStep formData={formData} onChange={handleChange} />}
+              {currentStep === 7 && <SocialStep formData={formData} onChange={handleChange} />}
+              {currentStep === 8 && (
                 <PantryStep
                   selections={pantrySelections}
+                  dietType={formData.diet_type}
                   onToggle={togglePantryItem}
                   onSelectAll={selectAllPantry}
                 />
@@ -535,7 +775,39 @@ function ActivityStep({ formData, onChange }: any) {
   );
 }
 
-// ============ STEP 5: Speed ============
+// ============ STEP 5: Diet Selection ============
+function DietStep({ formData, onChange }: any) {
+  return (
+    <div>
+      <div className="flex justify-center mb-6">
+        <div className="h-20 w-20 rounded-full flex items-center justify-center" style={{ backgroundColor: COLORS.primaryLight }}>
+          <Target className="h-10 w-10" style={{ color: COLORS.primary }} />
+        </div>
+      </div>
+
+      <h1 className="text-2xl font-black text-center mb-2">Tu tipo de dieta</h1>
+      <p className="text-center text-zinc-500 mb-8 text-sm">Esto ajusta los mínimos del pantry y el generador.</p>
+
+      <div className="space-y-3">
+        {DIET_OPTIONS.map((diet) => (
+          <button
+            key={diet.value}
+            onClick={() => onChange("diet_type", diet.value)}
+            className={`w-full p-4 rounded-2xl border-2 text-left transition-all ${formData.diet_type === diet.value
+              ? "border-purple-400 bg-purple-50"
+              : "border-zinc-200 hover:border-purple-300"
+              }`}
+          >
+            <div className="font-bold text-zinc-900">{diet.label}</div>
+            <div className="text-sm text-zinc-500">{diet.desc}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============ STEP 6: Speed ============
 function SpeedStep({ formData, onChange }: any) {
   const speeds = [
     {
@@ -608,7 +880,7 @@ function SpeedStep({ formData, onChange }: any) {
   );
 }
 
-// ============ STEP 6: Social (Optional) ============
+// ============ STEP 7: Social (Optional) ============
 function SocialStep({ formData, onChange }: any) {
   return (
     <div>
@@ -657,13 +929,19 @@ function SocialStep({ formData, onChange }: any) {
 
 function PantryStep({
   selections,
+  dietType,
   onToggle,
   onSelectAll,
 }: {
   selections: Record<string, Set<string>>;
+  dietType: string;
   onToggle: (categoryId: string, itemName: string) => void;
   onSelectAll: (category: GroceryCategory) => void;
 }) {
+  const rules = getDietRules(dietType);
+  const dietKey = getDietKey(dietType);
+  const breakfastSet = getBreakfastProteinSet(dietKey);
+
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -678,16 +956,18 @@ function PantryStep({
           const wholeGrainCount = Array.from(carbSelections).filter(name => WHOLE_GRAIN_ITEMS.has(name)).length;
           const healthyFatCount = Array.from(fatSelections).filter(name => HEALTHY_FAT_ITEMS.has(name)).length;
           const breakfastProteinCount = Array.from(new Set([...proteinSelections, ...dairySelections]))
-            .filter(name => BREAKFAST_PROTEIN_ITEMS.has(name)).length;
+            .filter(name => breakfastSet.has(name)).length;
           return (
             <div className="mt-2 text-xs text-zinc-500 space-y-0.5">
-              <p className={wholeGrainCount >= MIN_WHOLE_GRAINS ? "text-green-600" : "text-amber-600"}>
-                Integrales: {wholeGrainCount} seleccionados
-              </p>
-              <p className={healthyFatCount >= MIN_HEALTHY_FATS ? "text-green-600" : "text-amber-600"}>
+              {rules.minWholeGrains > 0 && (
+                <p className={wholeGrainCount >= rules.minWholeGrains ? "text-green-600" : "text-amber-600"}>
+                  Integrales: {wholeGrainCount} seleccionados
+                </p>
+              )}
+              <p className={healthyFatCount >= rules.minHealthyFats ? "text-green-600" : "text-amber-600"}>
                 Grasas saludables: {healthyFatCount} seleccionados
               </p>
-              <p className={breakfastProteinCount >= MIN_BREAKFAST_PROTEINS ? "text-green-600" : "text-amber-600"}>
+              <p className={breakfastProteinCount >= rules.minBreakfastProteins ? "text-green-600" : "text-amber-600"}>
                 Proteína desayuno: {breakfastProteinCount} seleccionados
               </p>
             </div>
@@ -698,7 +978,8 @@ function PantryStep({
       <div className="space-y-6 max-h-[55vh] overflow-y-auto pr-2">
         {GROCERY_CATEGORIES.map(cat => {
           const selectedCount = selections[cat.id]?.size || 0;
-          const meetsMin = selectedCount >= cat.minRequired;
+          const minRequired = rules.categoryMins[cat.id] ?? cat.minRequired;
+          const meetsMin = selectedCount >= minRequired;
           const carbSelections = selections["carbs"] || new Set<string>();
           const fatSelections = selections["fats"] || new Set<string>();
           const proteinSelections = selections["proteins"] || new Set<string>();
@@ -706,15 +987,15 @@ function PantryStep({
           const wholeGrainCount = Array.from(carbSelections).filter(name => WHOLE_GRAIN_ITEMS.has(name)).length;
           const healthyFatCount = Array.from(fatSelections).filter(name => HEALTHY_FAT_ITEMS.has(name)).length;
           const breakfastProteinCount = Array.from(new Set([...proteinSelections, ...dairySelections]))
-            .filter(name => BREAKFAST_PROTEIN_ITEMS.has(name)).length;
+            .filter(name => breakfastSet.has(name)).length;
           const extraHint =
-            cat.id === "carbs"
-              ? `incluye ${MIN_WHOLE_GRAINS} integral`
+            cat.id === "carbs" && rules.minWholeGrains > 0
+              ? `incluye ${rules.minWholeGrains} integral`
               : cat.id === "fats"
-                ? `incluye ${MIN_HEALTHY_FATS} saludables`
+                ? `incluye ${rules.minHealthyFats} saludables`
                 : cat.id === "proteins"
-                  ? `incluye ${MIN_BREAKFAST_PROTEINS} para desayuno`
-                : "";
+                  ? `incluye ${rules.minBreakfastProteins} para desayuno`
+                  : "";
           const itemsToRender = cat.id === "carbs"
             ? [...cat.items].sort((a, b) => {
               const aWhole = WHOLE_GRAIN_ITEMS.has(a.name);
@@ -730,24 +1011,24 @@ function PantryStep({
                   <h3 className="text-lg font-semibold text-gray-900">
                     {cat.nameEs}{" "}
                     <span className="text-sm text-gray-500">
-                      (mín. {cat.minRequired}{extraHint ? `, ${extraHint}` : ""})
+                      (mín. {minRequired}{extraHint ? `, ${extraHint}` : ""})
                     </span>
                   </h3>
                   <p className={`text-sm ${meetsMin ? "text-green-600" : "text-amber-600"}`}>
                     {selectedCount} seleccionados
                   </p>
-                  {cat.id === "carbs" && (
-                    <p className={`text-xs ${wholeGrainCount >= MIN_WHOLE_GRAINS ? "text-green-600" : "text-amber-600"}`}>
+                  {cat.id === "carbs" && rules.minWholeGrains > 0 && (
+                    <p className={`text-xs ${wholeGrainCount >= rules.minWholeGrains ? "text-green-600" : "text-amber-600"}`}>
                       Integrales: {wholeGrainCount} seleccionados
                     </p>
                   )}
                   {cat.id === "fats" && (
-                    <p className={`text-xs ${healthyFatCount >= MIN_HEALTHY_FATS ? "text-green-600" : "text-amber-600"}`}>
+                    <p className={`text-xs ${healthyFatCount >= rules.minHealthyFats ? "text-green-600" : "text-amber-600"}`}>
                       Grasas saludables: {healthyFatCount} seleccionados
                     </p>
                   )}
                   {cat.id === "proteins" && (
-                    <p className={`text-xs ${breakfastProteinCount >= MIN_BREAKFAST_PROTEINS ? "text-green-600" : "text-amber-600"}`}>
+                    <p className={`text-xs ${breakfastProteinCount >= rules.minBreakfastProteins ? "text-green-600" : "text-amber-600"}`}>
                       Proteína desayuno: {breakfastProteinCount} seleccionados
                     </p>
                   )}
@@ -799,7 +1080,9 @@ function PantryStep({
         })}
       </div>
       <div className="text-sm text-gray-500 text-center">
-        Debes cumplir el mínimo en cada categoría y elegir al menos 1 integral y 2 grasas saludables.
+        {rules.minWholeGrains > 0
+          ? `Debes cumplir el mínimo en cada categoría e incluir ${rules.minWholeGrains} integral(es) y ${rules.minHealthyFats} grasas saludables.`
+          : `Debes cumplir el mínimo en cada categoría e incluir ${rules.minHealthyFats} grasas saludables.`}
       </div>
     </div>
   );

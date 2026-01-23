@@ -55,6 +55,7 @@ export interface SimpleFoodItem {
     micros?: {
         iron_mg?: number;    // Hierro (Pregnancy/Anemia)
         calcium_mg?: number; // Calcio (Bones/Menopause)
+        zinc_mg?: number;    // Zinc (Immune/Metabolism)
         vit_c_mg?: number;   // Vit C (Immunity/Iron Abs)
         vit_d_iu?: number;   // Vit D (Mood/Bones)
         folate_mcg?: number; // Folato (Pregnancy)

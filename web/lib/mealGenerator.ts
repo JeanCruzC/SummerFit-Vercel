@@ -89,6 +89,7 @@ const MICRO_KEYS = [
 ] as const;
 type MicroKey = typeof MICRO_KEYS[number];
 const MICRO_MIN_RATIO = 1.0;
+const MICRO_DATA_COVERAGE_MIN = 0.15;
 
 // Basic groceries database - simple foods only
 // ENRICHED WITH CLINICAL DATA + PORTION UNITS (Approx USDA values)
@@ -284,6 +285,30 @@ const NAME_TO_ID: Record<string, string> = {
     'curry': '32593', 'pimenton': '33241', 'pimentón': '33241', 'paprika': '33241',
     'curcuma': '33242', 'cúrcuma': '33242', 'canela': '33243',
     'oregano': '32195', 'orégano': '32195'
+};
+
+const resolvePantryTerms = (userPantryTerms?: string[]) => {
+    const ids = new Set<string>();
+    const unmatched: string[] = [];
+    if (!userPantryTerms || userPantryTerms.length === 0) {
+        return { ids, unmatched };
+    }
+    const norm = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    userPantryTerms.forEach(raw => {
+        if (raw === null || raw === undefined) return;
+        const maybeId = String(raw);
+        if (/^\d+$/.test(maybeId)) {
+            ids.add(maybeId);
+            return;
+        }
+        const mapped = NAME_TO_ID[norm(maybeId)] || fuzzyMatchPantryTerm(maybeId, NAME_TO_ID);
+        if (mapped) {
+            ids.add(mapped);
+        } else {
+            unmatched.push(maybeId);
+        }
+    });
+    return { ids, unmatched };
 };
 
 // RDA Profile for sex/age-specific micronutrient targets
@@ -649,8 +674,9 @@ const assessPantryFeasibility = (
                 const per100 = resolveMicroPer100g(f, key);
                 return (per100 * maxG) / 100;
             }).filter(v => v > 0).sort((a, b) => b - a);
-            if (perFood.length === 0) {
-                issues.push(`Sin datos de ${key} en la despensa`);
+            const coverage = perFood.length / Math.max(foods.length, 1);
+            if (coverage < MICRO_DATA_COVERAGE_MIN) {
+                console.warn(`  ⚠️ Datos insuficientes para validar ${key} (${Math.round(coverage * 100)}%)`);
                 return;
             }
             const maxPerMeal = perFood.slice(0, maxItemsPerMeal).reduce((sum, v) => sum + v, 0);
@@ -995,7 +1021,7 @@ export interface WeeklyMealPlan {
 // ============================================================
 
 // UNIFIED QUERY: Pre-load ALL food categories from Supabase in 1 single query
-async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<SimpleFoodItem[]> {
+async function loadFoodsFromDB(nutrientPriorities: string[] = [], requiredFoodIds: string[] = []): Promise<SimpleFoodItem[]> {
     try {
         // Use relative path to avoid path-alias resolution issues when running via tsx
         const { createClient } = await import('./supabase/client');
@@ -1037,8 +1063,7 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
             return null;
         };
 
-        // Transform raw DB data to SimpleFoodItem format
-        const transformed: SimpleFoodItem[] = data.map(d => {
+        const mapRow = (d: any): SimpleFoodItem => {
             // Detect category based on culinary_category field
             // Detect category based on MULTIPLE fields (category, category_es, culinary_category)
             let category: SimpleFoodItem['category'] | 'other' = 'other'; // Change default to 'other' to avoid protein pollution
@@ -1230,7 +1255,28 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = []): Promise<Simpl
                     colina_mg: d.colina_mg || 0,
                 }
             };
-        });
+        };
+
+        // Transform raw DB data to SimpleFoodItem format
+        const transformed: SimpleFoodItem[] = data.map(mapRow);
+
+        if (requiredFoodIds.length > 0) {
+            const missing = requiredFoodIds.filter(id => !transformed.find(f => String(f.id) === String(id)));
+            if (missing.length > 0) {
+                const { data: extraData, error: extraError } = await supabase
+                    .from('foods')
+                    .select('*')
+                    .in('id', missing);
+                if (!extraError && extraData && extraData.length > 0) {
+                    const extraFoods = extraData.map(mapRow);
+                    extraFoods.forEach(f => {
+                        if (!transformed.find(existing => String(existing.id) === String(f.id))) {
+                            transformed.push(f);
+                        }
+                    });
+                }
+            }
+        }
 
         // Cache the entire result for future use
         const cacheKey = 'all_foods_unified';
@@ -2523,8 +2569,8 @@ function aggregateMicrosFromMeals(meals: Meal[]): MacroTotals['micros'] {
     return totals;
 }
 
-function validateMicros(totals: MacroTotals['micros'], rdaProfile?: RDAProfile): string[] {
-    if (!totals) return ['Micronutrient data missing'];
+function validateMicros(totals: MacroTotals['micros'], rdaProfile?: RDAProfile, foods?: SimpleFoodItem[]): string[] {
+    if (!totals) return [];
     const issues: string[] = [];
 
     // Get sex/age-specific RDA targets
@@ -2535,7 +2581,18 @@ function validateMicros(totals: MacroTotals['micros'], rdaProfile?: RDAProfile):
     const lifeStageLabel = rdaProfile?.lifeStage && rdaProfile.lifeStage !== 'standard'
         ? ` (${rdaProfile.lifeStage})` : '';
 
-    const check = (key: string, label: string, unit: string) => {
+    const microCoverage: Partial<Record<MicroKey, number>> = {};
+    if (foods && foods.length > 0) {
+        MICRO_KEYS.forEach(key => {
+            const count = foods.filter(f => resolveMicroPer100g(f, key) > 0).length;
+            microCoverage[key] = count / foods.length;
+        });
+    }
+
+    const canCheck = (key: MicroKey) => !foods || (microCoverage[key] || 0) >= MICRO_DATA_COVERAGE_MIN;
+
+    const check = (key: MicroKey, label: string, unit: string) => {
+        if (!canCheck(key)) return;
         const val = Math.round((totals as any)[key] || 0);
         const target = targets[key] || 0;
         if (target > 0 && val < target * MICRO_MIN_RATIO) {
@@ -2577,33 +2634,22 @@ export async function generateDayMealPlanFromDB(
     console.log(`  🛒 User pantry terms/ids: ${userPantryTerms?.length || 0} items`);
     console.log(`  👤 RDA Profile: ${rdaProfile?.gender || 'default'}, ${rdaProfile?.age || 'N/A'} años, ${rdaProfile?.lifeStage || 'standard'}`);
 
+    const pantryInfo = resolvePantryTerms(userPantryTerms);
+    const pantryIds = pantryInfo.ids;
+    const unmatchedTerms = pantryInfo.unmatched;
+
     // Load foods from database
-    const dbFoods = await loadFoodsFromDB(nutrientPriorities);
+    const dbFoods = await loadFoodsFromDB(nutrientPriorities, Array.from(pantryIds));
     console.log(`  💾 Loaded ${dbFoods.length} foods from database`);
 
     let filteredDbFoods: SimpleFoodItem[];
 
     if (userPantryTerms && userPantryTerms.length > 0) {
-        const norm = (s: string) => (s || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-        const pantryIds = new Set<string>();
-        const unmatchedTerms: string[] = [];
-
-        userPantryTerms.forEach(raw => {
-            const maybeId = String(raw);
-            if (/^\d+$/.test(maybeId)) {
-                pantryIds.add(maybeId);
-                return;
-            }
-            const mapped = NAME_TO_ID[norm(raw)];
-            if (mapped) {
-                pantryIds.add(mapped);
-            } else {
-                unmatchedTerms.push(raw);
-            }
-        });
-
         if (unmatchedTerms.length > 0) {
             console.warn(`  ⚠️ Unmatched pantry terms (no IDs found): ${unmatchedTerms.join(', ')}`);
+        }
+        if (pantryIds.size === 0) {
+            throw new Error(`Tu despensa no coincide con ningún alimento del catálogo. IDs no reconocidos: ${unmatchedTerms.slice(0, 5).join(', ')}${unmatchedTerms.length > 5 ? '...' : ''}. Revisa tu selección.`);
         }
 
         filteredDbFoods = dbFoods.filter(f => pantryIds.has(String(f.id)));
@@ -2615,7 +2661,7 @@ export async function generateDayMealPlanFromDB(
         console.log(`  ✅ Pantry ID filter: ${filteredDbFoods.length} foods match user's ${pantryIds.size} pantry IDs (${unmatchedTerms.length} unmatched)`);
 
         if (filteredDbFoods.length === 0) {
-            throw new Error(`Tu despensa no coincide con ningún alimento del catálogo. IDs no reconocidos: ${unmatchedTerms.slice(0, 5).join(', ')}${unmatchedTerms.length > 5 ? '...' : ''}. Revisa tu selección.`);
+            throw new Error(`Tu despensa no coincide con ningún alimento del catálogo. Revisa tu selección.`);
         }
     } else {
         // Fallback to onboarding whitelist if no pantry provided
@@ -2958,7 +3004,8 @@ export async function generateDayMealPlanFromDB(
     }
 
     // Micronutrient checks with sex/age-specific RDA targets (soft warnings)
-    const microIssues = validateMicros(microTotals, rdaProfile);
+    const planFoods = meals.flatMap(meal => meal.items.map(item => item.food));
+    const microIssues = validateMicros(microTotals, rdaProfile, planFoods);
 
     // Daily composition checks: 2 frutas, 2 verduras, 1 grasa, 1-2 lácteos, máx 1 legumbre principal
     const dayCounts = { fruit: 0, vegetable: 0, fat: 0, dairy: 0, legume: 0 };
@@ -3161,30 +3208,19 @@ export async function generateWeeklyMealPlanFromDB(
     console.log(`  🛒 User pantry terms: ${userPantryTerms?.length || 0} items`);
     console.log(`  👤 RDA Profile: ${rdaProfile?.gender || 'default'}, ${rdaProfile?.age || 'N/A'} años`);
 
-    const dbFoods = await loadFoodsFromDB(nutrientPriorities);
+    const pantryInfo = resolvePantryTerms(userPantryTerms);
+    const pantryIds = pantryInfo.ids;
+    const unmatchedTerms = pantryInfo.unmatched;
+
+    const dbFoods = await loadFoodsFromDB(nutrientPriorities, Array.from(pantryIds));
     let filteredDbFoods: SimpleFoodItem[];
 
     if (userPantryTerms && userPantryTerms.length > 0) {
-        const norm = (s: string) => (s || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-        const pantryIds = new Set<string>();
-        const unmatchedTerms: string[] = [];
-
-        userPantryTerms.forEach(raw => {
-            const maybeId = String(raw);
-            if (/^\d+$/.test(maybeId)) {
-                pantryIds.add(maybeId);
-                return;
-            }
-            const mapped = NAME_TO_ID[norm(raw)];
-            if (mapped) {
-                pantryIds.add(mapped);
-            } else {
-                unmatchedTerms.push(raw);
-            }
-        });
-
         if (unmatchedTerms.length > 0) {
             console.warn(`  ⚠️ Unmatched pantry terms (no IDs found): ${unmatchedTerms.join(', ')}`);
+        }
+        if (pantryIds.size === 0) {
+            throw new Error('Tu despensa no coincide con ningún alimento del catálogo. Revisa tu selección.');
         }
 
         filteredDbFoods = dbFoods.filter(f => pantryIds.has(String(f.id)));

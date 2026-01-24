@@ -1329,6 +1329,7 @@ async function generateMealFromFoods(
     };
 
     console.log(`\n🍽️  [MEAL GEN] Generating ${type} - Target: ${targetCalories} kcal, ${targetProteinGrams || 'auto'}g protein`);
+    // Redeploy trigger: Force Vercel build
 
     // ========================================
     // PHASE 1: FOOD FILTERING & VALIDATION

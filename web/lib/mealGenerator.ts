@@ -1089,6 +1089,14 @@ async function loadFoodsFromDB(nutrientPriorities: string[] = [], requiredFoodId
 
             if (usdaCategory) {
                 category = usdaCategory;
+
+                // CRITICAL OVERRIDE: High-fat fruits/veg must be 'fat' for logic to work (Avocado, Olives, Coconut)
+                if (catSearch.includes('avocado') || catSearch.includes('palta') ||
+                    catSearch.includes('olive') || catSearch.includes('aceituna') ||
+                    catSearch.includes('coconut') || catSearch.includes('coco')) {
+                    category = 'fat';
+                }
+
                 if (usdaCategory === 'carb' && isLegume) {
                     category = 'legume';
                 }

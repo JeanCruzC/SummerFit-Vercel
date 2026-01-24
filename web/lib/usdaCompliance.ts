@@ -6,6 +6,56 @@ export const USDA_DGA_LIMITS = {
     satFatMaxPercentKcal: 10,
 };
 
+type DietKey =
+    | 'balanced'
+    | 'keto'
+    | 'low_carb'
+    | 'vegan'
+    | 'vegetarian'
+    | 'paleo'
+    | 'mediterranean'
+    | 'high_protein'
+    | 'diabetes_friendly'
+    | 'dash';
+
+const DIET_NORMALIZATION_MAP: Record<string, DietKey> = {
+    estandar: 'balanced',
+    estandar_: 'balanced',
+    standard: 'balanced',
+    balanced: 'balanced',
+    keto: 'keto',
+    low_carb: 'low_carb',
+    lowcarb: 'low_carb',
+    lowcarb_: 'low_carb',
+    vegan: 'vegan',
+    vegana: 'vegan',
+    vegetarian: 'vegetarian',
+    vegetariana: 'vegetarian',
+    paleo: 'paleo',
+    mediterranea: 'mediterranean',
+    mediterranean: 'mediterranean',
+    alta_proteina: 'high_protein',
+    alta_protein: 'high_protein',
+    high_protein: 'high_protein',
+    diabeticos: 'diabetes_friendly',
+    diabeticos_bajo_indice_glucemico: 'diabetes_friendly',
+    diabetes_friendly: 'diabetes_friendly',
+    dash: 'dash',
+};
+
+export function normalizeDietType(value?: string): DietKey {
+    const raw = (value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const cleaned = raw.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    return DIET_NORMALIZATION_MAP[cleaned] || 'balanced';
+}
+
+export function getUSDAComplianceMode(dietType?: string, conditions: string[] = []): 'hard' | 'soft' {
+    if (conditions.includes('diabetes_type_2')) return 'hard';
+    const key = normalizeDietType(dietType);
+    if (key === 'keto' || key === 'low_carb' || key === 'paleo') return 'soft';
+    return 'hard';
+}
+
 type ServingTarget = { min: number; max: number };
 type ServingTargets = {
     vegetables: ServingTarget;
@@ -55,7 +105,7 @@ export function getDietAdjustedServingTargets(
         healthyFats: { ...base.healthyFats },
     };
 
-    const diet = (dietType || '').toLowerCase();
+    const diet = normalizeDietType(dietType);
     const setRange = (key: keyof ServingTargets, min: number, max: number) => {
         const safeMin = Math.max(0, min);
         const safeMax = Math.max(safeMin, max);

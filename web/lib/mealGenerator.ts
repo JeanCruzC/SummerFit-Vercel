@@ -19,7 +19,7 @@ import {
     type PortionCalculationContext
 } from './portionRules';
 import { assignRole } from './roleMapper';
-import { validateUSDAHard, computeMealBudgets, isWholeGrain, getDietAdjustedServingTargets, countServingsByGroup } from './usdaCompliance';
+import { validateUSDAHard, computeMealBudgets, isWholeGrain, getDietAdjustedServingTargets, countServingsByGroup, getUSDAComplianceMode, normalizeDietType } from './usdaCompliance';
 
 let glpkInstance: any | null = null;
 async function getGlpk() {
@@ -629,6 +629,8 @@ const assessPantryFeasibility = (
 ): { ok: boolean; issues: string[] } => {
     const issues: string[] = [];
     const servingTargets = getDietAdjustedServingTargets(targetCalories, dietType, conditions);
+    const usdaMode = getUSDAComplianceMode(dietType, conditions);
+    const normalizedDiet = normalizeDietType(dietType);
     if (servingTargets) {
         const maxItemsPerMeal = 6;
         const groupDefs: Array<{
@@ -2735,7 +2737,7 @@ export async function generateDayMealPlanFromDB(
     ).length;
     const missing: string[] = [];
     if (coverage.protein === 0) missing.push('proteínas');
-    if (coverage.carb === 0) missing.push('carbohidratos');
+    if (coverage.carb === 0 && !['keto', 'paleo'].includes(normalizedDiet)) missing.push('carbohidratos');
     if (coverage.vegetable === 0 && (servingTargets?.vegetables.min || 0) > 0) missing.push('verduras');
     if (coverage.fruit === 0 && (servingTargets?.fruits.min || 0) > 0) missing.push('frutas');
     if (coverage.fat === 0 && (servingTargets?.healthyFats.min || 0) > 0) missing.push('grasas saludables');
@@ -2744,13 +2746,20 @@ export async function generateDayMealPlanFromDB(
     if (breakfastProteinCount === 0) missing.push('proteínas de desayuno (huevo/yogurt/tofu)');
     if (missing.length > 0) {
         const dietLabel = dietType || 'estándar';
-        throw new Error(`Tu selección de despensa no cubre grupos obligatorios para la dieta ${dietLabel}: ${missing.join(', ')}. Agrega más opciones en esas categorías.`);
+        if (usdaMode === 'hard') {
+            throw new Error(`Tu selección de despensa no cubre grupos obligatorios para la dieta ${dietLabel}: ${missing.join(', ')}. Agrega más opciones en esas categorías.`);
+        } else {
+            console.warn(`⚠️ Pantry coverage limitada para dieta ${dietLabel}: ${missing.join(', ')}`);
+        }
     }
 
     const feasibilityFoods = applyDietFiltersForFeasibility(filteredDbFoods, dietType, conditions);
     const feasibility = assessPantryFeasibility(feasibilityFoods, numMeals, targetCalories, dietType, conditions, rdaProfile);
     if (!feasibility.ok) {
-        throw new Error(`Tu despensa no puede cumplir USDA/RDA con porciones reales. Ajusta tu selección: ${feasibility.issues.join(' | ')}`);
+        if (usdaMode === 'hard') {
+            throw new Error(`Tu despensa no puede cumplir USDA/RDA con porciones reales. Ajusta tu selección: ${feasibility.issues.join(' | ')}`);
+        }
+        console.warn(`⚠️ Pantry no cumple USDA/RDA completo (modo ${usdaMode}): ${feasibility.issues.join(' | ')}`);
     }
 
     // Create variety manager for this day (or use provided one for weekly plans)
@@ -3042,8 +3051,12 @@ export async function generateDayMealPlanFromDB(
     const planForValidation: MealPlan = { id: 'day', name: 'Day', name_es: 'Día', meals, totals: { ...finalTotals, micros: microTotals } };
     const usdaHard = validateUSDAHard(planForValidation, targetCalories, rdaProfile?.age, dietType, conditions);
     if (!usdaHard.isValid) {
-        console.error('❌ USDA hard validation failed:', usdaHard.issues);
-        throw new Error(`USDA hard fail: ${usdaHard.issues.join(' | ')}`);
+        if (usdaMode === 'hard') {
+            console.error('❌ USDA hard validation failed:', usdaHard.issues);
+            throw new Error(`USDA hard fail: ${usdaHard.issues.join(' | ')}`);
+        }
+        deviations.push(...usdaHard.issues.map(issue => `⚠️ USDA: ${issue}`));
+        console.warn('⚠️ USDA soft validation issues:', usdaHard.issues);
     }
 
     // Micronutrient checks with sex/age-specific RDA targets (soft warnings)

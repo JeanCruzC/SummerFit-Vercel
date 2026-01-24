@@ -639,12 +639,12 @@ const assessPantryFeasibility = (
             filter: (f: SimpleFoodItem) => boolean;
             group: 'vegetables' | 'fruits' | 'dairy' | 'protein' | 'wholeGrains' | 'healthyFats';
         }> = [
-                { key: 'vegetables', label: 'verduras', filter: f => f.category === 'vegetable', group: 'vegetables' },
-                { key: 'fruits', label: 'frutas', filter: f => f.category === 'fruit', group: 'fruits' },
-                { key: 'dairy', label: 'lácteos', filter: f => f.category === 'dairy' || f.category === 'beverage', group: 'dairy' },
-                { key: 'protein', label: 'proteínas', filter: f => f.category === 'protein' || f.category === 'legume', group: 'protein' },
+                { key: 'vegetables', label: 'verduras', filter: f => getFunctionalCategory(f) === 'vegetable', group: 'vegetables' },
+                { key: 'fruits', label: 'frutas', filter: f => getFunctionalCategory(f) === 'fruit', group: 'fruits' },
+                { key: 'dairy', label: 'lácteos', filter: f => getFunctionalCategory(f) === 'dairy' || getFunctionalCategory(f) === 'beverage', group: 'dairy' },
+                { key: 'protein', label: 'proteínas', filter: f => getFunctionalCategory(f) === 'protein' || getFunctionalCategory(f) === 'legume', group: 'protein' },
                 { key: 'wholeGrains', label: 'granos integrales', filter: f => isWholeGrain(f), group: 'wholeGrains' },
-                { key: 'healthyFats', label: 'grasas saludables', filter: f => f.category === 'fat', group: 'healthyFats' },
+                { key: 'healthyFats', label: 'grasas saludables', filter: f => getFunctionalCategory(f) === 'fat', group: 'healthyFats' },
             ];
 
         groupDefs.forEach(def => {
@@ -700,26 +700,29 @@ const applyDietFiltersForFeasibility = (
 ): SimpleFoodItem[] => {
     let filtered = [...foods];
     if (dietType === 'keto') {
-        filtered = filtered.filter(f =>
-            f.category !== 'carb' &&
-            f.category !== 'legume' &&
-            !(f.category === 'fruit' && (f.carbs || 0) > 10) &&
-            !(f.category === 'dairy' && (f.carbs || 0) > 5)
-        );
+        filtered = filtered.filter(f => {
+            const cat = getFunctionalCategory(f);
+            return cat !== 'carb' &&
+                cat !== 'legume' &&
+                !(cat === 'fruit' && (f.carbs || 0) > 10) &&
+                !(cat === 'dairy' && (f.carbs || 0) > 5);
+        });
     }
     if (dietType === 'vegan') {
-        filtered = filtered.filter(f =>
-            !['protein', 'dairy'].includes(f.category) ||
-            f.category === 'legume' ||
-            f.name.toLowerCase().includes('bean') ||
-            f.name.toLowerCase().includes('lentil') ||
-            f.name.toLowerCase().includes('tofu') ||
-            f.name.toLowerCase().includes('chickpea')
-        );
+        filtered = filtered.filter(f => {
+            const cat = getFunctionalCategory(f);
+            return !['protein', 'dairy'].includes(cat) ||
+                cat === 'legume' ||
+                f.name.toLowerCase().includes('bean') ||
+                f.name.toLowerCase().includes('lentil') ||
+                f.name.toLowerCase().includes('tofu') ||
+                f.name.toLowerCase().includes('chickpea');
+        });
     }
     if (dietType === 'vegetarian') {
         filtered = filtered.filter(f => {
-            if (f.category === 'protein') {
+            const cat = getFunctionalCategory(f);
+            if (cat === 'protein') {
                 const nm = f.name.toLowerCase();
                 return nm.includes('egg') || nm.includes('tofu') || nm.includes('bean') || nm.includes('lentil') || nm.includes('chickpea');
             }
@@ -728,7 +731,7 @@ const applyDietFiltersForFeasibility = (
     }
     if (dietType === 'diabetes_friendly' || conditions.includes('diabetes_type_2')) {
         filtered = filtered.filter(f =>
-            !(f.category === 'carb' && (f.carbs || 0) > 25 && !f.fiber)
+            !(getFunctionalCategory(f) === 'carb' && (f.carbs || 0) > 25 && !(f.fiber && f.fiber > 3))
         );
     }
     return filtered;

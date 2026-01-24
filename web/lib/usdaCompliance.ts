@@ -295,7 +295,7 @@ export function countServingsByGroup(plan: MealPlan): ServingCount {
             const f = item.food;
             const grams = item.portion_g || 0;
 
-            switch (f.category) {
+            switch (getFunctionalCategory(f)) {
                 case 'vegetable':
                     totals.vegetables += gramsToServings(grams, 'vegetables', f);
                     break;

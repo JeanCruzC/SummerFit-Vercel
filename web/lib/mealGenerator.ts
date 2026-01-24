@@ -1818,23 +1818,25 @@ async function generateMealFromFoods(
             sodiumVars.push({ name: xName, coef: perG.sodium });
             satVars.push({ name: xName, coef: perG.sat });
 
-            if (f.category === 'vegetable') {
+            const fCat = getFunctionalCategory(f);
+
+            if (fCat === 'vegetable') {
                 vegServVars.push({ name: xName, coef: 1 / (f.serving_equiv_grams || 90) });
             }
-            if (f.category === 'carb' && isWholeGrain(f)) {
+            if (fCat === 'carb' && isWholeGrain(f)) {
                 const base = f.serving_equiv_grams || 90;
                 wholeServVars.push({ name: xName, coef: 1 / base });
             }
-            if (f.category === 'dairy') {
+            if (fCat === 'dairy') {
                 dairyServVars.push({ name: xName, coef: 1 / (f.serving_equiv_grams || 244) });
             }
-            if (f.category === 'fat') {
+            if (fCat === 'fat') {
                 const fatPerG = perG.fat || 0;
                 if (fatPerG > 0) {
                     fatServVars.push({ name: xName, coef: fatPerG / 5 });
                 }
             }
-            if (f.category === 'fruit') {
+            if (fCat === 'fruit') {
                 fruitServVars.push({ name: xName, coef: 1 / (f.serving_equiv_grams || 150) });
             }
             countVars.push({ name: yName, coef: 1 });

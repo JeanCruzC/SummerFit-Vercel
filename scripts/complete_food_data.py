@@ -78,7 +78,11 @@ FIELDS_CONFIG = {
     "serving_unit": {"type": "text", "priority": 3},
     "ingredients": {"type": "text", "priority": 3},
     
-    # Macronutrients (if missing)
+    # Macronutrients (CRITICAL)
+    "kcal_per_100g": {"type": "nutrient", "priority": 4},
+    "protein_g_per_100g": {"type": "nutrient", "priority": 4},
+    "carbs_g_per_100g": {"type": "nutrient", "priority": 4},
+    "fat_g_per_100g": {"type": "nutrient", "priority": 4},
     "fiber_g_per_100g": {"type": "nutrient", "priority": 4},
     "sugar_g_per_100g": {"type": "nutrient", "priority": 4},
     "sodium_mg_per_100g": {"type": "nutrient", "priority": 4},
@@ -98,6 +102,10 @@ VALID_GROUPS = [
 ]
 
 NUMERIC_RANGES = {
+    "kcal_per_100g": (0, 900),
+    "protein_g_per_100g": (0, 100),
+    "carbs_g_per_100g": (0, 100),
+    "fat_g_per_100g": (0, 100),
     "fiber_g_per_100g": (0, 40),
     "sugar_g_per_100g": (0, 90),
     "sodium_mg_per_100g": (0, 5000),
@@ -327,6 +335,10 @@ FIELD DEFINITIONS:
 - is_whole_grain: true/false - Is this a whole grain food?
 - processing_level: One of: minimally_processed, processed, ultra_processed
 - serving_equiv_grams: USDA standard serving size in grams (e.g., 30 for bread slice, 90 for vegetable cup)
+- kcal_per_100g: Calories per 100g
+- protein_g_per_100g: Protein in grams per 100g
+- carbs_g_per_100g: Total carbohydrates in grams per 100g
+- fat_g_per_100g: Total fat in grams per 100g
 - fiber_g_per_100g: Dietary fiber in grams per 100g
 - sugar_g_per_100g: Total sugars in grams per 100g
 - sodium_mg_per_100g: Sodium in mg per 100g

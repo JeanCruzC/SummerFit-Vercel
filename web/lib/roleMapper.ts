@@ -1,5 +1,6 @@
 
 import { SimpleFoodItem } from './mealGenerator';
+import { getFunctionalCategory } from './usdaCompliance';
 
 export type FoodRole = 'protein' | 'carb' | 'veggie' | 'fat' | 'fruit' | 'dairy' | 'legume' | 'condiment' | 'beverage';
 
@@ -31,7 +32,9 @@ export const CONDIMENT_KEYWORDS = [
 export function assignRole(food: SimpleFoodItem): FoodRole {
     const name = (food.name || '').toLowerCase();
     const nameEs = (food.name_es || '').toLowerCase();
-    const cat = (food.category || '').toLowerCase();
+
+    // Use functional category to ensure nutritional correctness (e.g. Avocado = Fat)
+    const cat = (getFunctionalCategory(food) || food.category || '').toLowerCase();
 
     // 1. Force Condiment Check (Keyword Based)
     // Prevents "Cocoa Powder" from being a protein source/carb source

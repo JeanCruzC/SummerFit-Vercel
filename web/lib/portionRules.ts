@@ -6,6 +6,7 @@
 
 import { SimpleFoodItem, MealItem } from './mealGenerator';
 import { getCorrectedPortion } from './roleMapper';
+import { getFunctionalCategory } from './usdaCompliance';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -164,6 +165,9 @@ export function isPrimaryProtein(food: SimpleFoodItem): boolean {
     console.warn(`[portionRules] isPrimaryProtein: Invalid food data`);
     return false;
   }
+  // Functional override takes precedence
+  if (getFunctionalCategory(food) === 'protein') return true;
+
   return food.protein >= PROTEIN_THRESHOLDS.PRIMARY_SOURCE;
 }
 
@@ -176,6 +180,9 @@ export function isPrimaryCarb(food: SimpleFoodItem): boolean {
     console.warn(`[portionRules] isPrimaryCarb: Invalid food data`);
     return false;
   }
+  // Functional override
+  if (getFunctionalCategory(food) === 'carb') return true;
+
   return food.carbs >= CARB_THRESHOLDS.PRIMARY_SOURCE &&
     food.category !== 'vegetable';
 }
@@ -188,6 +195,9 @@ export function isPrimaryFat(food: SimpleFoodItem): boolean {
     console.warn(`[portionRules] isPrimaryFat: Invalid food data`);
     return false;
   }
+  // Functional override (e.g. Avocado ~15g fat but IS a fat source)
+  if (getFunctionalCategory(food) === 'fat') return true;
+
   return food.fat >= FAT_THRESHOLDS.PRIMARY_SOURCE;
 }
 

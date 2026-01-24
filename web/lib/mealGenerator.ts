@@ -19,7 +19,7 @@ import {
     type PortionCalculationContext
 } from './portionRules';
 import { assignRole } from './roleMapper';
-import { validateUSDAHard, computeMealBudgets, isWholeGrain, getDietAdjustedServingTargets, countServingsByGroup, getUSDAComplianceMode, normalizeDietType } from './usdaCompliance';
+import { validateUSDAHard, computeMealBudgets, isWholeGrain, getDietAdjustedServingTargets, countServingsByGroup, getUSDAComplianceMode, normalizeDietType, getFunctionalCategory } from './usdaCompliance';
 
 let glpkInstance: any | null = null;
 async function getGlpk() {
@@ -2727,12 +2727,13 @@ export async function generateDayMealPlanFromDB(
     // Hard check: ensure pantry covers core groups, otherwise abort with a clear message
     const coverage = { protein: 0, carb: 0, vegetable: 0, fruit: 0, fat: 0, dairy: 0, wholeGrain: 0 };
     filteredDbFoods.forEach(f => {
-        if (f.category === 'protein' || f.category === 'legume') coverage.protein++;
-        if (f.category === 'carb') coverage.carb++;
-        if (f.category === 'vegetable') coverage.vegetable++;
-        if (f.category === 'fruit') coverage.fruit++;
-        if (f.category === 'fat') coverage.fat++;
-        if (f.category === 'dairy' || f.category === 'beverage') coverage.dairy++;
+        const cat = getFunctionalCategory(f);
+        if (cat === 'protein' || cat === 'legume') coverage.protein++;
+        if (cat === 'carb') coverage.carb++;
+        if (cat === 'vegetable') coverage.vegetable++;
+        if (cat === 'fruit') coverage.fruit++;
+        if (cat === 'fat') coverage.fat++;
+        if (cat === 'dairy' || cat === 'beverage') coverage.dairy++;
         if (isWholeGrain(f)) coverage.wholeGrain++;
     });
     const breakfastProteinCount = filteredDbFoods.filter(f =>

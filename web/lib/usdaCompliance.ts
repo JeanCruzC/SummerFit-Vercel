@@ -49,6 +49,30 @@ export function normalizeDietType(value?: string): DietKey {
     return DIET_NORMALIZATION_MAP[cleaned] || 'balanced';
 }
 
+const FUNCTIONAL_CATEGORY_OVERRIDES: Record<string, string> = {
+    '31638': 'fat', // Palta (Avocado) -> Fat (Functional)
+    '27881': 'fat', // Aceite de Oliva / Coco -> Fat
+    '29934': 'fat', // Maní -> Fat
+    '29952': 'fat', // Mantequilla de Maní -> Fat
+    '29904': 'fat', // Almendras -> Fat
+    '29946': 'fat', // Nueces -> Fat
+    '29939': 'fat', // Pecanas -> Fat
+    '29908': 'fat', // Cashews/Pistachos -> Fat
+    '32504': 'fat', // Aceitunas -> Fat
+    '30005': 'fat', // Chía/Linaza -> Fat
+    '30815': 'carb', // Quinua -> Carb
+    '30796': 'carb', // Avena -> Carb
+};
+
+export function getFunctionalCategory(food: SimpleFoodItem): string {
+    if (!food) return '';
+    const id = String(food.id);
+    if (FUNCTIONAL_CATEGORY_OVERRIDES[id]) {
+        return FUNCTIONAL_CATEGORY_OVERRIDES[id];
+    }
+    return food.category;
+}
+
 export function getUSDAComplianceMode(dietType?: string, conditions: string[] = []): 'hard' | 'soft' {
     if (conditions.includes('diabetes_type_2')) return 'hard';
     const key = normalizeDietType(dietType);

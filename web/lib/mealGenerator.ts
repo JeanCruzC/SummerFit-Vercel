@@ -2680,6 +2680,7 @@ export async function generateDayMealPlanFromDB(
     console.log(`  👤 RDA Profile: ${rdaProfile?.gender || 'default'}, ${rdaProfile?.age || 'N/A'} años, ${rdaProfile?.lifeStage || 'standard'}`);
 
     const normalizedDiet = normalizeDietType(dietType);
+    const usdaMode: 'soft' | 'hard' = 'soft'; // 'hard' throws errors, 'soft' logs warnings
     const pantryInfo = resolvePantryTerms(userPantryTerms);
     const pantryIds = pantryInfo.ids;
     const unmatchedTerms = pantryInfo.unmatched;

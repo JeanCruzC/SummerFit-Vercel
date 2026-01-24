@@ -93,7 +93,14 @@ FIELDS_CONFIG = {
     "vitamin_d_iu": {"type": "nutrient", "priority": 5},
     "folate_ug": {"type": "nutrient", "priority": 5},
     "vitamin_b12_ug": {"type": "nutrient", "priority": 5},
-    "magnesium_mg": {"type": "nutrient", "priority": 5},
+    # Even MORE Micronutrients (Start of Exhaustive List)
+    "iron_mg": {"type": "nutrient", "priority": 5},
+    "calcium_mg": {"type": "nutrient", "priority": 5},
+    "zinc_mg": {"type": "nutrient", "priority": 5},
+    "potassium_mg": {"type": "nutrient", "priority": 5},
+    "vitamin_a_iu": {"type": "nutrient", "priority": 5},
+    "omega3_g": {"type": "nutrient", "priority": 5},
+    "colina_mg": {"type": "nutrient", "priority": 5},
 }
 
 VALID_GROUPS = [
@@ -115,6 +122,13 @@ NUMERIC_RANGES = {
     "folate_ug": (0, 1500),
     "vitamin_b12_ug": (0, 50),
     "magnesium_mg": (0, 600),
+    "iron_mg": (0, 100),
+    "calcium_mg": (0, 2000),
+    "zinc_mg": (0, 100),
+    "potassium_mg": (0, 5000),
+    "vitamin_a_iu": (0, 50000),
+    "omega3_g": (0, 10),
+    "colina_mg": (0, 1000),
     "serving_equiv_grams": (1, 500),
 }
 
@@ -348,6 +362,13 @@ FIELD DEFINITIONS:
 - folate_ug: Folate in mcg per 100g
 - vitamin_b12_ug: Vitamin B12 in mcg per 100g
 - magnesium_mg: Magnesium in mg per 100g
+- iron_mg: Iron in mg per 100g
+- calcium_mg: Calcium in mg per 100g
+- zinc_mg: Zinc in mg per 100g
+- potassium_mg: Potassium in mg per 100g
+- vitamin_a_iu: Vitamin A in IU per 100g
+- omega3_g: Omega-3 fatty acids in g per 100g
+- colina_mg: Choline in mg per 100g
 
 Return ONLY a valid JSON object with the missing fields filled plus a "confidence" number (0-1).
 Use null if truly unknown.

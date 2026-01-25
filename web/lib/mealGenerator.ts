@@ -2084,10 +2084,12 @@ async function generateMealFromFoods(
 
     const initialMeal = (): ScoredItem[] => {
         const meal: ScoredItem[] = [];
-        const prot = proteinPool.length ? portionItem(randomPick(proteinPool), { protein: mealProteinTarget * 0.9 }) : null;
+        // TUNED: Reduced multipliers (0.9 -> 0.75, 0.85 -> 0.7) to prevent overshooting calories
+        // when we later force-add fats/dairy/veggies.
+        const prot = proteinPool.length ? portionItem(randomPick(proteinPool), { protein: mealProteinTarget * 0.75 }) : null;
         if (prot) meal.push(prot);
         if (carbPool.length) {
-            const carb = portionItem(randomPick(carbPool), { carbs: mealCarbTarget * 0.85 });
+            const carb = portionItem(randomPick(carbPool), { carbs: mealCarbTarget * 0.7 });
             if (carb) meal.push(carb);
         }
         const vegCount = (type === 'lunch' || type === 'dinner') ? 2 : 1;
@@ -2112,7 +2114,7 @@ async function generateMealFromFoods(
             }
         }
         if ((type === 'breakfast' || type === 'snack') && fruitPool.length) {
-            const fr = portionItem(randomPick(fruitPool), { kcal: 60 });
+            const fr = portionItem(randomPick(fruitPool), { kcal: 50 }); // Reduced from 60
             if (fr) meal.push(fr);
         }
 

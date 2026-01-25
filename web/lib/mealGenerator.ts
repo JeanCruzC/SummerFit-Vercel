@@ -2093,42 +2093,66 @@ async function generateMealFromFoods(
         const vegCount = (type === 'lunch' || type === 'dinner') ? 2 : 1;
         for (let i = 0; i < vegCount; i++) {
             if (veggiePool.length) {
-                // REDUCED: 60kcal of veggies is too much (approx 3 servings). 20kcal is ~1 serving (90g).
+                // REDUCED: 20kcal target
                 const v = portionItem(randomPick(veggiePool), { kcal: 20 });
-                if (v && !meal.find(m => m.food.id === v.food.id)) meal.push(v);
+                if (v && !meal.find(m => m.food.id === v.food.id)) {
+                    // SAFETY CAP: Prevent massive portions if DB serving info is weird
+                    if (v.portion_g > 150) {
+                        const ratio = 150 / v.portion_g;
+                        v.portion_g = 150;
+                        v.macros = {
+                            protein: v.macros.protein * ratio,
+                            carbs: v.macros.carbs * ratio,
+                            fat: v.macros.fat * ratio,
+                            kcal: v.macros.kcal * ratio
+                        };
+                    }
+                    meal.push(v);
+                }
             }
         }
         if ((type === 'breakfast' || type === 'snack') && fruitPool.length) {
-            const fr = portionItem(randomPick(fruitPool), { kcal: 80 });
+            const fr = portionItem(randomPick(fruitPool), { kcal: 60 });
             if (fr) meal.push(fr);
         }
 
         // Ensure group minimums are represented in the heuristic path
-        // FORCE: If budget prevents adding mandatory groups, we might need to be lenient.
+        // FORCE: If budget prevents adding mandatory groups, we must ignore budget validation for these specific items.
         if (groupTargets?.dairyMinServings && dairyPool.length) {
             const hasDairy = meal.some(m => getFunctionalCategory(m.food) === 'dairy' || getFunctionalCategory(m.food) === 'beverage');
             if (!hasDairy) {
-                const d = portionItem(randomPick(dairyPool), { protein: mealProteinTarget * 0.2 });
-                if (d) meal.push(d);
+                const pick = randomPick(dairyPool);
+                let d = portionItem(pick, { protein: mealProteinTarget * 0.2 });
+                // Fallback: Force small portion (150g yogurt/milk) if validation fails
+                if (!d) {
+                    const forcedGrams = 150;
+                    d = {
+                        food: pick,
+                        portion_g: forcedGrams,
+                        macros: calculateItemMacros(pick, forcedGrams),
+                        course: inferCourse(pick)
+                    };
+                }
+                meal.push(d);
             }
         }
         if (groupTargets?.fatMinServings && fatPool.length) {
             const hasFat = meal.some(m => getFunctionalCategory(m.food) === 'fat');
-            // Check totals.healthyFats if possible? No easy access here.
             if (!hasFat) {
-                // Use a smaller ask to fit in budget, or force it.
-                // 1 serving of fat is ~5g fat.
-                let f = portionItem(randomPick(fatPool), { fat: 8 });
+                const pick = randomPick(fatPool);
+                // Try normal portion first
+                let f = portionItem(pick, { fat: 8 });
+                // Fallback: Force micro portion (30g avocado / 10g nuts) if validation fails
                 if (!f) {
-                    // Fallback: try very small portion or force minimal valid portion check
-                    f = portionItem(randomPick(fatPool), { fat: 5 });
+                    const forcedGrams = pick.name.toLowerCase().includes('oil') ? 5 : 30;
+                    f = {
+                        food: pick,
+                        portion_g: forcedGrams,
+                        macros: calculateItemMacros(pick, forcedGrams),
+                        course: inferCourse(pick)
+                    };
                 }
-                if (f) {
-                    // console.log(`  ➕ Heuristic injected mandatory fat: ${f.food.name} (${f.portion_g}g)`);
-                    meal.push(f);
-                } else {
-                    console.warn(`  ⚠️ Heuristic failed to portion mandatory fat (Pool: ${fatPool.length})`);
-                }
+                meal.push(f);
             }
         }
         if (groupTargets?.wholeGrainMinServings && wholeGrainPool.length) {

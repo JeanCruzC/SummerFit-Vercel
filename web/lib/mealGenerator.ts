@@ -1714,6 +1714,28 @@ async function generateMealFromFoods(
             if (!fruitCount) parts.push(80);
         }
 
+        // Penalize missing USDA group minimums (heuristic guidance)
+        if (groupTargets) {
+            const tmpMeal: Meal = {
+                id: 'tmp',
+                type,
+                type_es: typeNames[type] || type,
+                items: mealItems.map(i => ({
+                    food: i.food,
+                    portion_g: i.portion_g,
+                    cooking_state: i.food.cooking_states?.[0],
+                    macros: i.macros
+                })),
+                totals
+            };
+            const servings = countServingsByGroup({ id: 'tmp', name: 'tmp', name_es: 'tmp', meals: [tmpMeal], totals });
+            if ((groupTargets.vegMinServings || 0) > servings.vegetables) parts.push((groupTargets.vegMinServings - servings.vegetables) * 800);
+            if ((groupTargets.fruitMinServings || 0) > servings.fruits) parts.push((groupTargets.fruitMinServings - servings.fruits) * 700);
+            if ((groupTargets.dairyMinServings || 0) > servings.dairy) parts.push((groupTargets.dairyMinServings - servings.dairy) * 900);
+            if ((groupTargets.fatMinServings || 0) > servings.healthyFats) parts.push((groupTargets.fatMinServings - servings.healthyFats) * 900);
+            if ((groupTargets.wholeGrainMinServings || 0) > servings.wholeGrains) parts.push((groupTargets.wholeGrainMinServings - servings.wholeGrains) * 900);
+        }
+
         const seen: Record<string, number> = {};
         mealItems.forEach(i => { seen[i.food.id] = (seen[i.food.id] || 0) + 1; });
         Object.values(seen).forEach(count => {
@@ -2009,9 +2031,15 @@ async function generateMealFromFoods(
     // First attempt: MILP solution to satisfy hard constraints
     let milpSolution: ScoredItem[] | null = null;
     try {
-        milpSolution = await solveWithMILP();
+        // PERF: On client-side (browser), MILP (glpk.js) often crashes or lags due to WebAssembly/Worker issues.
+        // We skip it and rely on the robust heuristic which now handles USDA groups well.
+        if (typeof window !== 'undefined') {
+            // console.log('⚡ Client-side detected: Skipping MILP, using Robust Heuristic');
+        } else {
+            milpSolution = await solveWithMILP();
+        }
     } catch (err) {
-        console.warn('  ⚠️ MILP solver failed, falling back to heuristic:', err);
+        console.warn('  ⚠️ MILP solver failed/skipped, falling back to heuristic:', err);
     }
     if (milpSolution && milpSolution.length) {
         milpSolution.forEach(i => items.push({
@@ -2030,7 +2058,14 @@ async function generateMealFromFoods(
             totals: finalTotals
         };
     }
+
     const wholeGrainPool = carbPool.filter(f => isWholeGrain(f));
+
+    // DIAGNOSTIC: Check for empty pools even before checking targets
+    if (dairyPool.length === 0) console.warn(`  ⚠️ Dairy pool is EMPTY.`);
+    if (wholeGrainPool.length === 0) console.warn(`  ⚠️ WholeGrain pool is EMPTY.`);
+    if (fruitPool.length === 0) console.warn(`  ⚠️ Fruit pool is EMPTY.`);
+
     const hasGroupMins = Boolean(groupTargets && (
         ((groupTargets.vegMinServings || 0) > 0 && veggiePool.length > 0) ||
         ((groupTargets.fruitMinServings || 0) > 0 && fruitPool.length > 0) ||
@@ -2065,6 +2100,43 @@ async function generateMealFromFoods(
         if ((type === 'breakfast' || type === 'snack') && fruitPool.length) {
             const fr = portionItem(randomPick(fruitPool), { kcal: 80 });
             if (fr) meal.push(fr);
+        }
+
+        // Ensure group minimums are represented in the heuristic path
+        if (groupTargets?.dairyMinServings && dairyPool.length) {
+            const hasDairy = meal.some(m => getFunctionalCategory(m.food) === 'dairy' || getFunctionalCategory(m.food) === 'beverage');
+            if (!hasDairy) {
+                const d = portionItem(randomPick(dairyPool), { protein: mealProteinTarget * 0.2 });
+                if (d) meal.push(d);
+            }
+        }
+        if (groupTargets?.fatMinServings && fatPool.length) {
+            const hasFat = meal.some(m => getFunctionalCategory(m.food) === 'fat');
+            if (!hasFat) {
+                const f = portionItem(randomPick(fatPool), { fat: mealFatTarget * 0.6 });
+                if (f) meal.push(f);
+            }
+        }
+        if (groupTargets?.wholeGrainMinServings && wholeGrainPool.length) {
+            const hasWhole = meal.some(m => m.food.category === 'carb' && isWholeGrain(m.food));
+            if (!hasWhole) {
+                const wg = portionItem(randomPick(wholeGrainPool), { carbs: mealCarbTarget * 0.6 });
+                if (wg) meal.push(wg);
+            }
+        }
+        if (groupTargets?.fruitMinServings && fruitPool.length) {
+            const hasFruit = meal.some(m => getFunctionalCategory(m.food) === 'fruit');
+            if (!hasFruit) {
+                const fr = portionItem(randomPick(fruitPool), { kcal: 80 });
+                if (fr) meal.push(fr);
+            }
+        }
+        if (groupTargets?.vegMinServings && veggiePool.length) {
+            const hasVeg = meal.some(m => getFunctionalCategory(m.food) === 'vegetable');
+            if (!hasVeg) {
+                const v = portionItem(randomPick(veggiePool), { kcal: 60 });
+                if (v) meal.push(v);
+            }
         }
         return meal;
     };
@@ -2643,7 +2715,7 @@ function validateMicros(totals: MacroTotals['micros'], rdaProfile?: RDAProfile, 
     const microCoverage: Partial<Record<MicroKey, number>> = {};
     if (foods && foods.length > 0) {
         MICRO_KEYS.forEach(key => {
-            const count = foods.filter(f => resolveMicroPer100g(f, key) > 0).length;
+            const count = foods.filter(f => f.micros && Object.prototype.hasOwnProperty.call(f.micros, key)).length;
             microCoverage[key] = count / foods.length;
         });
     }

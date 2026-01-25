@@ -77,6 +77,8 @@ export interface SimpleFoodItem {
     is_common_staple?: boolean;
 }
 
+export type ScoredItem = { food: SimpleFoodItem; portion_g: number; macros: MacroTotals; course: 'main' | 'side' | 'snack' };
+
 const MICRO_KEYS = [
     'calcium_mg',
     'iron_mg',
@@ -384,31 +386,55 @@ function getRDATargets(profile?: RDAProfile): Record<string, number> {
 }
 
 // Fuzzy matching utility for pantry terms that don't match exactly
+// Fuzzy matching utility for pantry terms
 function fuzzyMatchPantryTerm(term: string, nameToIdMap: Record<string, string>): string | undefined {
     const normTerm = term.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
     // 1. Exact match
     if (nameToIdMap[normTerm]) return nameToIdMap[normTerm];
 
-    // 2. Partial match (term contains key or key contains term)
-    for (const [key, id] of Object.entries(nameToIdMap)) {
-        if (normTerm.includes(key) || key.includes(normTerm)) {
-            return id;
-        }
-    }
+    // 2. Strict Partial match (Term MUST include Key)
+    // PREVENTS: "Maní" matching "Mantequilla de Maní"
+    // ALLOWS: "Maní Tostado" matching "Maní"
+    let bestMatchId: string | undefined;
+    let maxLen = 0;
 
-    // 3. Word-based matching (any word in term matches any key)
-    const termWords = normTerm.split(/\s+/);
-    for (const word of termWords) {
-        if (word.length < 3) continue; // Skip short words
-        for (const [key, id] of Object.entries(nameToIdMap)) {
-            if (key.includes(word) || word.includes(key)) {
-                return id;
+    for (const [key, id] of Object.entries(nameToIdMap)) {
+        // ONLY allow if the USER INPUT contains the MAP KEY
+        // Disallow if the MAP KEY contains the USER INPUT (unless equal)
+        if (normTerm.includes(key)) {
+            if (key.length > maxLen) {
+                maxLen = key.length;
+                bestMatchId = id;
             }
         }
     }
+    return bestMatchId;
+}
 
-    return undefined;
+// Compatibility Rules
+function areFoodsCompatible(food: SimpleFoodItem, existing: ScoredItem[]): boolean {
+    const fCat = getFunctionalCategory(food);
+    const fName = food.name.toLowerCase();
+    const isNutButter = fName.includes('butter') || fName.includes('mantequilla') || fName.includes('crema');
+
+    for (const item of existing) {
+        const eCat = getFunctionalCategory(item.food);
+        const eName = item.food.name.toLowerCase();
+
+        // Rule 1: No Nut Butters with Vegetables (Broccoli + PB)
+        if (fCat === 'vegetable' && isNutButter && eCat === 'fat') return false;
+        if (eCat === 'vegetable' && fCat === 'fat' && isNutButter) return false;
+
+        // Rule 2: No Fruits with Salty Proteins (Fish/Chicken) in same bowl (simplify)
+        // (Allows salads, but maybe block fish + sweet fruit?)
+        const isFish = eName.includes('pescado') || eName.includes('fish') || eName.includes('salmon') || eName.includes('atun');
+        if (fCat === 'fruit' && isFish) return false;
+
+        // Rule 3: No duplicate main categories (e.g. 2 different porridges)
+        if (fCat === 'carb' && eCat === 'carb' && existing.filter(e => getFunctionalCategory(e.food) === 'carb').length >= 2) return false;
+    }
+    return true;
 }
 
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
@@ -1583,7 +1609,7 @@ async function generateMealFromFoods(
     // ===========================================================
     // OPTIMIZATION-BASED MEAL CONSTRUCTION (multi-factor scoring)
     // ===========================================================
-    type ScoredItem = { food: SimpleFoodItem; portion_g: number; macros: MacroTotals; course: 'main' | 'side' | 'snack' };
+
 
     const norm = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const getServingSize = (f: SimpleFoodItem): number => f.serving_size || f.portion_g || 100;
@@ -2096,20 +2122,23 @@ async function generateMealFromFoods(
         for (let i = 0; i < vegCount; i++) {
             if (veggiePool.length) {
                 // REDUCED: 20kcal target
-                const v = portionItem(randomPick(veggiePool), { kcal: 20 });
-                if (v && !meal.find(m => m.food.id === v.food.id)) {
-                    // SAFETY CAP: Prevent massive portions if DB serving info is weird
-                    if (v.portion_g > 150) {
-                        const ratio = 150 / v.portion_g;
-                        v.portion_g = 150;
-                        v.macros = {
-                            protein: v.macros.protein * ratio,
-                            carbs: v.macros.carbs * ratio,
-                            fat: v.macros.fat * ratio,
-                            kcal: v.macros.kcal * ratio
-                        };
+                let vItem: ScoredItem | null = null;
+                // Retry loop for compatibility
+                for (let attempt = 0; attempt < 5; attempt++) {
+                    const candidate = randomPick(veggiePool);
+                    if (areFoodsCompatible(candidate, meal)) {
+                        vItem = portionItem(candidate, { kcal: 20 });
+                        if (vItem) break;
                     }
-                    meal.push(v);
+                }
+
+                if (vItem && !meal.find(m => m.food.id === vItem!.food.id)) {
+                    // SAFETY CAP: Prevent massive portions if DB serving info is weird
+                    if (vItem.portion_g > 150) {
+                        vItem.portion_g = 150;
+                        vItem.macros = calculateItemMacros(vItem.food, 150);
+                    }
+                    meal.push(vItem);
                 }
             }
         }
@@ -2141,7 +2170,17 @@ async function generateMealFromFoods(
         if (groupTargets?.fatMinServings && fatPool.length) {
             const hasFat = meal.some(m => getFunctionalCategory(m.food) === 'fat');
             if (!hasFat) {
-                const pick = randomPick(fatPool);
+                let pick: SimpleFoodItem | undefined;
+                // Compatibility retry for strict fats (Nut butters vs Veggies)
+                for (let attempt = 0; attempt < 5; attempt++) {
+                    const c = randomPick(fatPool);
+                    if (areFoodsCompatible(c, meal)) {
+                        pick = c;
+                        break;
+                    }
+                }
+                if (!pick) pick = randomPick(fatPool); // Fallback to any if impossible
+
                 // Try normal portion first
                 let f = portionItem(pick, { fat: 8 });
                 // Fallback: Force micro portion (30g avocado / 10g nuts) if validation fails

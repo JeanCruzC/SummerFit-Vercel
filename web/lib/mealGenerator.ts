@@ -2093,7 +2093,8 @@ async function generateMealFromFoods(
         const vegCount = (type === 'lunch' || type === 'dinner') ? 2 : 1;
         for (let i = 0; i < vegCount; i++) {
             if (veggiePool.length) {
-                const v = portionItem(randomPick(veggiePool), { kcal: 60 });
+                // REDUCED: 60kcal of veggies is too much (approx 3 servings). 20kcal is ~1 serving (90g).
+                const v = portionItem(randomPick(veggiePool), { kcal: 20 });
                 if (v && !meal.find(m => m.food.id === v.food.id)) meal.push(v);
             }
         }
@@ -2103,6 +2104,7 @@ async function generateMealFromFoods(
         }
 
         // Ensure group minimums are represented in the heuristic path
+        // FORCE: If budget prevents adding mandatory groups, we might need to be lenient.
         if (groupTargets?.dairyMinServings && dairyPool.length) {
             const hasDairy = meal.some(m => getFunctionalCategory(m.food) === 'dairy' || getFunctionalCategory(m.food) === 'beverage');
             if (!hasDairy) {
@@ -2112,29 +2114,41 @@ async function generateMealFromFoods(
         }
         if (groupTargets?.fatMinServings && fatPool.length) {
             const hasFat = meal.some(m => getFunctionalCategory(m.food) === 'fat');
+            // Check totals.healthyFats if possible? No easy access here.
             if (!hasFat) {
-                const f = portionItem(randomPick(fatPool), { fat: mealFatTarget * 0.6 });
-                if (f) meal.push(f);
+                // Use a smaller ask to fit in budget, or force it.
+                // 1 serving of fat is ~5g fat.
+                let f = portionItem(randomPick(fatPool), { fat: 8 });
+                if (!f) {
+                    // Fallback: try very small portion or force minimal valid portion check
+                    f = portionItem(randomPick(fatPool), { fat: 5 });
+                }
+                if (f) {
+                    // console.log(`  ➕ Heuristic injected mandatory fat: ${f.food.name} (${f.portion_g}g)`);
+                    meal.push(f);
+                } else {
+                    console.warn(`  ⚠️ Heuristic failed to portion mandatory fat (Pool: ${fatPool.length})`);
+                }
             }
         }
         if (groupTargets?.wholeGrainMinServings && wholeGrainPool.length) {
             const hasWhole = meal.some(m => m.food.category === 'carb' && isWholeGrain(m.food));
             if (!hasWhole) {
-                const wg = portionItem(randomPick(wholeGrainPool), { carbs: mealCarbTarget * 0.6 });
+                const wg = portionItem(randomPick(wholeGrainPool), { carbs: mealCarbTarget * 0.4 }); // Reduced from 0.6
                 if (wg) meal.push(wg);
             }
         }
         if (groupTargets?.fruitMinServings && fruitPool.length) {
             const hasFruit = meal.some(m => getFunctionalCategory(m.food) === 'fruit');
             if (!hasFruit) {
-                const fr = portionItem(randomPick(fruitPool), { kcal: 80 });
+                const fr = portionItem(randomPick(fruitPool), { kcal: 60 }); // Reduced
                 if (fr) meal.push(fr);
             }
         }
         if (groupTargets?.vegMinServings && veggiePool.length) {
             const hasVeg = meal.some(m => getFunctionalCategory(m.food) === 'vegetable');
             if (!hasVeg) {
-                const v = portionItem(randomPick(veggiePool), { kcal: 60 });
+                const v = portionItem(randomPick(veggiePool), { kcal: 20 });
                 if (v) meal.push(v);
             }
         }

@@ -2253,11 +2253,13 @@ async function generateMealFromFoods(
 
                 // Remove if reduced to near zero
                 if (target.portion_g < 5) {
+                    // console.warn(`   🗑️ Deleting ${target.food.name} (<5g)`);
                     const idx = meal.indexOf(target);
                     if (idx > -1) meal.splice(idx, 1);
                 }
 
                 currentTotal = meal.reduce((sum, i) => sum + i.macros.kcal, 0);
+                // console.warn(`   📉 Step ${attempts}: ${target.food.name} -> ${target.portion_g}g. New Total: ${currentTotal}`);
                 attempts++;
             }
 

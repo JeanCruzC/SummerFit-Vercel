@@ -84,7 +84,7 @@ export function getFunctionalCategory(food: SimpleFoodItem): string {
     if (!food) return '';
     const id = String(food.id);
     if (FUNCTIONAL_CATEGORY_OVERRIDES[id]) {
-        console.log(`[USDA] 🎯 Override applied: ${id} (${food.name}) -> ${FUNCTIONAL_CATEGORY_OVERRIDES[id]}`);
+        // console.log(`[USDA] 🎯 Override applied: ${id} (${food.name}) -> ${FUNCTIONAL_CATEGORY_OVERRIDES[id]}`);
         return FUNCTIONAL_CATEGORY_OVERRIDES[id];
     }
     return food.category;

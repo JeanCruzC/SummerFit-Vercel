@@ -2228,31 +2228,33 @@ async function generateMealFromFoods(
                 if (v) meal.push(v);
             }
         }
-        // TRIM PHASE: If we overshot calories, scale down largest items AGGRESSIVELY
+        // TRIM PHASE: EXTREME PRECISION MODE
         let currentTotal = meal.reduce((sum, i) => sum + i.macros.kcal, 0);
-        const maxKcal = targetCalories * 1.05; // Max 5% overshoot tolerance (strict)
+        // STRICT CAP: Target + 2% (was 5%)
+        const maxKcal = targetCalories * 1.02;
 
         if (currentTotal > maxKcal) {
             let attempts = 0;
-            // Try up to 25 times to shave down portions
-            while (currentTotal > maxKcal && attempts < 25) {
-                // Target Carbs, Protein AND Fats (if not strictly forced small)
-                const candidates = meal.filter(i => {
-                    const cat = getFunctionalCategory(i.food);
-                    // Allow trimming fats too if they are getting huge, but prioritize reducing Carbs/Protein first
-                    return (cat === 'carb' || cat === 'protein' || cat === 'fat') && i.portion_g > 15;
-                });
+            while (currentTotal > maxKcal && attempts < 50) {
+                // Select candidates: ANY item > 10g can be cut
+                const candidates = meal.filter(i => i.portion_g > 10);
 
                 if (candidates.length === 0) break;
 
-                // Sort by kcal desc (Cut the biggest offender first)
+                // Sort by kcal contribution (highest first)
                 candidates.sort((a, b) => b.macros.kcal - a.macros.kcal);
                 const target = candidates[0];
 
-                // Reduce by 10%
-                const newGrams = Math.floor(target.portion_g * 0.9);
-                target.portion_g = newGrams;
-                target.macros = calculateItemMacros(target.food, newGrams);
+                // Cut by 15% each step
+                const newGrams = Math.floor(target.portion_g * 0.85);
+                target.portion_g = Math.max(newGrams, 0); // Safety
+                target.macros = calculateItemMacros(target.food, target.portion_g);
+
+                // Remove if reduced to near zero
+                if (target.portion_g < 5) {
+                    const idx = meal.indexOf(target);
+                    if (idx > -1) meal.splice(idx, 1);
+                }
 
                 currentTotal = meal.reduce((sum, i) => sum + i.macros.kcal, 0);
                 attempts++;

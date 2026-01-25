@@ -2228,25 +2228,24 @@ async function generateMealFromFoods(
                 if (v) meal.push(v);
             }
         }
-        // TRIM PHASE: If we overshot calories (common due to forced additions), scale down largest items
+        // TRIM PHASE: If we overshot calories, scale down largest items AGGRESSIVELY
         let currentTotal = meal.reduce((sum, i) => sum + i.macros.kcal, 0);
-        const maxKcal = targetCalories * 1.05; // Max 5% overshoot allowed
+        const maxKcal = targetCalories * 1.05; // Max 5% overshoot tolerance (strict)
 
         if (currentTotal > maxKcal) {
-            // console.log(`  ✂️ Trimming meal: ${currentTotal} > ${maxKcal}`);
             let attempts = 0;
-            while (currentTotal > maxKcal && attempts < 10) {
-                // Find largest contributor (changeable items only)
-                // exclusions: small seasonings, veggies (already small), forced items? 
-                // We target Carbs and Protein primarily.
+            // Try up to 25 times to shave down portions
+            while (currentTotal > maxKcal && attempts < 25) {
+                // Target Carbs, Protein AND Fats (if not strictly forced small)
                 const candidates = meal.filter(i => {
                     const cat = getFunctionalCategory(i.food);
-                    return (cat === 'carb' || cat === 'protein') && i.portion_g > 40;
+                    // Allow trimming fats too if they are getting huge, but prioritize reducing Carbs/Protein first
+                    return (cat === 'carb' || cat === 'protein' || cat === 'fat') && i.portion_g > 15;
                 });
 
                 if (candidates.length === 0) break;
 
-                // Sort by kcal desc
+                // Sort by kcal desc (Cut the biggest offender first)
                 candidates.sort((a, b) => b.macros.kcal - a.macros.kcal);
                 const target = candidates[0];
 

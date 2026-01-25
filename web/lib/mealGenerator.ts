@@ -2183,13 +2183,24 @@ async function generateMealFromFoods(
 
                 // Try normal portion first
                 let f = portionItem(pick, { fat: 8 });
-                // Fallback: Force micro portion (30g avocado / 10g nuts) if validation fails
+                // Fallback: Force significantly larger portion to ensure we cross the serving threshold
                 if (!f) {
-                    const forcedGrams = pick.name.toLowerCase().includes('oil') ? 5 : 30;
+                    const isOil = pick.name.toLowerCase().includes('oil') || pick.name.toLowerCase().includes('aceite');
+                    const forcedGrams = isOil ? 15 : 60; // Increased: 15g oil (~3 tsp) or 60g avocado (~1/3 fruit)
+
+                    // Manual calc to ensure it's not zero
+                    // Use calculateItemMacros which is now available in scope
+                    let m = calculateItemMacros(pick, forcedGrams);
+                    if ((m.fat === 0 || m.fat < 1) && pick.category === 'fat') {
+                        // Emergency fallback if DB has 0 fat for a fat item
+                        m.fat = isOil ? 15 : 10;
+                        m.kcal = m.fat * 9;
+                    }
+
                     f = {
                         food: pick,
                         portion_g: forcedGrams,
-                        macros: calculateItemMacros(pick, forcedGrams),
+                        macros: m,
                         course: inferCourse(pick)
                     };
                 }

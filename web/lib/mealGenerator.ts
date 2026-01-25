@@ -2236,8 +2236,8 @@ async function generateMealFromFoods(
         if (currentTotal > maxKcal) {
             console.warn(`[TRIM START] Meal Total: ${currentTotal} > Max: ${maxKcal} (Target: ${targetCalories})`);
             let attempts = 0;
-            while (currentTotal > maxKcal && attempts < 50) {
-                // Select candidates: ANY item can be cut if we are desperate
+            while (currentTotal > maxKcal && attempts < 100) {
+                // Select candidates: ANY item can be cut
                 const candidates = meal.filter(i => i.portion_g > 1);
 
                 if (candidates.length === 0) break;
@@ -2246,8 +2246,8 @@ async function generateMealFromFoods(
                 candidates.sort((a, b) => b.macros.kcal - a.macros.kcal);
                 const target = candidates[0];
 
-                // Cut by 15% each step
-                const newGrams = Math.floor(target.portion_g * 0.85);
+                // Cut by 20% each step (More aggressive)
+                const newGrams = Math.floor(target.portion_g * 0.8);
                 target.portion_g = Math.max(newGrams, 0); // Safety
                 target.macros = calculateItemMacros(target.food, target.portion_g);
 
@@ -2259,6 +2259,13 @@ async function generateMealFromFoods(
 
                 currentTotal = meal.reduce((sum, i) => sum + i.macros.kcal, 0);
                 attempts++;
+            }
+
+            // GUILLOTINE: If still over budget after 100 attempts, EXECUTE the largest item.
+            if (currentTotal > maxKcal) {
+                console.warn(`[GUILLOTINE] Loop failed (Total: ${currentTotal}). Executing largest item.`);
+                meal.sort((a, b) => b.macros.kcal - a.macros.kcal);
+                if (meal.length > 0) meal.shift(); // Remove biggest
             }
         }
 

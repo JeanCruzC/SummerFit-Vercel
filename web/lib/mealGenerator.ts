@@ -2228,6 +2228,38 @@ async function generateMealFromFoods(
                 if (v) meal.push(v);
             }
         }
+        // TRIM PHASE: If we overshot calories (common due to forced additions), scale down largest items
+        let currentTotal = meal.reduce((sum, i) => sum + i.macros.kcal, 0);
+        const maxKcal = targetCalories * 1.05; // Max 5% overshoot allowed
+
+        if (currentTotal > maxKcal) {
+            // console.log(`  ✂️ Trimming meal: ${currentTotal} > ${maxKcal}`);
+            let attempts = 0;
+            while (currentTotal > maxKcal && attempts < 10) {
+                // Find largest contributor (changeable items only)
+                // exclusions: small seasonings, veggies (already small), forced items? 
+                // We target Carbs and Protein primarily.
+                const candidates = meal.filter(i => {
+                    const cat = getFunctionalCategory(i.food);
+                    return (cat === 'carb' || cat === 'protein') && i.portion_g > 40;
+                });
+
+                if (candidates.length === 0) break;
+
+                // Sort by kcal desc
+                candidates.sort((a, b) => b.macros.kcal - a.macros.kcal);
+                const target = candidates[0];
+
+                // Reduce by 10%
+                const newGrams = Math.floor(target.portion_g * 0.9);
+                target.portion_g = newGrams;
+                target.macros = calculateItemMacros(target.food, newGrams);
+
+                currentTotal = meal.reduce((sum, i) => sum + i.macros.kcal, 0);
+                attempts++;
+            }
+        }
+
         return meal;
     };
 

@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "date-fns": "^4.1.0",
+    "glpk.js": "^5.0.0",
     "react-easy-crop": "^5.5.6"
   }
 }

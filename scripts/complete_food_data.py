@@ -61,6 +61,8 @@ SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("NEXT_PU
 OFFICIAL_DATA_PATH = os.environ.get("OFFICIAL_DATA_PATH")
 BATCH_SIZE = int(os.environ.get("FOOD_COMPLETION_BATCH_SIZE", "250"))
 SCAN_ALL = os.environ.get("FOOD_COMPLETION_SCAN_ALL", "1") == "1"
+RETRY_PASSES = int(os.environ.get("FOOD_COMPLETION_RETRY_PASSES", "2"))
+RETRY_SLEEP = float(os.environ.get("FOOD_COMPLETION_RETRY_SLEEP", "5"))
 
 # Fields to fill with AI
 FIELDS_CONFIG = {
@@ -669,6 +671,7 @@ def run_completion(supabase, limit: int, dry_run: bool = False):
     
     success_count = 0
     error_count = 0
+    failed_items: List[Dict[str, Any]] = []
     
     print(f"\n📝 Processing {len(foods_to_process)} foods...")
     
@@ -683,7 +686,8 @@ def run_completion(supabase, limit: int, dry_run: bool = False):
         
         if not completed:
             error_count += 1
-            print(f"  ❌ AI completion failed")
+            failed_items.append({"food": food, "missing": missing})
+            print(f"  ❌ AI completion failed (id={food.get('id')} name={food.get('name')})")
             continue
         
         completed_data = completed["data"]
@@ -742,6 +746,71 @@ def run_completion(supabase, limit: int, dry_run: bool = False):
         else:
              time.sleep(0.3)
     
+    # Retry failed items (transient API issues)
+    if failed_items and OPENAI_API_KEY and RETRY_PASSES > 0:
+        print(f"\n🔁 Reintentando {len(failed_items)} fallos de IA ({RETRY_PASSES} pasadas)...")
+        remaining = failed_items
+        for retry_idx in range(1, RETRY_PASSES + 1):
+            if not remaining:
+                break
+            print(f"   🔄 Retry pass {retry_idx}/{RETRY_PASSES} (items={len(remaining)})")
+            time.sleep(RETRY_SLEEP)
+            new_remaining: List[Dict[str, Any]] = []
+            for item in tqdm(remaining, desc=f"♻️ Retry {retry_idx}", unit="food"):
+                food = item["food"]
+                missing = item["missing"]
+                completed = complete_food(food, missing)
+                if not completed:
+                    new_remaining.append(item)
+                    continue
+                completed_data = completed["data"]
+                field_sources = completed["field_sources"]
+                if not dry_run and completed_data:
+                    data_quality_flags = safe_json_load(food.get("data_quality_flags"))
+                    existing_sources = data_quality_flags.get("field_sources") or {}
+                    merged_sources = {**existing_sources, **field_sources}
+                    data_quality_flags.update({
+                        "ai_completed": True,
+                        "completed_fields": list(completed_data.keys()),
+                        "field_sources": merged_sources,
+                        "model": "qwen-turbo" if completed.get("raw_response") else "official",
+                        "prompt_hash": completed.get("prompt_hash"),
+                        "raw_response": (completed.get("raw_response") or "")[:2000],
+                        "confidence": completed.get("confidence"),
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    })
+                    update_payload = dict(completed_data)
+                    update_payload["data_audited_at"] = datetime.now(timezone.utc).isoformat()
+                    update_payload["data_quality_flags"] = json.dumps(data_quality_flags)
+                    for attempt in range(MAX_RETRIES):
+                        try:
+                            result = supabase.table("foods").update(update_payload).eq("id", food["id"]).execute()
+                            if result.data:
+                                success_count += 1
+                            else:
+                                error_count += 1
+                            break
+                        except Exception:
+                            if attempt == MAX_RETRIES - 1:
+                                new_remaining.append(item)
+                            else:
+                                time.sleep(BACKOFF_BASE ** attempt)
+                else:
+                    success_count += 1
+            remaining = new_remaining
+
+        if remaining:
+            os.makedirs(os.path.join(os.path.dirname(__file__), '..', 'logs'), exist_ok=True)
+            fail_path = os.path.join(os.path.dirname(__file__), '..', 'logs', 'ai_completion_failed.jsonl')
+            with open(fail_path, "a", encoding="utf-8") as f:
+                for item in remaining:
+                    f.write(json.dumps({
+                        "id": item["food"].get("id"),
+                        "name": item["food"].get("name"),
+                        "missing": item["missing"]
+                    }) + "\n")
+            print(f"\n⚠️ Quedan {len(remaining)} fallos. Guardado en: {fail_path}")
+
     print(f"\n{'='*50}")
     print(f"✅ Success: {success_count}")
     print(f"❌ Errors: {error_count}")

@@ -10,6 +10,12 @@ const __dirname = dirname(__filename);
 
 dotenv.config({ path: resolve(__dirname, '../web/.env.local') });
 
+// Polyfill Worker for Node.js environment (glpk.js needs it)
+import { Worker } from 'worker_threads';
+if (typeof global.Worker === 'undefined') {
+    (global as any).Worker = Worker;
+}
+
 async function run() {
     console.log('🧪 Testing Meal Generator with Categorization Fix...');
     try {

@@ -1729,11 +1729,11 @@ async function generateMealFromFoods(
                 totals
             };
             const servings = countServingsByGroup({ id: 'tmp', name: 'tmp', name_es: 'tmp', meals: [tmpMeal], totals });
-            if ((groupTargets.vegMinServings || 0) > servings.vegetables) parts.push((groupTargets.vegMinServings - servings.vegetables) * 800);
-            if ((groupTargets.fruitMinServings || 0) > servings.fruits) parts.push((groupTargets.fruitMinServings - servings.fruits) * 700);
-            if ((groupTargets.dairyMinServings || 0) > servings.dairy) parts.push((groupTargets.dairyMinServings - servings.dairy) * 900);
-            if ((groupTargets.fatMinServings || 0) > servings.healthyFats) parts.push((groupTargets.fatMinServings - servings.healthyFats) * 900);
-            if ((groupTargets.wholeGrainMinServings || 0) > servings.wholeGrains) parts.push((groupTargets.wholeGrainMinServings - servings.wholeGrains) * 900);
+            if ((groupTargets.vegMinServings || 0) > servings.vegetables) parts.push(((groupTargets.vegMinServings || 0) - servings.vegetables) * 800);
+            if ((groupTargets.fruitMinServings || 0) > servings.fruits) parts.push(((groupTargets.fruitMinServings || 0) - servings.fruits) * 700);
+            if ((groupTargets.dairyMinServings || 0) > servings.dairy) parts.push(((groupTargets.dairyMinServings || 0) - servings.dairy) * 900);
+            if ((groupTargets.fatMinServings || 0) > servings.healthyFats) parts.push(((groupTargets.fatMinServings || 0) - servings.healthyFats) * 900);
+            if ((groupTargets.wholeGrainMinServings || 0) > servings.wholeGrains) parts.push(((groupTargets.wholeGrainMinServings || 0) - servings.wholeGrains) * 900);
         }
 
         const seen: Record<string, number> = {};

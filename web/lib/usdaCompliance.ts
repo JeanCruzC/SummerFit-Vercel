@@ -350,7 +350,7 @@ export function countServingsByGroup(plan: MealPlan): ServingCount {
     return totals;
 }
 
-export type USDAValidation = { isValid: boolean; issues: string[] };
+export type USDAValidation = { isValid: boolean; issues: string[]; warnings: string[] };
 
 export function validateUSDAHard(
     plan: MealPlan,
@@ -360,6 +360,7 @@ export function validateUSDAHard(
     conditions: string[] = []
 ): USDAValidation {
     const issues: string[] = [];
+    const warnings: string[] = [];
     const totals = plan.totals;
 
     // Saturated fat <10% kcal
@@ -400,7 +401,7 @@ export function validateUSDAHard(
             const t = targets[key];
             if (!t) return;
             if (val < t.min) issues.push(`${key} ${val.toFixed(2)} < min ${t.min}`);
-            if (val > t.max) issues.push(`${key} ${val.toFixed(2)} > max ${t.max}`);
+            if (val > t.max) warnings.push(`${key} ${val.toFixed(2)} > max ${t.max}`);
         };
         check('vegetables', s.vegetables);
         check('fruits', s.fruits);
@@ -410,7 +411,7 @@ export function validateUSDAHard(
         check('healthyFats', s.healthyFats);
     }
 
-    return { isValid: issues.length === 0, issues };
+    return { isValid: issues.length === 0, issues, warnings };
 }
 
 export function computeMealBudgets(targetKcal: number, ageYears?: number, share: number = 0.33) {

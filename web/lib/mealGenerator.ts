@@ -3186,6 +3186,10 @@ export async function generateDayMealPlanFromDB(
         deviations.push(...usdaHard.issues.map(issue => `⚠️ USDA: ${issue}`));
         console.warn('⚠️ USDA soft validation issues:', usdaHard.issues);
     }
+    if (usdaHard.warnings.length > 0) {
+        deviations.push(...usdaHard.warnings.map(w => `⚠️ USDA: ${w}`));
+        console.warn('⚠️ USDA serving max warnings:', usdaHard.warnings);
+    }
 
     // Micronutrient checks with sex/age-specific RDA targets (soft warnings)
     const planFoods = meals.flatMap(meal => meal.items.map(item => item.food));

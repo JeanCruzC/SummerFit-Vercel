@@ -2234,10 +2234,11 @@ async function generateMealFromFoods(
         const maxKcal = targetCalories * 1.02;
 
         if (currentTotal > maxKcal) {
+            console.warn(`[TRIM START] Meal Total: ${currentTotal} > Max: ${maxKcal} (Target: ${targetCalories})`);
             let attempts = 0;
             while (currentTotal > maxKcal && attempts < 50) {
-                // Select candidates: ANY item > 10g can be cut
-                const candidates = meal.filter(i => i.portion_g > 10);
+                // Select candidates: ANY item can be cut if we are desperate
+                const candidates = meal.filter(i => i.portion_g > 1);
 
                 if (candidates.length === 0) break;
 

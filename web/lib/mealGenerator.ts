@@ -3215,12 +3215,9 @@ export async function generateDayMealPlanFromDB(
     if (dayCounts.legume > 1) deviations.push(`⚠️ Demasiadas legumbres principales (${dayCounts.legume}/1)`);
 
     if (microIssues.length > 0) {
-        if (usdaMode === 'hard') {
-            console.error('❌ Micronutrient targets not met:', microIssues);
-            throw new Error(`Micronutrientes insuficientes: ${microIssues.join(' | ')}`);
-        }
+        // Warning only, never throw on micros
+        console.warn('⚠️ Micronutrient targets not met (Warning only):', microIssues);
         deviations.push(...microIssues.map(issue => `⚠️ Micro: ${issue}`));
-        console.warn('⚠️ Micronutrient warnings:', microIssues);
     }
 
     console.log(`\n🎉 [DAY PLAN COMPLETE]`);
